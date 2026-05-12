@@ -1,0 +1,38 @@
+The SwiftSketch project generates results in two primary output formats: SVG (Vector) and PNG (Raster).
+
+  1. Output Formats
+   * SVG (Scalable Vector Graphics): This is the core output format. The project uses the diffvg library to represent and save the sketches as vector paths (typically cubic Bézier curves).
+   * PNG: Rasterized versions of the sketches are saved for visualization, often including intermediate steps during the optimization or diffusion process.
+
+  ---
+
+  2. Internal Data Structures
+  Before the results are saved to a file, they are stored in a hierarchical structure combining PyTorch Tensors and diffvg objects:
+
+  A. The High-Level Scene (diffvg Objects)
+  The sketch is managed as a collection of paths within a "scene" concept:
+   * pydiffvg.Path: Each individual stroke is represented by this object. It contains:
+       * points: A PyTorch Tensor of shape (num_control_points, 2) representing the $(x, y)$ coordinates of the Bézier control points.
+       * num_control_points: An integer tensor defining the degree of the curve (e.g., 4 points for a cubic Bézier).
+       * stroke_width: A scalar tensor for the thickness.
+       * is_closed: A boolean.
+   * pydiffvg.ShapeGroup: Manages the styling of a path, such as its stroke_color and fill_color (usually black strokes and no fill for sketches).
+
+  B. The Raw Geometry (Tensors)
+  In the SwiftSketch diffusion pipeline, the sketch is often handled purely as a multi-dimensional PyTorch Tensor before being converted to diffvg objects:
+   * Data Structure: torch.Tensor
+   * Shape: (batch_size, num_paths, 4, 2)
+       * num_paths: Number of strokes in the sketch.
+       * 4: The four control points for a cubic Bézier curve.
+       * 2: The $(x, y)$ coordinates.
+   * Range: Coordinates are typically normalized to a range like $[-1, 1]$ or $[0, 1]$ during processing and scaled to the canvas_size (e.g., 224x224 or 512x512) just before rendering or saving.
+
+  ---
+
+  Summary of the Transformation Flow
+   1. Model Output: A raw torch.Tensor containing coordinates.
+   2. Refinement: The tensor is optimized or denoised.
+   3. Path Creation: The tensor is iterated over to instantiate a list of pydiffvg.Path objects.
+   4. Final Save:
+       * SVG: pydiffvg.save_svg(path, width, height, shapes, shape_groups) converts the objects into an XML-based .svg file.
+       * PNG: The pydiffvg.RenderFunction rasterizes the paths into an RGB(A) tensor, which is then saved using PIL (Pillow) or torchvision.utils.save_image.
