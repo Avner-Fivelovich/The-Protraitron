@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The PORTRAITRON 3000</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700;900&family=Inter:ital,wght@0,400;0,700;0,900;1,400&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #1a1a1c;
+        --dark: #0f0f10;
+        --accent: #26a69a;
+        --purple: #9c27b0;
+        --deep: #4a148c;
+        --card: #252528;
+        --silver: #e0e0e0;
+        --font-display: 'Space Grotesk', sans-serif;
+        --font-sans: 'Inter', sans-serif;
+        --font-mono: 'JetBrains Mono', monospace;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        background-color: var(--dark);
+        color: var(--silver);
+        font-family: var(--font-sans);
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* Slide Layout */
+      .presentation {
+        height: 100vh;
+        width: 100vw;
+        position: relative;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: none; /* Controlled by JS */
+        flex-direction: column;
+        padding: 100px 80px 80px 80px;
+        background-color: var(--bg);
+        border: 15px solid var(--dark);
+        overflow: hidden;
+      }
+
+      .slide.active { display: flex; animation: slideIn 0.4s ease-out; }
+
+      @keyframes slideIn {
+        from { opacity: 0; transform: scale(0.98); }
+        to { opacity: 1; transform: scale(1); }
+      }
+
+      /* Background Texture */
+      .slide::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: 
+          linear-gradient(var(--dark) 1px, transparent 1px),
+          linear-gradient(90deg, var(--dark) 1px, transparent 1px);
+        background-size: 100px 100px;
+        opacity: 0.2;
+        pointer-events: none;
+      }
+
+      /* Header */
+      header {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 100;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--dark);
+        padding: 15px 40px;
+        border-bottom: 3px solid var(--deep);
+      }
+
+      .brand {
+        background: var(--purple);
+        color: white;
+        font-family: var(--font-display);
+        font-weight: 900;
+        padding: 6px 20px;
+        transform: skewX(-12deg);
+        font-size: 1.2rem;
+        box-shadow: 4px 4px 0 var(--deep);
+      }
+
+      .lab-meta {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      /* Content Styling */
+      h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
+
+      .slide-title {
+        font-size: 4.5rem;
+        font-weight: 900;
+        color: var(--purple);
+        margin-bottom: 40px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .slide-title::before {
+        content: '';
+        width: 12px; height: 60px;
+        background: var(--accent);
+      }
+
+      /* Card Grid */
+      .grid { display: grid; gap: 25px; flex: 1; }
+
+      .card {
+        background: var(--card);
+        border: 2px solid var(--deep);
+        padding: 40px;
+        position: relative;
+        box-shadow: 8px 8px 0 var(--dark);
+      }
+
+      .card h3 { color: var(--accent); margin-bottom: 20px; font-size: 1.8rem; }
+
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: rgba(0,0,0,0.3);
+        padding: 15px;
+        margin-bottom: 12px;
+        border-left: 5px solid var(--purple);
+      }
+
+      .step-label {
+        color: var(--accent);
+        font-weight: 900;
+        font-size: 1.4rem;
+        min-width: 80px;
+      }
+
+      /* Navigation */
+      .nav-controls {
+        position: fixed;
+        bottom: 60px;
+        right: 60px;
+        display: flex;
+        gap: 15px;
+        z-index: 200;
+      }
+
+      .nav-btn {
+        width: 60px;
+        height: 60px;
+        background: var(--purple);
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 900;
+        box-shadow: 4px 4px 0 var(--deep);
+        transition: transform 0.1s;
+      }
+
+      .nav-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--deep); }
+      .nav-btn:hover { background: var(--accent); }
+
+      .progress-bar {
+        position: fixed;
+        bottom: 45px;
+        left: 80px;
+        right: 80px;
+        height: 4px;
+        background: var(--card);
+        z-index: 150;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: var(--accent);
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      /* Specific Layouts */
+      .title-slide { text-align: center; justify-content: center; align-items: center; }
+      .behold { font-size: 9rem; color: var(--accent); font-weight: 900; margin-bottom: 10px; text-shadow: 6px 6px 0 var(--deep); }
+
+      /* Footer */
+      footer {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        height: 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        padding: 0 40px;
+        background: var(--dark);
+        border-top: 2px solid var(--deep);
+        color: #555;
+      }
+
+      .timeline-item { display: flex; gap: 40px; margin-bottom: 50px; font-size: 1.4rem; align-items: flex-start; }
+      .marker { 
+        padding: 8px 20px; background: var(--accent); color: black; 
+        font-weight: 900; height: fit-content;
+        font-size: 1.2rem;
+        min-width: 280px;
+        text-align: center;
+        transform: skewX(-5deg);
+      }
+
+      .circle-visual {
+        width: 320px; height: 320px;
+        border: 4px dashed var(--purple);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: spin 15s linear infinite;
+      }
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+      .labor-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 20px;
+        background: var(--dark);
+        border-right: 10px solid var(--purple);
+        margin-bottom: 15px;
+      }
+
+      /* Evil Accessories */
+      .self-destruct {
+        background: #d32f2f;
+        color: white;
+        border: 4px solid #7f0000;
+        padding: 5px 15px;
+        font-family: var(--font-display);
+        font-weight: 900;
+        cursor: pointer;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        box-shadow: 0 4px 0 #7f0000;
+        margin-left: 20px;
+        transition: transform 0.1s;
+      }
+      .self-destruct:active { transform: translateY(2px); box-shadow: 0 2px 0 #7f0000; }
+
+      .perry-spotter {
+        position: fixed;
+        bottom: -70px;
+        left: 40px;
+        padding: 20px;
+        background: #00838f;
+        border: 4px solid #005662;
+        color: white;
+        font-family: var(--font-display);
+        font-weight: 700;
+        z-index: 1000;
+        transition: bottom 0.5s;
+        cursor: help;
+        box-shadow: 4px 4px 15px rgba(0,0,0,0.5);
+      }
+      .perry-spotter:hover { bottom: 20px; }
+
+      .evil-sticky {
+        position: fixed;
+        top: 20vh;
+        right: -180px; /* RETRACTED BY DEFAULT */
+        background: #fff176;
+        color: #333;
+        padding: 20px 40px 20px 20px;
+        font-family: 'Comic Sans MS', cursive, sans-serif;
+        transform: rotate(-3deg);
+        box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+        font-size: 0.85rem;
+        z-index: 50;
+        max-width: 200px;
+        border-left: 5px solid #f9a825;
+        transition: right 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        cursor: pointer;
+      }
+      .evil-sticky:hover {
+        right: -30px; /* EXPANDED */
+      }
+      .evil-sticky::before {
+        content: 'TODO';
+        position: absolute;
+        left: -25px;
+        top: 20px;
+        background: #f9a825;
+        color: white;
+        padding: 2px 8px;
+        font-family: var(--font-display);
+        font-weight: 900;
+        transform: rotate(-90deg);
+        font-size: 0.6rem;
+        border-radius: 4px 4px 0 0;
+      }
+
+      @keyframes evil-shake {
+        0%, 100% { transform: translate(0, 0); }
+        10% { transform: translate(-10px, -10px); }
+        20% { transform: translate(10px, 10px); }
+        30% { transform: translate(-10px, 10px); }
+        40% { transform: translate(10px, -10px); }
+      }
+      .shaking { animation: evil-shake 0.1s linear infinite; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div style="display: flex; align-items: center;">
+        <div class="brand">DOOFENSHMIRTZ EVIL INC.</div>
+        <button class="self-destruct" id="sd-btn" onclick="selfDestruct()">Self-Destruct</button>
+      </div>
+      <div class="lab-meta">ROBOTICS DIVISION // THE PORTRAITRON</div>
+    </header>
+
+    <div class="evil-sticky">
+      <strong>TODO:</strong><br>
+      - Buy more aluminum foil<br>
+      - Catch platypus<br>
+      - Finish the -Tron<br>
+      - Move to Tri-State Area
+    </div>
+
+    <div class="perry-spotter">
+      HE'S A SEMI-AQUATIC...<br>
+      <span style="font-size: 0.7rem; opacity: 0.7;">(Wait, where's Perry?)</span>
+    </div>
+
+    <div class="presentation">
+      <!-- SLIDE 1 -->
+      <section class="slide active title-slide">
+        <h1 class="behold">BEHOLD!</h1>
+        <h2 style="font-size: 3rem; margin-bottom: 20px;">The PORTRAITRON 3000</h2>
+        <p style="font-size: 1.4rem; color: var(--silver); max-width: 800px; font-style: italic; opacity: 0.8;">
+          Avner Fivelovich, Hila Regev Shabath, Shira Shmuely
+        </p>
+      </section>
+
+      <!-- SLIDE 2 -->
+      <section class="slide">
+        <h2 class="slide-title">Description & Functionality</h2>
+        <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;">
+          <div style="grid-column: 1 / -1;">
+            <p style="font-size: 1.4rem; line-height: 1.6;">
+              Our latest invention shall capture a person standing in a VERY specific spot! The drawing is executed on paper using
+              our
+              patented MARKERTRON, then struck with a commemorative stamp of OUR OWN FACES, and finally handed
+              over to the subject before they're doomed!
+            </p>
+          </div>
+          <div class="card" style="border-color: var(--accent); background: rgba(0,0,0,0.2);">
+          <p style="font-size: 1.4rem; line-height: 1.6; margin-bottom: 1rem;">Sketch from Image</p>
+          <div class="step">
+            <span>
+              <ul style="font-size: 1.2rem;">
+                <li style="padding: 10px 0;">CAPTURE high-definition picture of the subject (3s after keyboard click)</li>
+                <li style="padding: 10px 0;">PROCESS Camera input to strokes</li>
+                <li style="padding: 10px 0;">OPTIMIZES strokes order algorithm</li>
+              </ul>
+            </span>
+          </div>
+          </div>
+          <div class="card" style="border-color: var(--accent); background: rgba(0,0,0,0.2);">
+          <p style="font-size: 1.4rem; line-height: 1.6; margin-bottom: 1rem;">Draw</p>
+          <div class="step">
+            <span>
+              <ul style="font-size: 1.2rem;">
+                <li style="padding: 10px 0;">PICK UP Marker</li>
+                <li style="padding: 10px 0;">DRAW strokes on page (main goal- our proof of concept)</li>
+                <li style="padding: 10px 0;">LET GO of marker</li>
+                <li style="padding: 10px 0;">PICK UP Stamp</li>
+                <li style="padding: 10px 0;">STAMP the page</li>
+                <li style="padding: 10px 0;">LET GO of stamp</li>
+              </ul>
+            </span>
+          </div>
+          </div>
+          <div class="card" style="border-color: var(--accent); background: rgba(0,0,0,0.2);">
+            <p style="font-size: 1.4rem; line-height: 1.6; margin-bottom: 1rem;">Hand The Drawing (Nice to Have)</p>
+              <div class="step">
+              <span>
+                <ul style="font-size: 1.2rem;">
+                  <li style="padding: 10px 0;">GET the page</li>
+                  <li style="padding: 10px 0;">HAND the page to a designated location</li>
+                </ul>
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 4 -->
+      <section class="slide">
+        <h2 class="slide-title">Hardware & Equipment</h2>
+        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="card">
+            <ul style="list-style: none; font-family: var(--font-mono); line-height: 2.2; font-size: 1.4rem;">
+              <li>> UR5e Robotic Arm</li>
+              <li>> 2D High-Def Camera</li>
+              <li>> Laboratory Clipboard</li>
+              <li>> Drawing Marker</li>
+              <li>> 3D Printed Marker Mount</li>
+              <li>> 3D Printed stamp</li>
+              <li>> Ink</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 5 -->
+      <section class="slide">
+        <h2 class="slide-title">Algorithms</h2>
+        <div class="grid">
+          <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="grid" style="grid-template-columns: 1fr; font-size: 1.4rem;">
+              <div class="card"><span class="step-label">Convert camera input to stroke - </span><span> https://swiftsketch.github.io/</span></div>
+              <div class="card"><span class="step-label">Draw strokes on page - </span><span>The Laboratory used framework</span></div>
+              <div class="card"><span class="step-label">Other Movements (Fixed Movements) - </span><span> The Laboratory used framework</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 6 -->
+      <section class="slide">
+        <h2 class="slide-title">Proof of Concept</h2>
+        <div class="grid" style="grid-template-columns: 1.2fr 1fr;">
+          <div class="card">
+            <div class="step" style="font-size: 1.4rem; line-height: 2.6rem;"><span>The PORTRAITRON will be able to draw a circle on paper, at this point the vectors are predetermained by a function
+            (rather
+            then by the camera input), and represented in the same format as the output of the image to vector algorithm we intend
+            to use: https://swiftsketch.github.io/</span></div>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <div class="circle-visual">
+              <div style="width: 200px; height: 200px; border: 2px solid white; border-radius: 50%; opacity: 0.4;"></div>
+              <span style="position: absolute; font-family: var(--font-mono); font-size: 0.9rem;">POC</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 7 -->
+      <section class="slide">
+        <h2 class="slide-title">Timeline</h2>
+        <div class="grid">
+          <div class="card">
+            <div class="timeline-item">
+              <div class="marker">UP TO POC PRESENTATION:</div>
+                <div style="display: flex; align-items: center;">
+                  <p style="font-weight: 700; color: white;">Design and print marker mount  |  Implement ability to draw a circle in center of paper (calibration, movement)</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+              <div class="marker" style="background: var(--purple);">AFTER POC PRESENTATION:</div>
+              <div style="display: flex; align-items: center;">
+                <p style="font-weight: 700; color: white;" >Integration of SwiftSketch algorithm  |  Refinement of drawing ability</p>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="marker" style="background: white; color: black;">CIRCA END OF SEMESTER:</div>
+              <div style="display: flex; align-items: center;">
+                <p style="font-weight: 700; color: white;" >Integration Testing (POTRAITRON is able to convert a picture of a face to vectors and draw it)</p>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="marker" style="background: hsl(51, 90%, 50%); color: black;">UP TO PRESENTATION DAY:</div>
+              <div style="display: flex; align-items: center;">
+                <p style="font-weight: 700; color: white;">
+                Take picture and send to SwiftSketch algorithm  |  
+                Design and print stamp  |  
+                Implement ability to pick up and put down marker mount and stamp  |  
+                Implement stamping  |  
+                Implement page handing (nice to have)
+              </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 8 -->
+      <section class="slide">
+        <h2 class="slide-title">Division of Labor</h2>
+        <div class="grid">
+          <div class="card" style="width: 70%;">
+            <div class="labor-row">
+              <span style="color: var(--accent); text-transform: uppercase; font-weight: 700;  font-size: 1.8rem;">Proof of Concept</span>
+              <span style="font-weight: 900; font-size: 1.8rem; font-style: italic;">Avner & Hila</span>
+            </div>
+            <div class="labor-row" style="border-color: var(--accent);">
+              <span style="color: var(--purple); text-transform: uppercase; font-weight: 700;  font-size: 1.8rem;">Drawing Refinement</span>
+              <span style="font-weight: 900; font-size: 1.8rem; font-style: italic;">Hila & Shira</span>
+            </div>
+            <div class="labor-row">
+              <span style="color: var(--accent); text-transform: uppercase; font-weight: 700;  font-size: 1.8rem;">Algorithm Execution</span>
+              <span style="font-weight: 900; font-size: 1.8rem; font-style: italic;">Avner</span>
+            </div>
+            <div class="labor-row" style="border-color: var(--accent);">
+              <span style="color: var(--purple); text-transform: uppercase; font-weight: 700;  font-size: 1.8rem;">Fixed Movements</span>
+              <span style="font-weight: 900; font-size: 1.8rem; font-style: italic;">Hila & Shira</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 9 -->
+      <section class="slide title-slide">
+        <h1 class="behold">THANKS FOR LISTENING!</h1>
+      </section>
+
+    </div>
+
+    <div class="nav-controls">
+      <button class="nav-btn" onclick="prev()">&#8592;</button>
+      <button class="nav-btn" onclick="next()">&#8594;</button>
+    </div>
+
+    <div class="progress-bar"><div class="progress-fill" id="p-fill"></div></div>
+
+    <footer>
+      <div>VER_SS.2.05</div>
+      <div style="font-weight: 900; color: var(--accent);">LOCATION: TRI-STATE AREA SECRET LAB</div>
+      <div>&copy; 2024 DOOFENSHMIRTZ EVIL INC.</div>
+    </footer>
+
+    <script>
+      let currentSlide = 0;
+      const slides = document.querySelectorAll('.slide');
+      const progress = document.getElementById('p-fill');
+
+      function update() {
+        slides.forEach((s, i) => {
+          s.classList.toggle('active', i === currentSlide);
+        });
+        progress.style.width = ((currentSlide + 1) / slides.length * 100) + '%';
+      }
+
+      function next() {
+        if(currentSlide < slides.length - 1) {
+          currentSlide++;
+          update();
+        }
+      }
+
+      function prev() {
+        if(currentSlide > 0) {
+          currentSlide--;
+          update();
+        }
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if(e.key === 'ArrowRight' || e.key === ' ') next();
+        if(e.key === 'ArrowLeft') prev();
+      });
+
+      function selfDestruct() {
+        document.body.classList.add('shaking');
+        const btn = document.getElementById('sd-btn');
+        btn.innerText = "OH NO!!!";
+        setTimeout(() => {
+          document.body.classList.remove('shaking');
+          btn.innerText = "SELF-DESTRUCT";
+          alert("CURSE YOU PERRY THE PLATYPUS!!!");
+        }, 1500);
+      }
+      
+      update();
+    </script>
+  </body>
+</html>
