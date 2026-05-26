@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The PORTRAITRON 3000 - Project Plan</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;900&family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- MathJax Configuration for Inline and Block Math -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      }
+    };
+  </script>
+  <!-- MathJax for gorgeous mathematical equation rendering -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <!-- Mermaid.js for Diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      theme: 'dark',
+      startOnLoad: true,
+      flowchart: { useMaxWidth: true, htmlLabels: true }
+    });
+  </script>
+
+  <style>
+    :root {
+      --bg: #0b0b0c;
+      --surface: #141416;
+      --card: #1d1d21;
+      --border: #2c2c35;
+      
+      --accent-teal: #26a69a;
+      --accent-teal-glow: rgba(38, 166, 154, 0.15);
+      
+      --accent-purple: #9c27b0;
+      --accent-purple-glow: rgba(156, 39, 176, 0.15);
+      
+      --text-primary: #f0f0f5;
+      --text-secondary: #a0a0b0;
+      --text-muted: #626272;
+      
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-sans: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      padding-bottom: 100px;
+    }
+
+    /* Grid Background Effect */
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 80px 80px;
+      opacity: 0.08;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #180525 0%, #031c19 100%);
+      border-bottom: 2px solid var(--border);
+      padding: 50px 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-teal));
+    }
+
+    .brand-banner {
+      background: var(--accent-purple);
+      color: white;
+      font-family: var(--font-display);
+      font-weight: 900;
+      display: inline-block;
+      padding: 6px 20px;
+      transform: skewX(-12deg);
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      box-shadow: 4px 4px 0 #4a148c;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: 3.5rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      background: linear-gradient(to right, #ffffff, #a0a0b0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      max-width: 800px;
+      margin: 0 auto;
+      font-weight: 300;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1200px;
+      margin: 40px auto 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Section Cards */
+    section {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      margin-bottom: 40px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      transition: border-color 0.3s ease;
+    }
+
+    section:hover {
+      border-color: #3e3e4d;
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      color: var(--text-primary);
+    }
+
+    h2::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 28px;
+      background: var(--accent-teal);
+      border-radius: 3px;
+    }
+
+    h3 {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      color: var(--accent-teal);
+    }
+
+    p {
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      font-size: 1.05rem;
+    }
+
+    strong {
+      color: var(--text-primary);
+    }
+
+    /* Directory Tree Visualization */
+    .dir-tree {
+      background-color: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 25px;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+
+    .dir-item {
+      padding: 4px 0;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+
+    .dir-item:hover {
+      background-color: rgba(255,255,255,0.03);
+    }
+
+    .dir-depth-1 { margin-left: 20px; }
+    .dir-depth-2 { margin-left: 40px; }
+    .dir-depth-3 { margin-left: 60px; }
+
+    .icon-folder { color: #f1c40f; margin-right: 8px; }
+    .icon-file { color: var(--text-secondary); margin-right: 8px; }
+    .icon-python { color: #3498db; margin-right: 8px; }
+    .icon-config { color: #e74c3c; margin-right: 8px; }
+    .icon-notes { color: #2ecc71; margin-right: 8px; }
+
+    .item-desc {
+      color: var(--text-muted);
+      margin-left: 15px;
+      font-size: 0.85rem;
+      font-family: var(--font-sans);
+    }
+
+    /* Math Block */
+    .math-block {
+      background-color: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 25px;
+      margin: 20px 0;
+      text-align: center;
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 1.45rem;
+      letter-spacing: 0.05em;
+      position: relative;
+    }
+
+    .math-tag {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .math-label {
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-top: 8px;
+    }
+
+    /* Info Matrix */
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 25px;
+    }
+
+    .matrix-card {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 25px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .matrix-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 4px;
+      background: var(--accent-teal);
+    }
+
+    .matrix-card.purple::before {
+      background: var(--accent-purple);
+    }
+
+    .matrix-card h4 {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    /* Code Snippets */
+    pre {
+      background-color: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: #e0e0e0;
+      margin: 15px 0;
+    }
+
+    .keyword { color: #f92672; }
+    .class { color: #66d9ef; }
+    .method { color: #a6e22e; }
+    .string { color: #e6db74; }
+    .comment { color: #75715e; font-style: italic; }
+
+    /* Interactive Perry Footer */
+    .perry-footer {
+      position: fixed;
+      bottom: -60px;
+      left: 30px;
+      background-color: #00838f;
+      border: 3px solid #005662;
+      border-radius: 8px 8px 0 0;
+      color: white;
+      font-family: var(--font-display);
+      font-weight: 700;
+      padding: 12px 24px;
+      z-index: 1000;
+      box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+      transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: pointer;
+    }
+
+    .perry-footer:hover {
+      bottom: 0;
+    }
+
+    .perry-footer span {
+      display: block;
+      font-size: 0.7rem;
+      opacity: 0.8;
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    /* Floating Navigation Indicator */
+    .toc-float {
+      position: fixed;
+      top: 50%;
+      right: 30px;
+      transform: translateY(-50%);
+      background-color: rgba(20, 20, 22, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      width: 220px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      z-index: 500;
+    }
+
+    @media (max-width: 1400px) {
+      .toc-float {
+        display: none;
+      }
+    }
+
+    .toc-float h5 {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+      color: var(--accent-purple);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .toc-float a {
+      display: block;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      transition: color 0.2s, padding-left 0.2s;
+    }
+
+    .toc-float a:hover {
+      color: var(--accent-teal);
+      padding-left: 5px;
+    }
+
+    /* Timeline Styles */
+    .timeline-container {
+      position: relative;
+      margin: 30px 0;
+      padding-left: 30px;
+      border-left: 2px solid var(--border);
+    }
+
+    .timeline-node {
+      position: relative;
+      margin-bottom: 40px;
+    }
+
+    .timeline-node::before {
+      content: '';
+      position: absolute;
+      left: -37px;
+      top: 5px;
+      width: 12px;
+      height: 12px;
+      background-color: var(--accent-teal);
+      border: 3px solid var(--bg);
+      border-radius: 50%;
+    }
+
+    .timeline-node.purple::before {
+      background-color: var(--accent-purple);
+    }
+
+    .timeline-node h4 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .timeline-node h4 span {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--accent-teal);
+    }
+
+    .timeline-node.purple h4 span {
+      color: var(--accent-purple);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid-overlay"></div>
+
+  <!-- FLOATING TABLE OF CONTENTS -->
+  <div class="toc-float">
+    <h5>Navigation</h5>
+    <a href="#overview">1. Overview</a>
+    <a href="#hardware">2. Single Host Architecture</a>
+    <a href="#timeline">3. POC Timeline</a>
+    <a href="#code-specs">4. Python Specifications</a>
+    <a href="#structure">5. Code Structure</a>
+    <a href="#ur5e">6. UR5e Commands</a>
+    <a href="#bezier">7. Bezier Math</a>
+    <a href="#verification">8. Verification Plan</a>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand-banner">ROBOTICS DIVISION // TRI-STATE AREA</div>
+    <h1>The Portraitron 3000</h1>
+    <div class="subtitle">System Architecture & Project Structure Implementation Plan</div>
+    <div style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 0.85rem; margin-top: 15px;">
+      Configured for: Standalone Python Execution with Closed-loop Portrait Handing
+    </div>
+  </header>
+
+  <!-- CONTAINER -->
+  <div class="container">
+
+    <!-- OVERVIEW -->
+    <section id="overview">
+      <h2 id="overview-header">Project Overview</h2>
+      <p id="overview-desc">
+        <strong>The Portraitron 3000</strong> is an automated robotic portraiture station designed to operate in an academic/lab environment. The goal is to capture a subject's likeness using high-definition camera arrays, convert the optical imagery into stylistic vector strokes via the <strong>SwiftSketch</strong> algorithm, and draw those paths physically onto paper using a high-precision <strong>Universal Robots UR5e</strong> arm.
+      </p>
+      
+      <!-- MERMAID DIAGRAM -->
+      <h3 id="overview-flow-header" style="margin-top: 15px; margin-bottom: 20px;">Complete Closed-loop Execution Flow</h3>
+      <div id="overview-flow-diag" class="mermaid" style="background-color: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
+        graph TD
+            A[Start System] --> B[Home Robot & Calibrate Surface]
+            B --> C[Idle - Wait for Subject Trigger]
+            C -->|Keyboard Click| D[Trigger Capture Camera]
+            D -->|HD PNG Image| E[Single Host: Run SwiftSketch on CUDA or MPS]
+            E -->|Bezier Path Tensors/SVG| F[Single Host: Discretize Curves]
+            F -->|Normalized 0,1 Coordinates| G[Calibration Transform: Convert to Robot Base Poses]
+            G --> H[UR-RTDE: Execute Safe Drawing Path via Ethernet]
+            H --> I[Execute Fixed Movements: Pickup Stamp & Seal Page]
+            I --> J[Portrait Handing: Grasp & Hand Page to Location]
+            J --> K[Return to Home]
+            K --> C
+            
+            style A fill:#4a148c,stroke:#9c27b0,stroke-width:2px,color:#fff
+            style C fill:#031c19,stroke:#26a69a,stroke-width:2px,color:#fff
+            style E fill:#0d2613,stroke:#2ecc71,stroke-width:2px,color:#fff
+            style H fill:#1a1103,stroke:#e67e22,stroke-width:2px,color:#fff
+            style J fill:#3e1509,stroke:#e74c3c,stroke-width:2px,color:#fff
+      </div>
+    </section>
+
+    <!-- HARDWARE DIVISION -->
+    <section id="hardware">
+      <h2 id="hardware-header">Single Host Machine Architecture</h2>
+      <p id="hardware-desc">
+        The system runs entirely on <strong>one host computer</strong> (either the GFX PC or the MacBook Pro). The code automatically adjusts its processing pipeline using dynamic PyTorch device selection:
+      </p>
+      <div class="matrix-grid">
+        <div id="hardware-card-nvidia" class="matrix-card">
+          <h4>Host: NVIDIA GFX PC</h4>
+          <p style="font-size: 0.95rem; margin-bottom: 0;">
+            <strong>High-Performance GPU Execution:</strong>
+            <br>Uses PyTorch with <strong>CUDA</strong>. Under this setup, the PC directly processes the cameras, runs SwiftSketch's neural stroke optimizations, scales curves to paper dimensions, and establishes socket connections to the physical robot via Ethernet.
+          </p>
+        </div>
+        <div id="hardware-card-apple" class="matrix-card purple">
+          <h4>Host: MacBook Pro M4 Max</h4>
+          <p style="font-size: 0.95rem; margin-bottom: 0;">
+            <strong>Unified Apple Silicon Execution:</strong>
+            <br>Uses PyTorch with <strong>MPS (Metal Performance Shaders)</strong>. The MacBook Pro directly captures camera frames, solves SwiftSketch, discretizes control points, and sends trajectory scripts to the robot via a single Ethernet socket link.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- POC TIMELINE -->
+    <section id="timeline">
+      <h2 id="timeline-header">High-Speed POC Roadmap: Tuesday - Wednesday (Week 8)</h2>
+      <p id="timeline-desc">
+        The closed semicircle drawing POC is scheduled for immediate completion within a 48-hour sprint during Week 8.
+      </p>
+
+      <div class="timeline-container">
+        <!-- Tuesday -->
+        <div id="timeline-tuesday" class="timeline-node">
+          <h4>Today: Tuesday, Week 8 (Mount Design & Core Code Setup) <span>CAD / CGL Overnight Printing</span></h4>
+          <ul>
+            <li><strong>CAD Design:</strong> Model the mechanical spring-loaded compliance pen holder in CAD (STL format) to absorb minor bed coordinate height variations.</li>
+            <li><strong>TAU CGL Printing:</strong> Submit the CAD model to the Tel Aviv University Computer Graphics Lab (CGL) via the <a href="https://www.cgl.cs.tau.ac.il/devices/" target="_blank" style="color: var(--accent-teal);">TAU CGL Devices</a> page to be fabricated in the 3D printers overnight.</li>
+            <li><strong>Core Files:</strong> Write `src/common/geometry.py` containing the Bézier curve calculations and scale mappings. Write `src/robot/controller.py` wrapping the `ur_rtde` commands.</li>
+          </ul>
+        </div>
+
+        <!-- Wednesday -->
+        <div id="timeline-wednesday" class="timeline-node purple">
+          <h4>Tomorrow: Wednesday, Week 8 (Full Integration & Physical Semicircle Test) <span>Physical Contact Run</span></h4>
+          <ul>
+            <li><strong>Tool Mounting:</strong> Retrieve the 3D-printed tool mount from the TAU CGL Lab. Secure the marker in the mount and bolt the assembly onto the UR5e wrist flange.</li>
+            <li><strong>Ethernet Link:</strong> Connect the single host computer directly to the UR5e controller via Ethernet and verify standard Port 30003 telemetry reading.</li>
+            <li><strong>Calibration Wizard:</strong> Run <code>scripts/calibrate_workspace.py</code>, touching paper sheet boundaries with the tool tip to save origin coordinates to YAML.</li>
+            <li><strong>Live POC Runs:</strong> Execute `scripts/poc_circle.py` safely in the air (offset +50mm) to check trajectories, then lower to $Z_{draw}$ and execute the closed semicircle path directly on paper to complete the POC!</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- CORE PY CODE DETAILS -->
+    <section id="code-specs">
+      <h2 id="code-specs-header">Python Implementation & API Specifications</h2>
+      <p id="code-specs-desc">
+        The absolute specifications, signatures, arguments, and workflows are detailed for each Python file in the codebase below.
+      </p>
+
+      <!-- FUNCTION DIRECTORY -->
+      <div id="block-directory" style="background-color: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 25px; margin-bottom: 30px;">
+        <h3 id="dir-title" style="margin-top: 0; color: var(--accent-purple); font-size: 1.5rem; border: none; display: flex; align-items: center; gap: 10px; text-transform: uppercase;">
+          <span style="display: inline-block; width: 6px; height: 22px; background: var(--accent-purple); border-radius: 3px;"></span>
+          Detailed Function &amp; File Directory
+        </h3>
+        <p id="dir-desc" style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 20px;">
+          A concise index of all files, classes, and functions required for the implementation, detailing their purpose, exact role, and complete code template:
+        </p>
+        
+        <!-- GEOMETRY SECTION -->
+        <div id="dir-common-geometry" class="directory-section" style="margin-bottom: 35px;">
+          <h4 style="font-family: var(--font-display); color: var(--text-primary); font-size: 1.15rem; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">1. Geometry calculations: <code>src/common/geometry.py</code></h4>
+          <p style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 15px;">Mathematical calculations for Bézier curve segmentation, coordinate translations, and circular tensor mocks.</p>
+          <ul style="list-style-type: none; padding-left: 5px;">
+            
+            <li id="dir-fn-discretize-bezier" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">discretize_bezier</strong> - Discretizes a single cubic Bézier curve into a sequence of linear segments. <span style="color: var(--text-muted);">(Required to convert mathematical Bézier curves into discrete spatial coordinates that the robot arm can move through linearly.)</span>
+              <pre id="code-geometry-fn-discretize-bezier-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">discretize_bezier</span>(p0: np.ndarray, p1: np.ndarray, p2: np.ndarray, p3: np.ndarray, num_steps: int = <span class="keyword">20</span>) -> np.ndarray:
+    <span class="comment"># evaluate B(t) for t in [0, 1] across num_steps</span>
+    t = np.linspace(<span class="keyword">0.0</span>, <span class="keyword">1.0</span>, num_steps + <span class="keyword">1</span>)[:, np.newaxis]
+    points = ((<span class="keyword">1</span> - t) ** <span class="keyword">3</span>) * p0 + \
+             <span class="keyword">3</span> * ((<span class="keyword">1</span> - t) ** <span class="keyword">2</span>) * t * p1 + \
+             <span class="keyword">3</span> * (<span class="keyword">1</span> - t) * (t ** <span class="keyword">2</span>) * p2 + \
+             (t ** <span class="keyword">3</span>) * p3
+    <span class="keyword">return</span> points</code></pre>
+            </li>
+
+            <li id="dir-fn-discretize-strokes-list" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">discretize_strokes_list</strong> - Converts a list of PyTorch Tensors (each representing a stroke of shape (num_curves, 4, 2)) to continuous discretized NumPy stroke arrays. <span style="color: var(--text-muted);">(Required to continuously parse and concatenate consecutive curves within each stroke to avoid pen lifts.)</span>
+              <pre id="code-geometry-fn-discretize-strokes-tensor-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">discretize_strokes_list</span>(strokes_list: list[torch.Tensor], num_steps: int = <span class="keyword">20</span>) -> list[np.ndarray]:
+    discretized_strokes = []
+    <span class="keyword">for</span> stroke_tensor <span class="keyword">in</span> strokes_list:
+        stroke_np = stroke_tensor.detach().cpu().numpy()
+        stroke_points = []
+        <span class="keyword">for</span> i, curve <span class="keyword">in</span> enumerate(stroke_np):
+            p0, p1, p2, p3 = curve[<span class="keyword">0</span>], curve[<span class="keyword">1</span>], curve[<span class="keyword">2</span>], curve[<span class="keyword">3</span>]
+            points = discretize_bezier(p0, p1, p2, p3, num_steps=num_steps)
+            <span class="keyword">if</span> i &gt; <span class="keyword">0</span>:
+                stroke_points.append(points[<span class="keyword">1</span>:])
+            <span class="keyword">else</span>:
+                stroke_points.append(points)
+        discretized_strokes.append(np.concatenate(stroke_points, axis=<span class="keyword">0</span>))
+    <span class="keyword">return</span> discretized_strokes</code></pre>
+            </li>
+
+            <li id="dir-fn-scale-points" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">scale_points</strong> - Scales normalized [0, 1] canvas coordinates to physical robot base coordinates in meters. <span style="color: var(--text-muted);">(Required to map relative canvas bounds to absolute, calibrated physical dimensions on the drawing paper.)</span>
+              <pre id="code-geometry-fn-scale-points-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">scale_points</span>(points: np.ndarray, origin: tuple[float, float], dimensions: tuple[float, float]) -> np.ndarray:
+    scaled_points = np.zeros_like(points)
+    scaled_points[:, <span class="keyword">0</span>] = origin[<span class="keyword">0</span>] + points[:, <span class="keyword">0</span>] * dimensions[<span class="keyword">0</span>]
+    scaled_points[:, <span class="keyword">1</span>] = origin[<span class="keyword">1</span>] + points[:, <span class="keyword">1</span>] * dimensions[<span class="keyword">1</span>]
+    <span class="keyword">return</span> scaled_points</code></pre>
+            </li>
+
+            <li id="dir-fn-generate-poc-arc-d-shape-tensor" style="margin-bottom: 10px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">generate_poc_arc_d_shape_tensor</strong> - Generates a simulated SwiftSketch output representing a circular arc closed by a straight line, constructed dynamically as a list of 2 separate PyTorch stroke tensors. <span style="color: var(--text-muted);">(Required to mock the D-shape drawing test data with configurable angles and directions for safely planning and tuning the robot's physical motions.)</span>
+              <pre id="code-geometry-fn-generate-poc-arc-d-shape-tensor-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">generate_poc_arc_d_shape_tensor</span>(
+    center: tuple[float, float] = (<span class="keyword">0.5</span>, <span class="keyword">0.5</span>), radius: float = <span class="keyword">0.3</span>,
+    start_deg: float = <span class="keyword">0.0</span>, end_deg: float = <span class="keyword">180.0</span>, clockwise: bool = <span class="keyword">False</span>
+) -> list[torch.Tensor]:
+    cx, cy = center
+    alpha_s = np.radians(start_deg)
+    alpha_e = np.radians(end_deg)
+    diff = alpha_e - alpha_s
+    <span class="keyword">if</span> clockwise <span class="keyword">and</span> diff > <span class="keyword">0</span>: diff -= <span class="keyword">2</span> * np.pi
+    <span class="keyword">elif</span> <span class="keyword">not</span> clockwise <span class="keyword">and</span> diff < <span class="keyword">0</span>: diff += <span class="keyword">2</span> * np.pi
+    
+    max_segment_span = np.pi / <span class="keyword">2</span>
+    num_segments = int(np.ceil(abs(diff) / max_segment_span))
+    delta = diff / num_segments
+    L = radius * (<span class="keyword">4.0</span> / <span class="keyword">3.0</span>) * np.tan(delta / <span class="keyword">4.0</span>)
+    arc_paths = []
+    <span class="keyword">for</span> j <span class="keyword">in</span> range(num_segments):
+        b_start = alpha_s + j * delta
+        b_end = alpha_s + (j + <span class="keyword">1</span>) * delta
+        p0 = [cx + radius * np.cos(b_start), cy + radius * np.sin(b_start)]
+        p3 = [cx + radius * np.cos(b_end), cy + radius * np.sin(b_end)]
+        p1 = [p0[<span class="keyword">0</span>] - L * np.sin(b_start), p0[<span class="keyword">1</span>] + L * np.cos(b_start)]
+        p2 = [p3[<span class="keyword">0</span>] + L * np.sin(b_end), p3[<span class="keyword">1</span>] - L * np.cos(b_end)]
+        arc_paths.append([p0, p1, p2, p3])
+        
+    arc_end, arc_start = arc_paths[-<span class="keyword">1</span>][<span class="keyword">3</span>], arc_paths[<span class="keyword">0</span>][<span class="keyword">0</span>]
+    dx, dy = arc_start[<span class="keyword">0</span>] - arc_end[<span class="keyword">0</span>], arc_start[<span class="keyword">1</span>] - arc_end[<span class="keyword">1</span>]
+    p0_line = arc_end
+    p1_line = [arc_end[<span class="keyword">0</span>] + dx / <span class="keyword">3.0</span>, arc_end[<span class="keyword">1</span>] + dy / <span class="keyword">3.0</span>]
+    p2_line = [arc_end[<span class="keyword">0</span>] + <span class="keyword">2.0</span> * dx / <span class="keyword">3.0</span>, arc_end[<span class="keyword">1</span>] + <span class="keyword">2.0</span> * dy / <span class="keyword">3.0</span>]
+    p3_line = arc_start
+    line_paths = [[p0_line, p1_line, p2_line, p3_line]]
+    <span class="keyword">return</span> [
+        torch.tensor(arc_paths, dtype=torch.float32),
+        torch.tensor(line_paths, dtype=torch.float32)
+    ]</code></pre>
+            </li>
+
+          </ul>
+        </div>
+
+        <!-- ROBOT SECTION -->
+        <div id="dir-robot-controller" class="directory-section" style="margin-bottom: 35px;">
+          <h4 style="font-family: var(--font-display); color: var(--text-primary); font-size: 1.15rem; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">2. UR5e Connection &amp; Motion Engine: <code>src/robot/controller.py</code></h4>
+          <p style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 15px;">Manages standard real-time communication sockets and coordinates multi-step robotic drawing procedures.</p>
+          <ul style="list-style-type: none; padding-left: 5px;">
+            
+            <li id="dir-fn-controller-init" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.__init__</strong> - Initializes control/receive sockets and sets default plane calibration values. <span style="color: var(--text-muted);">(Required to instantiate connection variables and local coordinate states.)</span>
+              <pre id="code-robot-controller-fn-init-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">__init__</span>(self, ip_address: str, config_path: str = <span class="string">"config/calibration.yaml"</span>):
+    self.ip = ip_address
+    self.config_path = config_path
+    self.rtde_c = <span class="keyword">None</span>
+    self.rtde_r = <span class="keyword">None</span>
+    self.origin = (<span class="keyword">0.0</span>, <span class="keyword">0.0</span>)
+    self.dimensions = (<span class="keyword">0.0</span>, <span class="keyword">0.0</span>)
+    self.z_draw = <span class="keyword">0.0</span>
+    self.z_travel = <span class="keyword">0.020</span>
+    self.tool_orientation = [<span class="keyword">0.0</span>, <span class="keyword">3.1415</span>, <span class="keyword">0.0</span>]
+    self.load_calibration()</code></pre>
+            </li>
+
+            <li id="dir-fn-controller-load-cal" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.load_calibration</strong> - Loads physical paper bounds and pen contact heights from calibration YAML. <span style="color: var(--text-muted);">(Required to retrieve coordinate bounds recorded by calibration wizards.)</span>
+              <pre id="code-robot-controller-fn-load-calibration-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">load_calibration</span>(self):
+    <span class="keyword">try</span>:
+        <span class="keyword">with</span> open(self.config_path, <span class="string">'r'</span>) <span class="keyword">as</span> f:
+            data = yaml.safe_load(f)
+        self.origin = (data[<span class="string">'origin_x'</span>], data[<span class="string">'origin_y'</span>])
+        self.dimensions = (data[<span class="string">'width'</span>], data[<span class="string">'height'</span>])
+        self.z_draw = data[<span class="string">'z_draw'</span>]
+        self.z_travel = self.z_draw + data.get(<span class="string">'z_travel_offset'</span>, <span class="keyword">0.020</span>)
+        self.tool_orientation = data.get(<span class="string">'tool_orientation'</span>, [<span class="keyword">0.0</span>, <span class="keyword">3.1415</span>, <span class="keyword">0.0</span>])
+    <span class="keyword">except</span> <span class="class">FileNotFoundError</span>:
+        print(<span class="string">f"Calibration file {self.config_path} not found. Defaulting."</span>)</code></pre>
+            </li>
+
+            <li id="dir-fn-controller-connect" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.connect</strong> - Establishes Ethernet RTDE TCP communication with the physical robot controller. <span style="color: var(--text-muted);">(Required to initialize active RTDE Control and Receive interfaces.)</span>
+              <pre id="code-robot-controller-fn-connect-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">connect</span>(self) -> bool:
+    <span class="keyword">try</span>:
+        self.rtde_c = rtde_control.RTDEControlInterface(self.ip)
+        self.rtde_r = rtde_receive.RTDEReceiveInterface(self.ip)
+        <span class="keyword">return</span> <span class="keyword">True</span>
+    <span class="keyword">except</span> <span class="class">Exception</span> <span class="keyword">as</span> e:
+        print(<span class="string">f"Failed to connect to UR5e at {self.ip}. Error: {e}"</span>)
+        <span class="keyword">return</span> <span class="keyword">False</span></code></pre>
+            </li>
+
+            <li id="dir-fn-controller-disconnect" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.disconnect</strong> - Stops the controller scripts and closes network socket connections. <span style="color: var(--text-muted);">(Required to cleanly release hardware and socket resources when done.)</span>
+              <pre id="code-robot-controller-fn-disconnect-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">disconnect</span>(self):
+    <span class="keyword">if</span> self.rtde_c:
+        self.rtde_c.stopScript()
+        self.rtde_c = <span class="keyword">None</span>
+    self.rtde_r = <span class="keyword">None</span></code></pre>
+            </li>
+
+            <li id="dir-fn-controller-is-safe" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.is_safe</strong> - Queries telemetry state to verify that no Emergency or Protective Stops are active. <span style="color: var(--text-muted);">(Required as a safety lock before planning motions.)</span>
+              <pre id="code-robot-controller-fn-is-safe-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">is_safe</span>(self) -> bool:
+    <span class="keyword">if</span> <span class="keyword">not</span> self.rtde_r: <span class="keyword">return</span> <span class="keyword">False</span>
+    <span class="keyword">return</span> <span class="keyword">not</span> (self.rtde_r.isEmergencyStopped() <span class="keyword">or</span> self.rtde_r.isProtectiveStopped())</code></pre>
+            </li>
+
+            <li id="dir-fn-controller-home" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.home</strong> - Returns the robot arm joints to a safe upright standby pose using joint-space moveJ, with configurable offsets to accommodate lab robot mounting orientations. <span style="color: var(--text-muted);">(Required to standardise initial configurations and prevent collisions.)</span>
+              <pre id="code-robot-controller-fn-home-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">home</span>(self):
+    self.rtde_c.moveJ(self.home_joints, speed=<span class="keyword">1.0</span>, acceleration=<span class="keyword">0.5</span>)</code></pre>
+            </li>
+
+            <li id="dir-fn-controller-exec" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.execute_drawing_path</strong> - Executes continuous linear blended Cartesian motions for coordinate strokes, using dynamic Z force mode contact boundaries. <span style="color: var(--text-muted);">(Required to control approach, zero F/T sensor, maintain constant downward pressure, and execute waypoint blends, stopping force mode and setting blend_radius to 0.0 at the end of each stroke.)</span>
+              <pre id="code-robot-controller-fn-execute-drawing-path-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">execute_drawing_path</span>(self, strokes: list[np.ndarray], speed: float = <span class="keyword">0.1</span>, accel: float = <span class="keyword">0.05</span>, blend_radius: float = <span class="keyword">0.002</span>):
+    <span class="keyword">for</span> stroke <span class="keyword">in</span> strokes:
+        <span class="keyword">if</span> len(stroke) &lt; <span class="keyword">2</span>: <span class="keyword">continue</span>
+        x0, y0 = stroke[<span class="keyword">0</span>]
+        hover_pose = [x0, y0, self.z_travel] + self.tool_orientation
+        self.rtde_c.moveL(hover_pose, speed=<span class="keyword">0.15</span>, acceleration=<span class="keyword">0.1</span>)
+        start_pose = [x0, y0, self.z_draw] + self.tool_orientation
+        self.rtde_c.moveL(start_pose, speed=<span class="keyword">0.04</span>, acceleration=<span class="keyword">0.05</span>)
+        
+        <span class="comment"># Zero force sensor and enable Z force mode to preserve contact with surface</span>
+        <span class="keyword">if</span> self.use_force_control:
+            self.rtde_c.zeroFtSensor()
+            time.sleep(<span class="keyword">0.2</span>)
+            task_frame = [<span class="keyword">0.0</span>, <span class="keyword">0.0</span>, <span class="keyword">0.0</span>, <span class="keyword">0.0</span>, <span class="keyword">0.0</span>, <span class="keyword">0.0</span>]
+            selection_vector = [<span class="keyword">0</span>, <span class="keyword">0</span>, <span class="keyword">1</span>, <span class="keyword">0</span>, <span class="keyword">0</span>, <span class="keyword">0</span>]
+            wrench = [<span class="keyword">0.0</span>, <span class="keyword">0.0</span>, -self.target_force, <span class="keyword">0.0</span>, <span class="keyword">0.0</span>, <span class="keyword">0.0</span>]
+            self.rtde_c.forceMode(task_frame, selection_vector, wrench, <span class="keyword">2</span>, [<span class="keyword">0.1</span>, <span class="keyword">0.1</span>, <span class="keyword">0.15</span>, <span class="keyword">0.1</span>, <span class="keyword">0.1</span>, <span class="keyword">0.1</span>])
+            time.sleep(<span class="keyword">0.1</span>)
+            
+        path = []
+        <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="keyword">1</span>, len(stroke)):
+            xi, yi = stroke[i]
+            current_blend = blend_radius <span class="keyword">if</span> i &lt; (len(stroke) - <span class="keyword">1</span>) <span class="keyword">else</span> <span class="keyword">0.0</span>
+            waypoint = [xi, yi, self.z_draw] + self.tool_orientation + [speed, accel, current_blend]
+            path.append(waypoint)
+        self.rtde_c.moveL(path)
+        
+        <span class="keyword">if</span> self.use_force_control:
+            self.rtde_c.forceModeStop()
+            time.sleep(<span class="keyword">0.1</span>)
+            
+        x_last, y_last = stroke[-<span class="keyword">1</span>]
+        exit_pose = [x_last, y_last, self.z_travel] + self.tool_orientation
+        self.rtde_c.moveL(exit_pose, speed=<span class="keyword">0.15</span>, acceleration=<span class="keyword">0.1</span>)</code></pre>
+            </li>
+
+            <li id="dir-fn-controller-pickup" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.execute_tool_pickup</strong> - Approach, pick up, and lock a specific tool flange using digital output pins. <span style="color: var(--text-muted);">(Required to mount drawing markers or gripper tools.)</span>
+              <pre id="code-robot-controller-fn-execute-tool-pickup-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">execute_tool_pickup</span>(self, tool_name: str):
+    <span class="comment"># Approaching the tool rack, activating gripper DO pins, and locking flange</span>
+    <span class="keyword">pass</span></code></pre>
+            </li>
+
+            <li id="dir-fn-controller-return" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.execute_tool_return</strong> - Returns a tool back to its storage slots. <span style="color: var(--text-muted);">(Required to safely disengage drawing/stamping tools when done.)</span>
+              <pre id="code-robot-controller-fn-execute-tool-return-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">execute_tool_return</span>(self, tool_name: str):
+    <span class="comment"># Navigating to safety, releasing tool lock DO pins, and drawing back</span>
+    <span class="keyword">pass</span></code></pre>
+            </li>
+
+            <li id="dir-fn-controller-deliver" style="margin-bottom: 10px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.execute_paper_delivery</strong> - Performs a sequence of moves to grasp, slide, and hand off paper sheets. <span style="color: var(--text-muted);">(Required to complete automated portrait delivery.)</span>
+              <pre id="code-robot-controller-fn-execute-paper-delivery-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">execute_paper_delivery</span>(self):
+    <span class="comment"># pickup grasper, touch paper, slide sheet to bin, disengage, return grasper</span>
+    <span class="keyword">pass</span></code></pre>
+            </li>
+
+          </ul>
+        </div>
+
+        <!-- CALIBRATION SECTION -->
+        <div id="dir-calibrate-workspace" class="directory-section" style="margin-bottom: 35px;">
+          <h4 style="font-family: var(--font-display); color: var(--text-primary); font-size: 1.15rem; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">3. Bed Calibration Wizard: <code>scripts/calibrate_workspace.py</code></h4>
+          <p style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 15px;">Guiding tool to interactively calibrate paper boundaries and pen-to-paper contact heights.</p>
+          <ul style="list-style-type: none; padding-left: 5px;">
+            
+            <li id="dir-fn-run-cal" style="margin-bottom: 10px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">run_calibration</strong> - Prompts operator to touch critical boundaries and Z height limits, saving limits to calibration.yaml. <span style="color: var(--text-muted);">(Required to align base axes with paper bounds.)</span>
+              <pre id="code-calibrate-workspace-fn-run-calibration-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">run_calibration</span>(ip_address: str, output_path: str = <span class="string">"config/calibration.yaml"</span>):
+    rtde_r = rtde_receive.RTDEReceiveInterface(ip_address)
+    input(<span class="string">"Jog to TOP-LEFT corner and press [ENTER]..."</span>)
+    pose = rtde_r.getActualTCPPose()
+    cal = {<span class="string">'origin_x'</span>: pose[<span class="keyword">0</span>], <span class="string">'origin_y'</span>: pose[<span class="keyword">1</span>]}
+    input(<span class="string">"Jog to TOP-RIGHT corner and press [ENTER]..."</span>)
+    pose_tr = rtde_r.getActualTCPPose()
+    cal[<span class="string">'width'</span>] = abs(pose_tr[<span class="keyword">0</span>] - cal[<span class="string">'origin_x'</span>])
+    input(<span class="string">"Jog to BOTTOM-LEFT corner and press [ENTER]..."</span>)
+    pose_bl = rtde_r.getActualTCPPose()
+    cal[<span class="string">'height'</span>] = abs(pose_bl[<span class="keyword">1</span>] - cal[<span class="string">'origin_y'</span>])
+    input(<span class="string">"Lower tool tip until contacting paper. Press [ENTER]..."</span>)
+    pose_z = rtde_r.getActualTCPPose()
+    cal[<span class="string">'z_draw'</span>] = pose_z[<span class="keyword">2</span>]
+    cal[<span class="string">'z_travel_offset'</span>] = <span class="keyword">0.020</span>
+    cal[<span class="string">'tool_orientation'</span>] = [pose_z[<span class="keyword">3</span>], pose_z[<span class="keyword">4</span>], pose_z[<span class="keyword">5</span>]]
+    cal[<span class="string">'target_force'</span>] = <span class="keyword">5.0</span>
+    cal[<span class="string">'use_force_control'</span>] = <span class="keyword">True</span>
+    cal[<span class="string">'home_joints'</span>] = [<span class="keyword">0.0</span>, -<span class="keyword">1.5708</span>, <span class="keyword">1.5708</span>, -<span class="keyword">1.5708</span>, -<span class="keyword">1.5708</span>, <span class="keyword">0.0</span>]
+    <span class="keyword">with</span> open(output_path, <span class="string">'w'</span>) <span class="keyword">as</span> f: yaml.safe_dump(cal, f)</code></pre>
+            </li>
+
+          </ul>
+        </div>
+
+        <!-- EXECUTION SECTION -->
+        <div id="dir-poc-circle" class="directory-section" style="margin-bottom: 0;">
+          <h4 style="font-family: var(--font-display); color: var(--text-primary); font-size: 1.15rem; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">4. Primary POC Execution Entry Point: <code>scripts/poc_circle.py</code></h4>
+          <p style="font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 15px;">Orchestration script for testing geometry plotting, mid-air path verification, and live drawings.</p>
+          <ul style="list-style-type: none; padding-left: 5px;">
+            
+            <li id="dir-fn-plot-offline" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">plot_offline</strong> - Displays physical trajectories on a 2D matplotlib chart. <span style="color: var(--text-muted);">(Required to visually verify shape layout, continuity, and bounds prior to physical sweeps.)</span>
+              <pre id="code-poc-circle-fn-plot-offline-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">plot_offline</span>(strokes: list[np.ndarray]):
+    plt.figure(figsize=(<span class="keyword">6</span>,<span class="keyword">6</span>))
+    <span class="keyword">for</span> i, stroke <span class="keyword">in</span> enumerate(strokes):
+        plt.plot(stroke[:, <span class="keyword">0</span>], stroke[:, <span class="keyword">1</span>], marker=<span class="string">'o'</span>, label=<span class="string">f"Path {i}"</span>)
+    plt.grid(<span class="keyword">True</span>); plt.axis(<span class="string">'equal'</span>); plt.legend(); plt.show()</code></pre>
+            </li>
+
+            <li id="dir-fn-poc-main" style="margin-bottom: 10px; font-size: 0.95rem; color: var(--text-secondary);">
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">main</strong> - Orchestrates closed-loop POC executions, air dry-runs, and live-ink runs. <span style="color: var(--text-muted);">(Required to control full testing cycles.)</span>
+              <pre id="code-poc-circle-fn-main-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">main</span>():
+    d_shape_strokes = generate_poc_arc_d_shape_tensor(start_deg=<span class="keyword">0.0</span>, end_deg=<span class="keyword">180.0</span>, clockwise=<span class="keyword">False</span>)
+    discretized = discretize_strokes_list(d_shape_strokes)
+    controller = UR5eController(ip_address=<span class="string">"192.168.1.100"</span>)
+    scaled_strokes = [scale_points(s, controller.origin, controller.dimensions) <span class="keyword">for</span> s <span class="keyword">in</span> discretized]
+    plot_offline(scaled_strokes)
+    <span class="keyword">if</span> input(<span class="string">"Proceed to UR5e dry air run? [y/N]: "</span>).lower() == <span class="string">'y'</span>:
+        controller.connect()
+        controller.home()
+        <span class="comment"># safe air offset: +50mm (disable force control for mid-air test)</span>
+        real_z_draw, real_z_travel = controller.z_draw, controller.z_travel
+        real_use_force = controller.use_force_control
+        controller.z_draw, controller.z_travel = real_z_draw + <span class="keyword">0.050</span>, real_z_travel + <span class="keyword">0.050</span>
+        controller.use_force_control = <span class="keyword">False</span>
+        controller.execute_drawing_path(scaled_strokes)
+        <span class="keyword">if</span> input(<span class="string">"Ready for real-ink? [y/N]: "</span>).lower() == <span class="string">'y'</span>:
+            controller.z_draw, controller.z_travel = real_z_draw, real_z_travel
+            controller.use_force_control = real_use_force
+            controller.execute_drawing_path(scaled_strokes)
+        controller.home(); controller.disconnect()</code></pre>
+            </li>
+
+          </ul>
+        </div>
+      </div>
+
+      <div id="specs-common-geometry">
+        <h3 id="specs-geometry-header">1. Geometry calculations: <code>src/common/geometry.py</code></h3>
+        <p id="geometry-desc">Mathematical calculations for Bézier curve segmentation, coordinate translations, and circular tensor mocks.</p>
+        <pre id="code-geometry-block"><code><span class="keyword">def</span> <span class="method">discretize_bezier</span>(p0: np.ndarray, p1: np.ndarray, p2: np.ndarray, p3: np.ndarray, num_steps: int = <span class="keyword">20</span>) -> np.ndarray:
+    <span class="comment">"""
+    Discretizes a single cubic Bézier curve into a sequence of linear segments.
+    B(t) = (1-t)^3*P0 + 3*(1-t)^2*t*P1 + 3*(1-t)*t^2*P2 + t^3*P3
+    """</span>
+    t = np.linspace(<span class="keyword">0.0</span>, <span class="keyword">1.0</span>, num_steps + <span class="keyword">1</span>)[:, np.newaxis]
+    points = ((<span class="keyword">1</span> - t) ** <span class="keyword">3</span>) * p0 + <span class="keyword">3</span> * ((<span class="keyword">1</span> - t) ** <span class="keyword">2</span>) * t * p1 + <span class="keyword">3</span> * (<span class="keyword">1</span> - t) * (t ** <span class="keyword">2</span>) * p2 + (t ** <span class="keyword">3</span>) * p3
+    <span class="keyword">return</span> points
+
+<span class="keyword">def</span> <span class="method">discretize_strokes_list</span>(strokes_list: list[torch.Tensor], num_steps: int = <span class="keyword">20</span>) -> list[np.ndarray]:
+    <span class="comment">"""Converts a list of PyTorch Tensors (each representing a stroke of shape (num_curves, 4, 2)) to discretized NumPy arrays."""</span>
+    discretized_strokes = []
+    <span class="keyword">for</span> stroke_tensor <span class="keyword">in</span> strokes_list:
+        stroke_np = stroke_tensor.detach().cpu().numpy()
+        stroke_points = []
+        <span class="keyword">for</span> i, curve <span class="keyword">in</span> enumerate(stroke_np):
+            p0, p1, p2, p3 = curve[<span class="keyword">0</span>], curve[<span class="keyword">1</span>], curve[<span class="keyword">2</span>], curve[<span class="keyword">3</span>]
+            points = discretize_bezier(p0, p1, p2, p3, num_steps=num_steps)
+            <span class="keyword">if</span> i &gt; <span class="keyword">0</span>:
+                stroke_points.append(points[<span class="keyword">1</span>:])
+            <span class="keyword">else</span>:
+                stroke_points.append(points)
+        discretized_strokes.append(np.concatenate(stroke_points, axis=<span class="keyword">0</span>))
+    <span class="keyword">return</span> discretized_strokes
+
+<span class="keyword">def</span> <span class="method">scale_points</span>(points: np.ndarray, origin: tuple[float, float], dimensions: tuple[float, float]) -> np.ndarray:
+    <span class="comment">"""Scales normalized [0,1] canvas points to base coordinates (meters)."""</span>
+    scaled = np.zeros_like(points)
+    scaled[:, <span class="keyword">0</span>] = origin[<span class="keyword">0</span>] + points[:, <span class="keyword">0</span>] * dimensions[<span class="keyword">0</span>]
+    scaled[:, <span class="keyword">1</span>] = origin[<span class="keyword">1</span>] + points[:, <span class="keyword">1</span>] * dimensions[<span class="keyword">1</span>]
+    <span class="keyword">return</span> scaled
+
+<span class="keyword">def</span> <span class="method">generate_poc_arc_d_shape_tensor</span>(
+    center: tuple[float, float] = (<span class="keyword">0.5</span>, <span class="keyword">0.5</span>), 
+    radius: float = <span class="keyword">0.3</span>,
+    start_deg: float = <span class="keyword">0.0</span>,
+    end_deg: float = <span class="keyword">180.0</span>,
+    clockwise: bool = <span class="keyword">False</span>
+) -> list[torch.Tensor]:
+    <span class="comment">"""
+    Generates a simulated SwiftSketch output representing a circular arc 
+    closed by a straight line, constructed dynamically as a list of 2 separate PyTorch stroke tensors.
+    """</span>
+    cx, cy = center
+    alpha_s = np.radians(start_deg)
+    alpha_e = np.radians(end_deg)
+    
+    diff = alpha_e - alpha_s
+    if clockwise and diff > 0:
+        diff -= 2 * np.pi
+    elif not clockwise and diff < 0:
+        diff += 2 * np.pi
+        
+    max_segment_span = np.pi / 2
+    num_segments = int(np.ceil(abs(diff) / max_segment_span))
+    delta = diff / num_segments
+    L = radius * (4.0 / 3.0) * np.tan(delta / 4.0)
+    
+    arc_paths = []
+    for j in range(num_segments):
+        b_start = alpha_s + j * delta
+        b_end = alpha_s + (j + 1) * delta
+        
+        p0 = [cx + radius * np.cos(b_start), cy + radius * np.sin(b_start)]
+        p3 = [cx + radius * np.cos(b_end), cy + radius * np.sin(b_end)]
+        p1 = [p0[0] - L * np.sin(b_start), p0[1] + L * np.cos(b_start)]
+        p2 = [p3[0] + L * np.sin(b_end), p3[1] - L * np.cos(b_end)]
+        arc_paths.append([p0, p1, p2, p3])
+        
+    arc_end = arc_paths[-1][3]
+    arc_start = arc_paths[0][0]
+    dx = arc_start[0] - arc_end[0]
+    dy = arc_start[1] - arc_end[1]
+    
+    p0_line = arc_end
+    p1_line = [arc_end[0] + dx / 3.0, arc_end[1] + dy / 3.0]
+    p2_line = [arc_end[0] + 2.0 * dx / 3.0, arc_end[1] + 2.0 * dy / 3.0]
+    p3_line = arc_start
+    
+    line_paths = [[p0_line, p1_line, p2_line, p3_line]]
+    
+    return [
+        torch.tensor(arc_paths, dtype=torch.float32),
+        torch.tensor(line_paths, dtype=torch.float32)
+    ]</code></pre>
+      </div>
+
+      <div id="specs-robot-controller">
+        <h3 id="specs-controller-header">2. UR5e Connection & Motion Engine: <code>src/robot/controller.py</code></h3>
+        <p id="controller-desc">Encapsulates the core control operations, linear blended path executions, and tool changes.</p>
+        <pre id="code-controller-block"><code><span class="keyword">class</span> <span class="class">UR5eController</span>:
+    <span class="keyword">def</span> <span class="method">__init__</span>(self, ip_address: str, config_path: str = <span class="string">"config/calibration.yaml"</span>):
+        self.ip = ip_address
+        self.config_path = config_path
+        self.rtde_c = <span class="keyword">None</span>
+        self.rtde_r = <span class="keyword">None</span>
+        self.load_calibration()
+
+    <span class="keyword">def</span> <span class="method">connect</span>(self) -> bool:
+        <span class="comment"># Creates rtde_control.RTDEControlInterface & rtde_receive.RTDEReceiveInterface</span>
+        
+    <span class="keyword">def</span> <span class="method">execute_drawing_path</span>(self, strokes: list[np.ndarray], speed: float = <span class="keyword">0.1</span>, accel: float = <span class="keyword">0.05</span>, blend_radius: float = <span class="keyword">0.002</span>):
+        <span class="comment">"""
+        1. Hover above the stroke start point (Travel Height)
+        2. Lower standard tool to drawing height (Z_draw)
+        3. Zero F/T sensor and engage compliant forceMode along base Z axis (-F_target)
+        4. Build blended path where all middle points have blend_radius, and last point has blend_radius = 0.0
+        5. Call self.rtde_c.moveL(path)
+        6. Stop forceMode control
+        7. Lift to Travel Height
+        """</span></code></pre>
+      </div>
+
+      <div id="specs-calibrate-workspace">
+        <h3 id="specs-calibrate-header">3. Physical Calibration Utility: <code>scripts/calibrate_workspace.py</code></h3>
+        <p id="calibrate-desc">Wizard enabling operators to manually touch bed corners and record coordinates.</p>
+        <pre id="code-calibrate-block"><code><span class="keyword">def</span> <span class="method">run_calibration</span>(ip_address: str, output_path: str = <span class="string">"config/calibration.yaml"</span>):
+    <span class="comment"># 1. Capture Top-Left: pose = rtde_r.getActualTCPPose() -> origin_x, origin_y
+    # 2. Capture Top-Right -> calculate width
+    # 3. Capture Bottom-Left -> calculate height
+    # 4. Capture Touch -> calculate z_draw
+    # 5. Save safe limits to YAML</span></code></pre>
+      </div>
+
+      <div id="specs-poc-circle">
+        <h3 id="specs-poc-header">4. Primary POC Executor: <code>scripts/poc_circle.py</code></h3>
+        <p id="poc-circle-desc">Runnable closed semicircle program. Traces shape offline, runs safely in the air, and executes physically.</p>
+        <pre id="code-poc-block"><code><span class="keyword">def</span> <span class="method">main</span>():
+    <span class="comment"># 1. Generate circular arc and straight line stroke list (2 independent strokes)
+    # 2. Discretize stroke list, concatenating consecutive curves in each stroke
+    # 3. Mapped coordinates to physical sheet limits
+    # 4. Connect to UR5e and home
+    # 5. Air-draw (+50mm offset) to verify kinematics without pen lifts on the arc
+    # 6. Real drawing on paper surface</span></code></pre>
+      </div>
+    </section>
+
+    <!-- DIRECTORY STRUCTURE -->
+    <section id="structure">
+      <h2 id="structure-header">Proposed Directory Structure</h2>
+      <p id="structure-desc">
+        The directory tree below decouples algorithmic math, physical robot command scripts, and configuration inputs.
+      </p>
+
+      <div id="structure-tree" style="margin-top: 20px;">
+        <div class="dir-tree">
+          <div class="dir-item"><span class="icon-folder">📁</span> <strong>The Protraitron/</strong> <span class="item-desc">Root Project Directory</span></div>
+          <div class="dir-item dir-depth-1"><span class="icon-folder">📁</span> <strong>config/</strong> <span class="item-desc">Hardware/Vision configurations (YAML/JSON)</span></div>
+          <div class="dir-item dir-depth-2"><span class="icon-config">⚙️</span> calibration.yaml <span class="item-desc">Hand-eye values, paper origin coordinates (x, y, z), workspace limits</span></div>
+          <div class="dir-item dir-depth-2"><span class="icon-config">⚙️</span> robot_config.yaml <span class="item-desc">UR5e static IP address, speed limits, connection timeouts</span></div>
+          <div class="dir-item dir-depth-1"><span class="icon-folder">📁</span> <strong>src/</strong> <span class="item-desc">Core algorithmic source package</span></div>
+          <div class="dir-item dir-depth-2"><span class="icon-folder">📁</span> <strong>common/</strong> <span class="item-desc">Shared helpers</span></div>
+          <div class="dir-item dir-depth-3"><span class="icon-python">🐍</span> geometry.py <span class="item-desc">Cubic Bézier discretization math and coordinate mapping</span></div>
+          <div class="dir-item dir-depth-3"><span class="icon-python">🐍</span> types.py <span class="item-desc">Common types (Path, Stroke, Waypoint, VectorList)</span></div>
+          <div class="dir-item dir-depth-2"><span class="icon-folder">📁</span> <strong>vision/</strong> <span class="item-desc">Camera & SwiftSketch interface</span></div>
+          <div class="dir-item dir-depth-3"><span class="icon-python">🐍</span> camera.py <span class="item-desc">Dual camera controller (OpenCV captures with countdown)</span></div>
+          <div class="dir-item dir-depth-3"><span class="icon-python">🐍</span> stroke_gen.py <span class="item-desc">SwiftSketch bridge (translating model outputs to vector paths)</span></div>
+          <div class="dir-item dir-depth-2"><span class="icon-folder">📁</span> <strong>robot/</strong> <span class="item-desc">UR5e Control API</span></div>
+          <div class="dir-item dir-depth-3"><span class="icon-python">🐍</span> controller.py <span class="item-desc">Wrapper for ur_rtde interface, homing, status readings</span></div>
+          <div class="dir-item dir-depth-3"><span class="icon-python">🐍</span> trajectories.py <span class="item-desc">Pre-defined tool change & paper delivery trajectories</span></div>
+          <div class="dir-item dir-depth-1"><span class="icon-folder">📁</span> <strong>scripts/</strong> <span class="item-desc">Executable terminal scripts for tools & POC</span></div>
+          <div class="dir-item dir-depth-2"><span class="icon-python">🐍</span> poc_circle.py <span class="item-desc">Proof of Concept script (runs closed semicircle D-shape drawn with continuous blended paths)</span></div>
+          <div class="dir-item dir-depth-2"><span class="icon-python">🐍</span> calibrate_workspace.py <span class="item-desc">Bed and drawing sheet calibration routine</span></div>
+          <div class="dir-item dir-depth-1"><span class="icon-folder">📁</span> <strong>tests/</strong> <span class="item-desc">Automated unit test scripts</span></div>
+          <div class="dir-item dir-depth-2"><span class="icon-python">🐍</span> test_geometry.py <span class="item-desc">Validates Bézier math and coordinate transformations</span></div>
+          <div class="dir-item dir-depth-1"><span class="icon-notes">📄</span> requirements.txt <span class="item-desc">Python project dependencies (numpy, torch, pyyaml, etc.)</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- UR5E COMMAND STRUCTURE -->
+    <section id="ur5e">
+      <h2 id="ur5e-header">UR5e RTDE Commands & API Structure</h2>
+      <p id="ur5e-desc">
+        The <code>ur_rtde</code> library interacts with the UR5e controller by packaging command arguments directly into native URScript packages.
+      </p>
+
+      <h3 id="ur5e-tcp-orient">TCP Orientation & 6D Poses</h3>
+      <p id="ur5e-tcp-desc">
+        Poses are represented as a 6-element list: <code>[x, y, z, rx, ry, rz]</code>. Positions are in <strong>meters</strong> and orientations are in <strong>rotation vector format (radians)</strong>.
+      </p>
+
+      <div class="matrix-grid">
+        <div id="ur5e-moveJ" class="matrix-card">
+          <h4>moveJ</h4>
+          <p style="font-size: 0.9rem;">
+            <strong>Joint-Space Move:</strong>
+            <br>Synchronizes the rotation velocity of all 6 joints to arrive at a target coordinate.
+            <br><code style="color: var(--accent-teal);">rtde_c.moveJ([q1, q2, q3, q4, q5, q6], speed, accel)</code>
+            <br><em>Primary application: High-speed joint adjustments (e.g. homing or tool pickup).</em>
+          </p>
+        </div>
+        <div id="ur5e-moveL" class="matrix-card">
+          <h4>moveL</h4>
+          <p style="font-size: 0.9rem;">
+            <strong>Linear Cartesian Move:</strong>
+            <br>Calculates joint adjustments to force the tool center point (TCP) to travel in a perfect straight line.
+            <br><code style="color: var(--accent-teal);">rtde_c.moveL([x, y, z, rx, ry, rz], speed, accel)</code>
+            <br><em>Primary application: Pen lowering, tool engagement, and paper sliding.</em>
+          </p>
+        </div>
+        <div id="ur5e-path-blending" class="matrix-card">
+          <h4>Path Blending</h4>
+          <p style="font-size: 0.9rem;">
+            <strong>Continuous Smooth Motions:</strong>
+            <br>Standard movements halt between waypoints. To draw smooth lines, we compile waypoints into a nested array containing a <code>blend_radius</code> (meters).
+            <br><code style="color: var(--accent-teal);">rtde_c.moveL(path_list)</code>
+            <br><em>Primary application: Discretized curves (e.g. Béziers, circles).</em>
+          </p>
+        </div>
+        <div id="ur5e-force-mode" class="matrix-card">
+          <h4>Force Mode</h4>
+          <p style="font-size: 0.9rem;">
+            <strong>Dynamic Z-Axis Contact:</strong>
+            <br>Zeroes F/T sensor, enables compliant Z-axis force control boundaries (wrench) to adapt to slanted bed heights, paper creases, and surface play.
+            <br><code style="color: var(--accent-teal);">rtde_c.forceMode(frame, select, wrench, type, limits)</code>
+            <br><em>Primary application: Active surface tracking to maintain consistent drawing pressure.</em>
+          </p>
+        </div>
+      </div>
+
+      <h3 id="ur5e-code-example" style="margin-top: 25px;">Code Example: Executing a Continuous Path</h3>
+      <pre id="code-ur5e-example"><code><span class="keyword">import</span> rtde_control
+
+<span class="comment"># Initialize connection (Port 30003)</span>
+rtde_c = rtde_control.<span class="class">RTDEControlInterface</span>(<span class="string">"192.168.1.100"</span>)
+
+<span class="comment"># Define continuous path: [X, Y, Z, Rx, Ry, Rz, speed, accel, blend_radius]</span>
+<span class="comment"># Position in meters. Blend radius > 0.0 allows continuous motion.</span>
+path = [
+    [<span class="keyword">0.45</span>, -<span class="keyword">0.20</span>, <span class="keyword">0.15</span>, <span class="keyword">0.0</span>, <span class="keyword">3.1415</span>, <span class="keyword">0.0</span>, <span class="keyword">0.2</span>, <span class="keyword">0.1</span>, <span class="keyword">0.02</span>],
+    [<span class="keyword">0.50</span>, -<span class="keyword">0.25</span>, <span class="keyword">0.15</span>, <span class="keyword">0.0</span>, <span class="keyword">3.1415</span>, <span class="keyword">0.0</span>, <span class="keyword">0.2</span>, <span class="keyword">0.1</span>, <span class="keyword">0.02</span>],
+    [<span class="keyword">0.55</span>, -<span class="keyword">0.20</span>, <span class="keyword">0.15</span>, <span class="keyword">0.0</span>, <span class="keyword">3.1415</span>, <span class="keyword">0.0</span>, <span class="keyword">0.2</span>, <span class="keyword">0.1</span>, <span class="keyword">0.00</span>]  <span class="comment"># 0.0 blend forces a stop</span>
+]
+
+<span class="comment"># Execute movement (blocking call by default)</span>
+rtde_c.<span class="method">moveL</span>(path)</code></pre>
+    </section>
+
+    <!-- BEZIER DISCRETIZATION -->
+    <section id="bezier">
+      <h2 id="bezier-header">Translating SwiftSketch Bézier Curves</h2>
+      <p id="bezier-desc">
+        SwiftSketch outputs sketches as PyTorch Tensors representing <strong>cubic Bézier curves</strong>.
+      </p>
+
+      <div id="math-bezier-eq1" class="math-block">
+        <span class="math-tag">Equation 1: Cubic Bézier Curve</span>
+        $$\mathbf{B}(t) = (1-t)^3 P_0 + 3(1-t)^2 t P_1 + 3(1-t) t^2 P_2 + t^3 P_3$$
+        <div class="math-label">evaluated for $t \in [0, 1]$ across $N$ discrete intervals</div>
+      </div>
+
+      <p id="bezier-segment-desc">
+        For a given curve, we segment $t \in [0, 1]$ into $N$ steps (e.g. $N=15$). Each step yields a 2D coordinate $(x_{canvas}, y_{canvas})$ in normalized coordinates $[0, 1]^2$.
+      </p>
+
+      <h3 id="bezier-affine">Workspace Affine Transformation</h3>
+      <p id="bezier-affine-desc">
+        These normalized coordinates scale linearly to the physical drawing board limits, defined in the calibration profile:
+      </p>
+
+      <div id="math-affine-eq2" class="math-block">
+        <span class="math-tag">Equation 2: Linear Affine Scaling</span>
+        $$X_{robot} = X_{origin} + x_{canvas} \cdot L_{width}$$
+        $$Y_{robot} = Y_{origin} + y_{canvas} \cdot L_{height}$$
+      </div>
+
+      <div id="alert-bezier-math" class="alert-card">
+        <h4>Quadrant Bézier Circle Math (The POC Approach)</h4>
+        <p style="font-size: 0.95rem; margin-bottom: 0;">
+          For the circle drawing POC, a circle is approximated using <strong>4 cubic Bézier curves</strong> (one per quadrant). 
+          The control point offset multiplier $k$ is calculated as:
+          <br>
+          <code style="background-color: var(--bg); color: var(--accent-teal); padding: 2px 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.9rem;">k = 4 * (sqrt(2) - 1) / 3 ≈ 0.5522847</code>
+          <br>This creates a mock SwiftSketch PyTorch tensor of shape <code>(4, 4, 2)</code> to validate coordinate pipelines offline.
+        </p>
+      </div>
+    </section>
+
+    <!-- VERIFICATION PLAN -->
+    <section id="verification">
+      <h2 id="verification-header">Step-by-Step Verification Plan</h2>
+      
+      <div class="matrix-grid">
+        <div id="verif-phase1" class="matrix-card">
+          <h4>Phase 1: Calibration & Mathematical Verification</h4>
+          <p style="font-size: 0.85rem; margin-bottom: 0;">
+            1. Validate Bézier parsing mathematically inside <code>test_geometry.py</code>.
+            <br>2. Run offline coordinate visualization using `matplotlib` to verify visual symmetry, trajectory speeds, and limits before executing motion.
+          </p>
+        </div>
+        <div id="verif-phase2" class="matrix-card purple">
+          <h4>Phase 2: Safe Physical "In-Air" Drawing</h4>
+          <p style="font-size: 0.85rem; margin-bottom: 0;">
+            1. Calibrate the paper sheet corner limits on the physical UR5e table.
+            <br>2. Run the circle script with drawing height offset:
+            <br><code style="color: var(--accent-purple);">Z_safe = Z_draw + 50mm</code>.
+            <br>3. Observe physical motion in air (including tool changes and delivery sweeps) to guarantee no collisions or joint-limit errors.
+          </p>
+        </div>
+        <div id="verif-phase3" class="matrix-card">
+          <h4>Phase 3: Real Ink & Delivery</h4>
+          <p style="font-size: 0.85rem; margin-bottom: 0;">
+            1. Mount physical marker and paper grasper/gripper tools.
+            <br>2. Execute drawing at precise $Z_{draw}$ surface limit.
+            <br>3. Observe drawing execution, stamping, stamp-return, grasper-pickup, and final paper handoff to the designated location.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- KEY QUESTIONS -->
+    <section id="questions">
+      <h2 id="questions-header">Platform Portability & Delivery Details</h2>
+      
+      <div id="questions-card-delivery" class="alert-card">
+        <h4>1. Portrait Handing Mechanism</h4>
+        <p style="font-size: 0.95rem; margin-bottom: 0;">
+          The system handles delivery via pre-planned spline movements inside <code>src/robot/trajectories.py</code>. For a pneumatic gripper or magnetic grasper, the controller toggles UR5e digital output pins (e.g. <code>rtde_c.setStandardDigitalOut(pin_number, value)</code>) to actuate paper release.
+        </p>
+      </div>
+
+      <div id="questions-card-complete" class="alert-card" style="border-left-color: var(--accent-teal);">
+        <h4 style="color: var(--accent-teal);">2. Core Setup Complete</h4>
+        <p style="font-size: 0.95rem; margin-bottom: 0; color: var(--text-secondary);">
+          The single-machine layout, direct physical testing workflow, and delivery paths are defined.
+        </p>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- PERRY THE PLATYPUS FOOTER -->
+  <div class="perry-footer" onclick="togglePerry()">
+    PERRY THE PLATYPUS SPOTTER
+    <span>(Wait... where is Perry?)</span>
+  </div>
+
+  <script>
+    // Interactive Easter egg
+    function togglePerry() {
+      const footer = document.querySelector('.perry-footer');
+      if (footer.style.bottom === '0px') {
+        footer.style.bottom = '-60px';
+      } else {
+        footer.style.bottom = '0px';
+        alert("CURSE YOU, PERRY THE PLATYPUS!!!");
+      }
+    }
+  </script>
+</body>
+</html>
