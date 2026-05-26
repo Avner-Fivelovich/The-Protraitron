@@ -123,11 +123,11 @@ def main():
     # -------------------------------------------------------------------------
     triangles_robust = []
     
-    # Lower core (Z in [0, 70]) - hollowed for deep Z insertion
-    add_box(triangles_robust, -13.0, 13.0, -17.5, -8.25, 0.0, 70.0)  # Front
-    add_box(triangles_robust, -13.0, 13.0, 8.25, 17.5, 0.0, 70.0)    # Back
-    add_box(triangles_robust, -13.0, -8.25, -8.25, 8.25, 0.0, 70.0)   # Left
-    add_box(triangles_robust, 8.25, 13.0, -8.25, 8.25, 0.0, 70.0)    # Right
+    # Lower core (Z in [0, 70]) - hollowed for deep Z insertion (aligned to 12.0mm cylinder outer radius)
+    add_box(triangles_robust, -12.0, 12.0, -17.5, -12.0, 0.0, 70.0)  # Front
+    add_box(triangles_robust, -12.0, 12.0, 12.0, 17.5, 0.0, 70.0)    # Back
+    add_box(triangles_robust, -13.0, -12.0, -17.5, 17.5, 0.0, 70.0)   # Left
+    add_box(triangles_robust, 12.0, 13.0, -17.5, 17.5, 0.0, 70.0)    # Right
     
     # Upper core (Z in [70, 100]) - 30mm solid ceiling stop at the top
     add_box(triangles_robust, -13.0, 13.0, -17.5, 17.5, 70.0, 100.0)
@@ -154,11 +154,11 @@ def main():
     # -------------------------------------------------------------------------
     triangles_fast = []
     
-    # Lower core (Z in [0, 12]) - hollowed for Z insertion
-    add_box(triangles_fast, -11.0, 11.0, -12.5, -8.25, 0.0, 12.0)  # Front
-    add_box(triangles_fast, -11.0, 11.0, 8.25, 12.5, 0.0, 12.0)    # Back
-    add_box(triangles_fast, -11.0, -8.25, -8.25, 8.25, 0.0, 12.0)   # Left
-    add_box(triangles_fast, 8.25, 11.0, -8.25, 8.25, 0.0, 12.0)    # Right
+    # Lower core (Z in [0, 12]) - hollowed for Z insertion (aligned to 10.0mm cylinder outer radius)
+    add_box(triangles_fast, -10.0, 10.0, -12.5, -10.0, 0.0, 12.0)  # Front
+    add_box(triangles_fast, -10.0, 10.0, 10.0, 12.5, 0.0, 12.0)    # Back
+    add_box(triangles_fast, -11.0, -10.0, -12.5, 12.5, 0.0, 12.0)   # Left
+    add_box(triangles_fast, 10.0, 11.0, -12.5, 12.5, 0.0, 12.0)    # Right
     
     # Upper core (Z in [12, 42]) - 30mm solid ceiling stop at the top
     add_box(triangles_fast, -11.0, 11.0, -12.5, 12.5, 12.0, 42.0)
