@@ -1,7 +1,8 @@
 """
 scripts/generate_mount_mesh.py
-Generates a 3D-printable STL file for the Robotiq 2F-85 grasped pen mount mathematically.
-Optimized to prevent cylinder protrusion by setting the core pinch width to 26mm, with 30mm solid ceiling stop.
+Generates two 3D-printable STL files for the Robotiq 2F-85 grasped pen mount:
+1. Robust & Stable Model: 100mm tall, 70mm pen insertion depth, straight cuboid walls.
+2. Fast-to-Print Model: 42mm tall, 12mm insertion depth, straight cuboid walls.
 """
 import math
 import os
@@ -72,25 +73,25 @@ def add_hollow_cylinder(triangles, r_out, r_in, z_bot, z_top, segments=32):
         vi1_bot = [r_in * c1, r_in * s1, z_bot]
         vi2_bot = [r_in * c2, r_in * s2, z_bot]
         
-        # 1. Outer Wall (2 triangles)
+        # 1. Outer Wall
         t1 = (vo1_bot, vo2_top, vo2_bot)
         t2 = (vo1_bot, vo1_top, vo2_top)
         triangles.append((calculate_normal(*t1), t1[0], t1[1], t1[2]))
         triangles.append((calculate_normal(*t2), t2[0], t2[1], t2[2]))
         
-        # 2. Inner Wall (2 triangles, facing inward)
+        # 2. Inner Wall
         t3 = (vi1_bot, vi2_bot, vi2_top)
         t4 = (vi1_bot, vi2_top, vi1_top)
         triangles.append((calculate_normal(*t3), t3[0], t3[1], t3[2]))
         triangles.append((calculate_normal(*t4), t4[0], t4[1], t4[2]))
         
-        # 3. Bottom Rim (2 triangles)
+        # 3. Bottom Rim
         t5 = (vo1_bot, vo2_bot, vi2_bot)
         t6 = (vo1_bot, vi2_bot, vi1_bot)
         triangles.append((calculate_normal(*t5), t5[0], t5[1], t5[2]))
         triangles.append((calculate_normal(*t6), t6[0], t6[1], t6[2]))
         
-        # 4. Top Rim (2 triangles)
+        # 4. Top Rim
         t7 = (vo1_top, vi2_top, vo2_top)
         t8 = (vo1_top, vi1_top, vi2_top)
         triangles.append((calculate_normal(*t7), t7[0], t7[1], t7[2]))
@@ -115,56 +116,69 @@ def write_binary_stl(filepath, triangles):
             f.write(data)
 
 def main():
-    triangles = []
-    
-    # -------------------------------------------------------------------------
-    # PART 1: THE PINCH BLOCK CORE
-    # -------------------------------------------------------------------------
-    # Overall Size: width 34mm (X in [-17, 17]), depth 35mm (Y in [-17.5, 17.5]), height 42mm.
-    # Core width (pinch) is 26mm (X in [-13, 13]).
-    # Since the cylinder has outer radius 12mm (X in [-12, 12]), setting the core pinch
-    # width to 26mm completely hides the cylinder inside the core web, preventing any protrusion!
-    #
-    # We leave 3.0 cm (30mm) of solid material at the top for a robust physical ceiling stop.
-    # This means the circular pen hole is only tunneled from Z = 0 to Z = 12.0 mm (Z_top = 12.0).
-    # From Z = 12.0 to Z = 42.0 is 30mm of solid material.
-    
-    # 1. Lower Core (Z in [0, 12]) - Split into 4 boxes surrounding the 16.5mm circular bore
-    add_box(triangles, -13.0, 13.0, -17.5, -8.25, 0.0, 12.0)  # Front Block
-    add_box(triangles, -13.0, 13.0, 8.25, 17.5, 0.0, 12.0)    # Back Block
-    add_box(triangles, -13.0, -8.25, -8.25, 8.25, 0.0, 12.0)   # Left Block
-    add_box(triangles, 8.25, 13.0, -8.25, 8.25, 0.0, 12.0)    # Right Block
-    
-    # 2. Upper Core (Z in [12, 42]) - Solid 30mm thickness block
-    add_box(triangles, -13.0, 13.0, -17.5, 17.5, 12.0, 42.0)
-    
-    # Left Flange walls (X in [-17.0, -13.0]) - No top rim (open channel for Z entry)
-    # Flange walls are now 6.25mm thick (Y in [-17.5, -11.25] and Y in [11.25, 17.5])
-    add_box(triangles, -17.0, -13.0, -17.5, -11.25, 0.0, 42.0)
-    add_box(triangles, -17.0, -13.0, 11.25, 17.5, 0.0, 42.0)
-    add_box(triangles, -17.0, -13.0, -11.25, 11.25, 0.0, 1.75) # Bottom Rim only
-    
-    # Right Flange walls (X in [13.0, 17.0]) - No top rim (open channel for Z entry)
-    # Flange walls are now 6.25mm thick (Y in [-17.5, -11.25] and Y in [11.25, 17.5])
-    add_box(triangles, 13.0, 17.0, -17.5, -11.25, 0.0, 42.0)
-    add_box(triangles, 13.0, 17.0, 11.25, 17.5, 0.0, 42.0)
-    add_box(triangles, 13.0, 17.0, -11.25, 11.25, 0.0, 1.75) # Bottom Rim only
-    
-    # -------------------------------------------------------------------------
-    # PART 2: THE HOLLOW CYLINDER CAGE
-    # -------------------------------------------------------------------------
-    # Extends downwards from Z = -40mm to Z_top = 12.0mm.
-    # The bore meets the solid block ceiling at Z = 12.0mm, leaving exactly 30mm of solid material.
-    # Outer diameter: 24mm (radius 12.0)
-    # Inner bore: 16.5mm (radius 8.25)
-    add_hollow_cylinder(triangles, r_out=12.0, r_in=8.25, z_bot=-40.0, z_top=12.0)
-    
-    # Save the file
     os.makedirs("hardware", exist_ok=True)
-    output_filename = "hardware/robotiq_pen_mount.stl"
-    print(f"Generating binary STL mesh with {len(triangles)} facets...")
-    write_binary_stl(output_filename, triangles)
-    print(f"Mesh generation successful! File saved in hardware directory: {os.path.abspath(output_filename)}")
+    
+    # -------------------------------------------------------------------------
+    # 1. GENERATE THE "ROBUST & STABLE" MODEL (100mm Tall, Ultra-Deep Insertion)
+    # -------------------------------------------------------------------------
+    triangles_robust = []
+    
+    # Lower core (Z in [0, 70]) - hollowed for deep Z insertion
+    add_box(triangles_robust, -13.0, 13.0, -17.5, -8.25, 0.0, 70.0)  # Front
+    add_box(triangles_robust, -13.0, 13.0, 8.25, 17.5, 0.0, 70.0)    # Back
+    add_box(triangles_robust, -13.0, -8.25, -8.25, 8.25, 0.0, 70.0)   # Left
+    add_box(triangles_robust, 8.25, 13.0, -8.25, 8.25, 0.0, 70.0)    # Right
+    
+    # Upper core (Z in [70, 100]) - 30mm solid ceiling stop at the top
+    add_box(triangles_robust, -13.0, 13.0, -17.5, 17.5, 70.0, 100.0)
+    
+    # Left Flange walls (X in [-17, -13]) - Open top for smooth Z entry
+    add_box(triangles_robust, -17.0, -13.0, -17.5, -11.25, 0.0, 100.0)
+    add_box(triangles_robust, -17.0, -13.0, 11.25, 17.5, 0.0, 100.0)
+    add_box(triangles_robust, -17.0, -13.0, -11.25, 11.25, 0.0, 1.75) # Bottom Rim
+    
+    # Right Flange walls (X in [13, 17]) - Open top for smooth Z entry
+    add_box(triangles_robust, 13.0, 17.0, -17.5, -11.25, 0.0, 100.0)
+    add_box(triangles_robust, 13.0, 17.0, 11.25, 17.5, 0.0, 100.0)
+    add_box(triangles_robust, 13.0, 17.0, -11.25, 11.25, 0.0, 1.75) # Bottom Rim
+    
+    # Hollow cylinder cage (Z in [-40, 70])
+    add_hollow_cylinder(triangles_robust, r_out=12.0, r_in=8.25, z_bot=-40.0, z_top=70.0)
+    
+    robust_file = "hardware/robotiq_pen_mount_robust.stl"
+    write_binary_stl(robust_file, triangles_robust)
+    print(f"Mesh generation successful: {robust_file} ({len(triangles_robust)} facets)")
+    
+    # -------------------------------------------------------------------------
+    # 2. GENERATE THE "FAST-TO-PRINT" MODEL (42mm Tall, Compact & Light)
+    # -------------------------------------------------------------------------
+    triangles_fast = []
+    
+    # Lower core (Z in [0, 12]) - hollowed for Z insertion
+    add_box(triangles_fast, -11.0, 11.0, -12.5, -8.25, 0.0, 12.0)  # Front
+    add_box(triangles_fast, -11.0, 11.0, 8.25, 12.5, 0.0, 12.0)    # Back
+    add_box(triangles_fast, -11.0, -8.25, -8.25, 8.25, 0.0, 12.0)   # Left
+    add_box(triangles_fast, 8.25, 11.0, -8.25, 8.25, 0.0, 12.0)    # Right
+    
+    # Upper core (Z in [12, 42]) - 30mm solid ceiling stop at the top
+    add_box(triangles_fast, -11.0, 11.0, -12.5, 12.5, 12.0, 42.0)
+    
+    # Left Flange walls (X in [-14.5, -11]) - Open top
+    add_box(triangles_fast, -14.5, -11.0, -12.5, -11.25, 0.0, 42.0)
+    add_box(triangles_fast, -14.5, -11.0, 11.25, 12.5, 0.0, 42.0)
+    add_box(triangles_fast, -14.5, -11.0, -11.25, 11.25, 0.0, 1.75) # Bottom Rim
+    
+    # Right Flange walls (X in [11, 14.5]) - Open top
+    add_box(triangles_fast, 11.0, 14.5, -12.5, -11.25, 0.0, 42.0)
+    add_box(triangles_fast, 11.0, 14.5, 11.25, 12.5, 0.0, 42.0)
+    add_box(triangles_fast, 11.0, 14.5, -11.25, 11.25, 0.0, 1.75) # Bottom Rim
+    
+    # Hollow cylinder cage (Z in [-30, 12]) - Outer diameter 20.0mm (radius 10.0)
+    add_hollow_cylinder(triangles_fast, r_out=10.0, r_in=8.25, z_bot=-30.0, z_top=12.0)
+    
+    fast_file = "hardware/robotiq_pen_mount_fast.stl"
+    write_binary_stl(fast_file, triangles_fast)
+    print(f"Mesh generation successful: {fast_file} ({len(triangles_fast)} facets)")
 
 if __name__ == "__main__":
     main()
