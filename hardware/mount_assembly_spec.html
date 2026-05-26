@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Robotiq 2F-85 Grasped Pen Mount Spec - Portraitron</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card: #111827;
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent-teal: #06b6d4;
+      --accent-orange: #f97316;
+      --border: #1f2937;
+      --font-display: 'Outfit', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 150px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-teal), var(--accent-orange));
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #fff, var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--accent-teal);
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    section {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h2::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 18px;
+      background-color: var(--accent-teal);
+      border-radius: 2px;
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin: 15px 0 10px 0;
+      color: var(--accent-orange);
+    }
+
+    p {
+      color: var(--text-secondary);
+      margin-bottom: 15px;
+      font-size: 1rem;
+    }
+
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 15px;
+      color: var(--text-secondary);
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    strong {
+      color: #fff;
+    }
+
+    .alert {
+      background-color: rgba(6, 182, 212, 0.05);
+      border-left: 4px solid var(--accent-teal);
+      border-radius: 4px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+
+    .alert-title {
+      font-weight: 600;
+      color: var(--accent-teal);
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Diagram Drawing Styles */
+    .blueprint {
+      background-color: #080c14;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 25px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #06b6d4;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 20px 0;
+      line-height: 1.4;
+    }
+
+    /* Specs Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 12px 15px;
+      text-align: left;
+    }
+
+    th {
+      background-color: rgba(255, 255, 255, 0.02);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    td {
+      color: var(--text-secondary);
+    }
+
+    tr:nth-child(even) td {
+      background-color: rgba(255, 255, 255, 0.01);
+    }
+
+    /* Highlights */
+    .highlight-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .h-card {
+      background-color: rgba(255, 255, 255, 0.01);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .h-card .val {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--accent-teal);
+      margin-bottom: 5px;
+    }
+
+    .h-card .lbl {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    #stl-viewer {
+      width: 100%;
+      height: 400px;
+      background-color: #030712;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 20px 0;
+      position: relative;
+    }
+
+    /* Footer styling */
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="subtitle">Mechanical Specification Sheet</div>
+      <h1>Robotiq 2F-85 Grasped Pen Mount (Refined)</h1>
+    </header>
+
+    <!-- SECTION 1: OVERVIEW -->
+    <section>
+      <h2>Design Strategy Overview</h2>
+      <p>
+        To eliminate mechanical tool-swap times and prevent unbolting wiring assemblies on the physical <strong>UR5e</strong> flange, the Portraitron utilizes a <strong>grasped tool strategy</strong>. 
+      </p>
+      <p>
+        The 3D-printed marker holder features an integrated top <strong>Pinch Block</strong> that is actively grabbed by the robot's <strong>Robotiq 2F-85 adaptive gripper</strong>. The bottom of the block houses a custom <strong>spring-loaded slider sleeve</strong> containing the Staedtler marker.
+      </p>
+      <div class="alert">
+        <div class="alert-title">🔒 Mechanical Interlocking Principle</div>
+        <p style="margin-bottom: 0;">
+          To prevent the holder from twisting or sliding during draw moves, we model <strong>anti-rotation pockets</strong> matching the standard flat silicone pads of the Robotiq 2F-85 gripper. When the fingers close, the rubber pads slide into these pockets, creating a rigid mechanical lock.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 2: REFINEMENTS -->
+    <section>
+      <h2>Design Refinements (Top-Entry, 30mm Ceiling & Core Protrusion Fix)</h2>
+      <p>
+        Based on real-world kinematics and force-torque transmission physics on the UR5e wrist, three crucial design refinements have been implemented:
+      </p>
+      <ul>
+        <li>
+          <strong>1. Smooth Top Entry (Open Channel)</strong>: 
+          The side locking pockets have **no top lip**—they extend all the way to the top of the block ($Z = 42.0\,\text{mm}$). This creates a smooth vertical channel so the robot's gripper fingers can slide straight down in Z onto the tool from above without colliding with a top flange.
+        </li>
+        <li>
+          <strong>2. Solid 30mm Ceiling End-Stop</strong>: 
+          Instead of tunneling the circular pen hole all the way through the block, **we leave exactly 3.0 cm (30.0 mm) of solid material at the top** (Z from 12.0 to 42.0 mm). This creates a robust physical ceiling stop for the pen, preventing the pen from sliding upwards during drawing, while tunneling the lower 12.0 mm of the block.
+        </li>
+        <li>
+          <strong>3. Extended 26mm Core Width (Cylinder Protrusion Fix)</strong>: 
+          Since the outer sliding cylinder has a $24.0\,\text{mm}$ diameter, setting the core pinch width to $22.0\,\text{mm}$ caused the cylinder to protrude out of the sides, blocking the gripper fingers. By **enlarging the core pinch thickness to $26.0\,\text{mm}$ and overall width to $34.0\,\text{mm}$**, the cylinder is completely hidden inside the core web with a $1.0\,\text{mm}$ safety margin, providing a perfectly flat, clean pinch face!
+        </li>
+      </ul>
+    </section>
+
+    <!-- SECTION 3: DIMENSIONS -->
+    <section>
+      <h2>Robotiq 2F-85 fingertip & Mating Block Dims</h2>
+      <p>
+        The standard silicone fingertip contact pads (Part Number: <strong>AGC-TIP-204-085</strong>) have a flat contact surface of <strong>22.0 mm width</strong> and <strong>37.5 mm height</strong>.
+      </p>
+
+      <div class="highlight-box">
+        <div class="h-card">
+          <div class="val">22.0 mm</div>
+          <div class="lbl">Fingertip Pad Width</div>
+        </div>
+        <div class="h-card">
+          <div class="val">37.5 mm</div>
+          <div class="lbl">Fingertip Pad Height</div>
+        </div>
+        <div class="h-card">
+          <div class="val">26.0 mm</div>
+          <div class="lbl">Target Core Pinch Width</div>
+        </div>
+        <div class="h-card">
+          <div class="val">4.0 mm</div>
+          <div class="lbl">Pocket Locking Depth</div>
+        </div>
+      </div>
+
+      <h3>Grasp Mating Block Blueprints</h3>
+      <div class="blueprint">
+                 [ Front Profile ]                              [ Side Profile ]
+           |<------- 34.0mm Width ------->|                 |<------- 35.0mm Depth ------->|
+           |                              |                 |                              |
+           +-----+                  +-----+                 +------------------------------+
+           |     |                  |     |                 |                              |
+           |     |   Recessed Wall  |     |                 |  Vertical guide channel      |
+           |     |<--  22.5mm Width -->|  |                 |  extends all the way to      |
+           |     |                  |     |                 |  the top (Z = 42mm).         |
+           |     |                  |     |                 |  NO TOP LIP.                 |
+           |     |                  |     |                 |  Allows smooth Z entry!      |
+           |     |                  |     |                 |                              |
+           +-----+------------------+-----+                 |                              |
+           |<--- Core Width: 26.0mm ---->|                  |  Bottom Lip: 1.75mm height   |
+           |   (Hides 24mm Cylinder)      |                 +------------------------------+
+           +-----+                  +-----+                 |<------- 35.0mm Depth ------->|
+      </div>
+
+      <p>
+        <strong>Mating Recesses Tolerances</strong>: Pockets are oversized by <strong>0.5 mm in width</strong> to allow the standard rubber fingers to slide into the slots comfortably without sanding, while preventing lateral play.
+      </p>
+    </section>
+
+    <!-- SECTION 4: PEN SPEC -->
+    <section>
+      <h2>Staedtler Lumocolor 317 M Dimensions</h2>
+      <p>
+        The universal permanent medium marker used for physical ink testing has the following dimensions:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Dimension (Metric)</th>
+            <th>CAD Design Mapping</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Pen Barrel Diameter</strong></td>
+            <td>10.0 mm (snug fit)</td>
+            <td>Model inner sleeve bore at <strong>10.2 mm</strong> with slit split-collar clamp</td>
+          </tr>
+          <tr>
+            <td><strong>Capped Length</strong></td>
+            <td>142.0 mm</td>
+            <td>Allows top protrusion above slider for easy manual insertion</td>
+          </tr>
+          <tr>
+            <td><strong>Tip Line Width (M)</strong></td>
+            <td>~1.0 mm</td>
+            <td>Ideal thickness for robot speed coordinate resolution</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SECTION 5: SPRING SLIDER -->
+    <section>
+      <h2>Spring-Loaded Compliance Assembly</h2>
+      <p>
+        To absorb physical slants of the drawing table and to prevent crushing the pen tip on initial engagement, a soft mechanical spring is nested concentric to the marker cylinder sleeve:
+      </p>
+      <ul>
+        <li><strong>Linear Stroke Play</strong>: Design a <strong>12.0 mm vertical stroke clearance</strong> using guide-pin channels on the outer slide-cage.</li>
+        <li><strong>Travel Stop Guide</strong>: Use a single <strong>M3 machine screw</strong> passing through the outer cage guide-slot into the inner slider to act as a physical stop.</li>
+        <li><strong>Compression Spring</strong>: Select a soft, wire-wound spring from the workbench (wire: $0.6\text{--}0.8\,\text{mm}$, OD: $14\text{--}15\,\text{mm}$, length: $35\,\text{mm}$) to provide a light restorative downward force.</li>
+      </ul>
+    </section>
+
+    <!-- SECTION 6: SLICER SETTINGS -->
+    <section>
+      <h2>TAU CGL 3D Printer Slicing Parameters</h2>
+      <p>
+        Upload the STL models to the <strong>TAU Computer Graphics Lab (CGL)</strong> printer queue and slice with the following parameters:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Slicer Setting</th>
+            <th>Value</th>
+            <th>Engineering Rationale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Material</strong></td>
+            <td><strong>PETG</strong> or Tough PLA</td>
+            <td>FDM layers won't snap when tightening the M3 clamping screw.</td>
+          </tr>
+          <tr>
+            <td><strong>Infill Density</strong></td>
+            <td><strong>45%</strong></td>
+            <td>Ensures the solid pinch block won't crush under Robotiq force bounds.</td>
+          </tr>
+          <tr>
+            <td><strong>Infill Pattern</strong></td>
+            <td><strong>Gyroid</strong></td>
+            <td>Isotropic internal strength.</td>
+          </tr>
+          <tr>
+            <td><strong>Wall Loops (Perimeters)</strong></td>
+            <td><strong>4 minimum</strong></td>
+            <td>Provides strong circular layers for the slide-sleeve bore.</td>
+          </tr>
+          <tr>
+            <td><strong>Supports</strong></td>
+            <td><strong>Enabled (Tree supports)</strong></td>
+            <td>Required inside the hollow cylinder and under the pocket ledges.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SECTION 7: INTERACTIVE 3D MODEL VIEWER -->
+    <section>
+      <h2>Interactive 3D Model Viewer</h2>
+      <p>
+        Use the interactive 3D WebGL viewer below to rotate, zoom, and inspect your custom 3D pen mount model (loaded directly from the local <code>robotiq_pen_mount.stl</code> mesh file).
+      </p>
+      <div id="stl-viewer"></div>
+      <div class="alert" style="margin-top: 15px; font-size: 0.9rem;">
+        <div class="alert-title">🌐 Local Web Server Required for 3D Viewer</div>
+        <p style="margin-bottom: 0;">
+          Due to standard browser security (CORS) policies, the 3D viewer cannot load the local STL file directly via <code>file://</code> URLs. To enable the interactive 3D viewer, start a quick local server in your terminal:
+          <br><code style="color: var(--accent-teal); font-family: var(--font-mono); display: block; margin-top: 5px;">python3 -m http.server 8000</code>
+          Then open <a href="http://localhost:8000/hardware/mount_assembly_spec.html" target="_blank" style="color: var(--accent-orange); font-weight: 600;">http://localhost:8000/hardware/mount_assembly_spec.html</a> in your browser!
+        </p>
+      </div>
+    </section>
+
+    <footer>
+      THE PORTRAITRON PROJECT &copy; 2026 - TAU COMPUTER GRAPHICS LAB
+    </footer>
+  </div>
+
+  <!-- Three.js and STLLoader CDN scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const container = document.getElementById('stl-viewer');
+      if (!container) return;
+
+      // 1. Scene, Camera, and Renderer Setup
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x030712);
+
+      const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 1000);
+      camera.position.set(0, -100, 50);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+
+      // 2. Lights
+      const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+      scene.add(ambientLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0x06b6d4, 2.0); // Cyan light
+      dirLight1.position.set(100, 100, 100);
+      scene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0xf97316, 1.5); // Orange light
+      dirLight2.position.set(-100, -100, 50);
+      scene.add(dirLight2);
+
+      const pointLight = new THREE.PointLight(0xffffff, 1.0, 100);
+      pointLight.position.set(0, 0, 80);
+      scene.add(pointLight);
+
+      // 3. Controls
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 + 0.1;
+
+      // 4. Load STL
+      const loader = new THREE.STLLoader();
+      loader.load('robotiq_pen_mount.stl', function (geometry) {
+        geometry.computeVertexNormals();
+        geometry.center();
+
+        const material = new THREE.MeshPhongMaterial({ 
+          color: 0x1f2937, 
+          specular: 0x111111, 
+          shininess: 200,
+          flatShading: true
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.rotation.x = -Math.PI / 2; // Align Z up
+        scene.add(mesh);
+
+        // Adjust camera to fit mesh size
+        const boundingBox = new THREE.Box3().setFromObject(mesh);
+        const size = new THREE.Vector3();
+        boundingBox.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        camera.position.set(0, -maxDim * 2.0, maxDim * 1.0);
+        controls.target.copy(geometry.boundingBox.getCenter(new THREE.Vector3()));
+        controls.update();
+      }, 
+      // progress
+      undefined, 
+      // error
+      function(error) {
+        console.warn("WebGL viewer failed to load local STL file. This is expected when opening via file:// protocol due to CORS restriction.");
+        const msg = document.createElement('div');
+        msg.style.position = 'absolute';
+        msg.style.top = '50%';
+        msg.style.left = '50%';
+        msg.style.transform = 'translate(-50%, -50%)';
+        msg.style.fontFamily = 'monospace';
+        msg.style.fontSize = '0.85rem';
+        msg.style.color = '#9ca3af';
+        msg.style.textAlign = 'center';
+        msg.style.padding = '20px';
+        msg.innerHTML = '3D View Standby Mode<br><span style="font-size:0.75rem; color:#6b7280;">(Start local python web server to view in 3D)</span>';
+        container.appendChild(msg);
+      });
+
+      // 5. Window Resize Handler
+      window.addEventListener('resize', onWindowResize, false);
+      function onWindowResize() {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      }
+
+      // 6. Animation Loop
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+    });
+  </script>
+</body>
+</html>
