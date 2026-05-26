@@ -85,11 +85,12 @@
     header {
       background: linear-gradient(135deg, #180525 0%, #031c19 100%);
       border-bottom: 2px solid var(--border);
-      padding: 50px 40px;
+      padding: 50px 40px 52px 40px;
       text-align: center;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      z-index: 2;
     }
 
     header::after {
@@ -100,6 +101,7 @@
       right: 0;
       height: 4px;
       background: linear-gradient(90deg, var(--accent-purple), var(--accent-teal));
+      z-index: 2;
     }
 
     .brand-banner {
@@ -452,6 +454,107 @@
     .timeline-node.purple h4 span {
       color: var(--accent-purple);
     }
+
+    /* Folder Tabs Navigation */
+    .folder-header {
+      position: absolute;
+      bottom: 1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 950px;
+      padding: 0 20px;
+    }
+
+    .tabs-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .tab-item {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      padding: 6px 12px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .tab-item a {
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-weight: bold;
+      transition: color 0.2s ease;
+    }
+
+    .tab-item:hover {
+      background-color: #1a1a22;
+      transform: translateY(-1px);
+    }
+
+    .tab-item:hover a {
+      color: var(--text-primary);
+    }
+
+    .tab-item.active {
+      background-color: var(--card);
+      border-color: var(--border);
+      border-bottom: none;
+      font-weight: bold;
+      z-index: 3;
+    }
+
+    .tab-item.active a {
+      color: var(--accent-teal);
+    }
+
+    /* Folder Content Box */
+    .folder-main {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      padding: 40px 30px;
+      border-radius: 0 12px 12px 12px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      position: relative;
+      z-index: 1;
+      max-width: 950px;
+      margin: 0 auto;
+    }
+
+    /* Tab Content Visibility */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 </head>
 <body>
@@ -476,13 +579,43 @@
     <div class="brand-banner">ROBOTICS DIVISION // TRI-STATE AREA</div>
     <h1>The Portraitron 3000</h1>
     <div class="subtitle">System Architecture & Project Structure Implementation Plan</div>
-    <div style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 0.85rem; margin-top: 15px;">
+    <div style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 0.85rem; margin-top: 15px; margin-bottom: 25px;">
       Configured for: Standalone Python Execution with Closed-loop Portrait Handing
     </div>
+
+    <!-- TABS NAVIGATION BAR (Nested inside header) -->
+    <nav class="folder-header">
+      <ul class="tabs-list">
+        <!-- Active/Open Tab (Matches the content box color) -->
+        <li class="tab-item active" onclick="switchTab(event, 'phase-1')">
+          <a href="javascript:void(0)">Phase 1️⃣: POC (D-Shape)</a>
+        </li>
+        <!-- Inactive Tab -->
+        <li class="tab-item" onclick="switchTab(event, 'phase-2')">
+          <a href="javascript:void(0)">Phase 2️⃣: SwiftSketch</a>
+        </li>
+        <!-- Inactive Tab -->
+        <li class="tab-item" onclick="switchTab(event, 'phase-3')">
+          <a href="javascript:void(0)">Phase 3️⃣: Pen &amp; Stamp</a>
+        </li>
+        <!-- Inactive Tab -->
+        <li class="tab-item" onclick="switchTab(event, 'phase-4')">
+          <a href="javascript:void(0)">Phase 4️⃣: Camera</a>
+        </li>
+        <!-- Inactive Tab -->
+        <li class="tab-item" onclick="switchTab(event, 'phase-5')">
+          <a href="javascript:void(0)">Phase 5️⃣: Handoff</a>
+        </li>
+      </ul>
+    </nav>
   </header>
 
   <!-- CONTAINER -->
-  <div class="container">
+  <div class="container" style="max-width: 950px;">
+    <!-- Folder Main Content Body -->
+    <main class="folder-main">
+      <!-- TAB 1: PHASE 1 CONTENT (POC D-Shape Drawing) -->
+      <div id="phase-1" class="tab-content active">
 
     <!-- OVERVIEW -->
     <section id="overview">
@@ -1093,7 +1226,7 @@
             <strong>Continuous Smooth Motions:</strong>
             <br>Standard movements halt between waypoints. To draw smooth lines, we compile waypoints into a nested array containing a <code>blend_radius</code> (meters).
             <br><code style="color: var(--accent-teal);">rtde_c.moveL(path_list)</code>
-            <br><em>Primary application: Discretized curves (e.g. Béziers, circles).</em>
+            <br><em>Primary application: Discretized curves (e.g. Béziers, D-shapes).</em>
           </p>
         </div>
         <div id="ur5e-force-mode" class="matrix-card">
@@ -1154,13 +1287,13 @@ rtde_c.<span class="method">moveL</span>(path)</code></pre>
       </div>
 
       <div id="alert-bezier-math" class="alert-card">
-        <h4>Quadrant Bézier Circle Math (The POC Approach)</h4>
+        <h4>Semicircle Bézier D-Shape Math (The POC Approach)</h4>
         <p style="font-size: 0.95rem; margin-bottom: 0;">
-          For the circle drawing POC, a circle is approximated using <strong>4 cubic Bézier curves</strong> (one per quadrant). 
-          The control point offset multiplier $k$ is calculated as:
+          For the closed semicircle D-shape POC, the circular arc is approximated using <strong>2 cubic Bézier curves</strong> (one per $90^\circ$ quadrant), closed by <strong>1 degenerate collinear cubic Bézier curve</strong> representing the straight line.
+          The control point offset multiplier $k$ for each quadrant is:
           <br>
           <code style="background-color: var(--bg); color: var(--accent-teal); padding: 2px 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.9rem;">k = 4 * (sqrt(2) - 1) / 3 ≈ 0.5522847</code>
-          <br>This creates a mock SwiftSketch PyTorch tensor of shape <code>(4, 4, 2)</code> to validate coordinate pipelines offline.
+          <br>This creates a mock SwiftSketch output comprising two separate PyTorch stroke tensors of shape <code>(2, 4, 2)</code> (for the arc) and <code>(1, 4, 2)</code> (for the line) to validate coordinates and lift sequences offline.
         </p>
       </div>
     </section>
@@ -1181,7 +1314,7 @@ rtde_c.<span class="method">moveL</span>(path)</code></pre>
           <h4>Phase 2: Safe Physical "In-Air" Drawing</h4>
           <p style="font-size: 0.85rem; margin-bottom: 0;">
             1. Calibrate the paper sheet corner limits on the physical UR5e table.
-            <br>2. Run the circle script with drawing height offset:
+            <br>2. Run the D-shape script with drawing height offset:
             <br><code style="color: var(--accent-purple);">Z_safe = Z_draw + 50mm</code>.
             <br>3. Observe physical motion in air (including tool changes and delivery sweeps) to guarantee no collisions or joint-limit errors.
           </p>
@@ -1216,7 +1349,301 @@ rtde_c.<span class="method">moveL</span>(path)</code></pre>
       </div>
     </section>
 
-  </div>
+    </div> <!-- END OF TAB 1 (PHASE 1) -->
+
+    <!-- TAB 2: PHASE 2 CONTENT (SwiftSketch Pipeline) -->
+    <div id="phase-2" class="tab-content">
+      <section>
+        <h2>Phase 2: SwiftSketch Neural Stroke Engine Integration</h2>
+        <p>
+          Phase 2 introduces the core AI drawing algorithm: <strong>SwiftSketch</strong>. Instead of static shapes, the system processes a raw photo of the subject and optimizes a set of continuous vector contours in real time.
+        </p>
+
+        <!-- SWIFTSKETCH DIAGRAM -->
+        <h3 style="margin-top: 20px; margin-bottom: 15px;">SwiftSketch Execution Flow</h3>
+        <div class="mermaid" style="background-color: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
+          graph TD
+              A[High-Res Subject Photo] --> B[Background Matting &amp; Edge Extraction]
+              B --> C[PyTorch Optimization Loop on GPU CUDA/MPS]
+              C --> D[B&amp;W Stroke Matching Loss Minimization]
+              D --> E[Generate Parametric Cubic Bezier Curves]
+              E -->|PyTorch Tensor (N, 4, 2)| F[Serialize to JSON / Output Format]
+              F --> G[Geometry Discretization Engine]
+              
+              style A fill:#031c19,stroke:#26a69a,stroke-width:2px,color:#fff
+              style C fill:#4a148c,stroke:#9c27b0,stroke-width:2px,color:#fff
+              style F fill:#1a1103,stroke:#e67e22,stroke-width:2px,color:#fff
+        </div>
+
+        <h3 style="margin-top: 25px;">Core Software Component: <code>src/vision/stroke_gen.py</code></h3>
+        <p>
+          This module handles the PyTorch optimization pipeline, running dynamically on CUDA (NVIDIA GFX PC) or MPS (Apple MacBook M4 Max).
+        </p>
+        <pre><code><span class="keyword">import</span> torch
+<span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+
+<span class="keyword">class</span> <span class="class">SwiftSketchOptimizer</span>:
+    <span class="keyword">def</span> <span class="method">__init__</span>(self, device: str = <span class="string">"cuda"</span>):
+        <span class="keyword">if</span> device == <span class="string">"cuda"</span> <span class="keyword">and not</span> torch.cuda.is_available():
+            device = <span class="string">"mps"</span> <span class="keyword">if</span> torch.backends.mps.is_available() <span class="keyword">else</span> <span class="string">"cpu"</span>
+        self.device = torch.device(device)
+        print(f<span class="string">"SwiftSketch initialized on device: {self.device}"</span>)
+
+    <span class="keyword">def</span> <span class="method">generate_strokes</span>(self, image_path: str, num_strokes: int = <span class="keyword">150</span>) -> torch.Tensor:
+        <span class="comment"># 1. Load image and extract structural saliency map
+        # 2. Run optimization loop to align parametric Bezier coordinates
+        # 3. Output PyTorch Tensor of shape (num_strokes, 4, 2)</span>
+        raw_strokes = torch.rand(num_strokes, <span class="keyword">4</span>, <span class="keyword">2</span>, device=self.device)
+        <span class="keyword">return</span> raw_strokes</code></pre>
+
+        <div class="matrix-grid" style="margin-top: 25px;">
+          <div class="matrix-card">
+            <h4>GPU Optimization</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Leverages PyTorch autograd to compute the difference between simulated stroke rendering and target face contours, updating control points over 100 iterations.
+            </p>
+          </div>
+          <div class="matrix-card purple">
+            <h4>Dynamic Device Selector</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Decouples environment constraints. Runs on MPS for macOS development or CUDA for the lab's dedicated GFX workstation.
+            </p>
+          </div>
+          <div class="matrix-card">
+            <h4>Coordinate Serializer</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Transforms raw $[0, 1]$ canvas coordinates to unified stroke lists, ensuring seamless Hand 23/24 drawing execution.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div> <!-- END OF TAB 2 -->
+
+    <!-- TAB 3: PHASE 3 CONTENT (Pen & Stamp Mechanism) -->
+    <div id="phase-3" class="tab-content">
+      <section>
+        <h2>Phase 3: Pen &amp; Stamp Changer Mechanism</h2>
+        <p>
+          Phase 3 introduces automated physical manipulation of the tool assemblies. The robot manages <strong>two separate active tool mounts</strong>: the Compliance Marker Mount and the Portrait Stamp.
+        </p>
+
+        <!-- TOOL CHANGEOVER DIAGRAM -->
+        <h3 style="margin-top: 20px; margin-bottom: 15px;">Tool Rack Layout &amp; Cartesian Approach Arcs</h3>
+        <div class="mermaid" style="background-color: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
+          graph TD
+              A[Safe Standby Position] -->|moveJ approach| B[Marker Slot Above]
+              B -->|moveL slide-down| C[Close Gripper on Pinch Block]
+              C -->|moveL lift-up| D[Tool Engaged - Draw D-Shape]
+              D -->|moveJ return| E[Marker Slot Above]
+              E -->|moveL slide-down| F[Open Gripper to Deposit]
+              F -->|moveL lift-up| G[Standby Position]
+              G -->|moveJ approach| H[Stamp Slot Above]
+              H -->|moveL slide-down| I[Close Gripper on Stamp Block]
+              I -->|moveJ approach| J[Stamping Spot]
+              J -->|moveL Z-force Mode 5N| K[Apply Ink Stamp]
+              K -->|moveJ return| L[Stamp Slot Above]
+              L -->|moveL slide-down| M[Open Gripper to Deposit]
+              
+              style A fill:#4a148c,stroke:#9c27b0,stroke-width:2px,color:#fff
+              style D fill:#031c19,stroke:#26a69a,stroke-width:2px,color:#fff
+              style K fill:#e74c3c,stroke:#e74c3c,stroke-width:2px,color:#fff
+        </div>
+
+        <h3 style="margin-top: 25px;">Controller Tool Integration: <code>src/robot/trajectories.py</code></h3>
+        <p>
+          Defines hardcoded spline waypoints and safety limits in Joint Space to ensure zero-collision pick and place actions on the tool rack.
+        </p>
+        <pre><code><span class="keyword">class</span> <span class="class">ToolChanger</span>:
+    <span class="keyword">def</span> <span class="method">__init__</span>(self, controller):
+        self.c = controller
+        <span class="comment"># Joint configurations loaded from config/calibration.yaml</span>
+        self.rack_marker_joints = [<span class="keyword">0.45</span>, -<span class="keyword">1.2</span>, <span class="keyword">1.8</span>, -<span class="keyword">2.1</span>, -<span class="keyword">1.57</span>, <span class="keyword">0.0</span>]
+        self.rack_stamp_joints = [<span class="keyword">0.85</span>, -<span class="keyword">1.1</span>, <span class="keyword">1.7</span>, -<span class="keyword">2.2</span>, -<span class="keyword">1.57</span>, <span class="keyword">0.0</span>]
+
+    <span class="keyword">def</span> <span class="method">pickup_marker</span>(self):
+        <span class="comment"># 1. moveJ to safe hover above marker slot
+        # 2. moveL down into the open-top channel (Z alignment)
+        # 3. Command gripper closure (Hand 23 S/N C-47150 or Hand 24 S/N C-48685)
+        # 4. moveL straight up to exit tool rack</span>
+        print(<span class="string">"Marker pick sequence completed."</span>)
+
+    <span class="keyword">def</span> <span class="method">execute_stamping</span>(self, paper_bottom_right):
+        <span class="comment"># 1. moveJ to hover above target paper stamping spot
+        # 2. Zero force/torque sensor
+        # 3. forceMode: lower stamp with 5.0 Newtons downward pressure
+        # 4. Lift and return stamp to slot</span>
+        print(<span class="string">"Page stamped successfully."</span>)</code></pre>
+
+        <div class="matrix-grid" style="margin-top: 25px;">
+          <div class="matrix-card">
+            <h4>Joint-Space Safety Arcs</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Pickup moves are planned in Joint Space rather than Cartesian space to guarantee the robot arm never triggers singularities near the tool rack.
+            </p>
+          </div>
+          <div class="matrix-card purple">
+            <h4>Closed Gripper Slip Lock</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Uses the standard AGC-TIP-204-085 silicone fingertips nested within the $22.5\text{mm}$ recesses for zero tool twist during draw.
+            </p>
+          </div>
+          <div class="matrix-card">
+            <h4>Contact Pressure Control</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Applies standard `forceMode` with selection vector `[0,0,1,0,0,0]` to seal the page, absorbing ink-pad height anomalies.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div> <!-- END OF TAB 3 -->
+
+    <!-- TAB 4: PHASE 4 CONTENT (HD Vision Capture) -->
+    <div id="phase-4" class="tab-content">
+      <section>
+        <h2>Phase 4: High-Definition Vision &amp; Photo Capture</h2>
+        <p>
+          Phase 4 integrates the subject camera, lighting fixtures, and image pre-processing. The workstation features a countdown display and triggers ring-light flash control to isolate the subject's face against a clean background.
+        </p>
+
+        <!-- VISION SYSTEM DIAGRAM -->
+        <h3 style="margin-top: 20px; margin-bottom: 15px;">Image Processing Pipeline</h3>
+        <div class="mermaid" style="background-color: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
+          graph TD
+              A[USB HD Camera Stream] -->|countdown trigger| B[Capture Frame]
+              B -->|U2Net Matting| C[Remove Background]
+              C -->|Histogram Equalization| D[Contrast Enhancement]
+              D -->|Canny / Gabor filters| E[Extract Structural Face Lines]
+              E -->|Line Density Mask| F[Output Gray-scale Saliency Matrix]
+              F --> G[SwiftSketch Optimizer Input]
+              
+              style A fill:#0d2613,stroke:#2ecc71,stroke-width:2px,color:#fff
+              style C fill:#4a148c,stroke:#9c27b0,stroke-width:2px,color:#fff
+              style F fill:#1a1103,stroke:#e67e22,stroke-width:2px,color:#fff
+        </div>
+
+        <h3 style="margin-top: 25px;">Core Software Component: <code>src/vision/camera.py</code></h3>
+        <p>
+          Handles webcam capture, flash control, and U2Net thresholding algorithms.
+        </p>
+        <pre><code><span class="keyword">import</span> cv2
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+
+<span class="keyword">class</span> <span class="class">PortraitCamera</span>:
+    <span class="keyword">def</span> <span class="method">__init__</span>(self, camera_index: int = <span class="keyword">0</span>):
+        self.cap = cv2.VideoCapture(camera_index)
+        
+    <span class="keyword">def</span> <span class="method">capture_subject</span>(self) -> np.ndarray:
+        <span class="comment"># 1. Trigger countdown interface
+        # 2. Burst capture high-res frame
+        # 3. Return frame as NumPy array</span>
+        ret, frame = self.cap.read()
+        <span class="keyword">return</span> frame
+
+    <span class="keyword">def</span> <span class="method">remove_background</span>(self, frame: np.ndarray) -> np.ndarray:
+        <span class="comment"># Apply U2Net background separation / thresholding</span>
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (<span class="keyword">5</span>, <span class="keyword">5</span>), <span class="keyword">0</span>)
+        thresh = cv2.adaptiveThreshold(blurred, <span class="keyword">255</span>, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, <span class="keyword">11</span>, <span class="keyword">2</span>)
+        <span class="keyword">return</span> thresh</code></pre>
+
+        <div class="matrix-grid" style="margin-top: 25px;">
+          <div class="matrix-card">
+            <h4>Countdown UI</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Prompts the operator/subject with a 3-2-1 visual countdown, ensuring standard posture and gaze direction.
+            </p>
+          </div>
+          <div class="matrix-card purple">
+            <h4>Foreground Matting</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Automatically strips laboratory background clutter, preventing background elements from generating unwanted strokes.
+            </p>
+          </div>
+          <div class="matrix-card">
+            <h4>Ring-light Flash</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Controls UR5e digital output pins or standard web relays to trigger illumination ring-lights during photo capture.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div> <!-- END OF TAB 4 -->
+
+    <!-- TAB 5: PHASE 5 CONTENT (Automated Handing) -->
+    <div id="phase-5" class="tab-content">
+      <section>
+        <h2>Phase 5: Automated Portrait Handing &amp; Delivery</h2>
+        <p>
+          Phase 5 completes the robotic cycle. Once the drawing is verified and stamped, the robot switches to a custom <strong>paper-grasping gripper flange</strong>, picks up the page from the drawing board, and hands it directly to the subject or deposits it in a collection tray.
+        </p>
+
+        <!-- DELIVERY DIAGRAM -->
+        <h3 style="margin-top: 20px; margin-bottom: 15px;">Page Handoff Sequence</h3>
+        <div class="mermaid" style="background-color: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 20px;">
+          graph TD
+              A[Drawing &amp; Stamping Complete] -->|pickup_tool| B[Paper Grasper Flange]
+              B -->|moveJ approach| C[Approach Top Edge of Sheet]
+              C -->|moveL close gripper| D[Pinch Sheet Edge]
+              D -->|moveL slide-off| E[Slide Page from Magnetic Bed Pins]
+              E -->|moveJ travel| F[Move to Subject Handoff Location]
+              F -->|open standard digital output| G[Release Paper to User]
+              G -->|return_tool| H[Return Grasper to Slot]
+              H --> I[Home Robot - Wait for Next Cycle]
+              
+              style A fill:#031c19,stroke:#26a69a,stroke-width:2px,color:#fff
+              style D fill:#4a148c,stroke:#9c27b0,stroke-width:2px,color:#fff
+              style G fill:#e74c3c,stroke:#e74c3c,stroke-width:2px,color:#fff
+        </div>
+
+        <h3 style="margin-top: 25px;">Core Software Component: <code>src/robot/trajectories.py</code> (Delivery Extension)</h3>
+        <p>
+          Orchestrates tool exchange, electromagnetic/pneumatic grasper release, and safe travel curves to coordinate with the human workspace.
+        </p>
+        <pre><code><span class="keyword">class</span> <span class="class">DeliveryManager</span>:
+    <span class="keyword">def</span> <span class="method">__init__</span>(self, controller):
+        self.c = controller
+        self.grasper_pin = <span class="keyword">1</span> # Standard UR5e Digital Out Pin
+        
+    <span class="keyword">def</span> <span class="method">execute_portrait_handoff</span>(self):
+        <span class="comment"># 1. Retrieve the paper-grasper end-effector from rack
+        # 2. Jog to base of drawing bed sheet edge
+        # 3. Activate grasper clamp</span>
+        self.c.rtde_c.setStandardDigitalOut(self.grasper_pin, True)
+        
+        <span class="comment"># 4. Slide paper smoothly off bed alignment pins
+        # 5. Swing arm in safe envelope to user handoff pose
+        # 6. De-activate grasper clamp</span>
+        self.c.rtde_c.setStandardDigitalOut(self.grasper_pin, False)
+        
+        <span class="comment"># 7. Deposit grasper back on rack and home</span>
+        print(<span class="string">"Handoff sequence complete. System back to idle."</span>)</code></pre>
+
+        <div class="matrix-grid" style="margin-top: 25px;">
+          <div class="matrix-card">
+            <h4>Sliding Sheet Compensation</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Instead of lifting the sheet vertically, the robot slides the page along the drawing bed plane to easily disengage from magnetic alignment dowels.
+            </p>
+          </div>
+          <div class="matrix-card purple">
+            <h4>Digital Output Actuation</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Controls standard UR5e 24V digital outputs to drive solenoid pneumatic valves or electromagnets in the paper grasper tool.
+            </p>
+          </div>
+          <div class="matrix-card">
+            <h4>Collaborative Workspace Envelope</h4>
+            <p style="font-size: 0.85rem; margin-bottom: 0;">
+              Spline limits restrict arm acceleration to 0.1 m/s² during handoff, complying with collaborative robot safety rules.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div> <!-- END OF TAB 5 -->
+
+    </main> <!-- END OF FOLDER MAIN -->
+  </div> <!-- END OF CONTAINER -->
 
   <!-- PERRY THE PLATYPUS FOOTER -->
   <div class="perry-footer" onclick="togglePerry()">
@@ -1225,6 +1652,45 @@ rtde_c.<span class="method">moveL</span>(path)</code></pre>
   </div>
 
   <script>
+    // Tab switching logic
+    function switchTab(evt, tabId) {
+      // Get all elements with class="tab-content" and hide them
+      const tabContents = document.getElementsByClassName("tab-content");
+      for (let i = 0; i < tabContents.length; i++) {
+        tabContents[i].classList.remove("active");
+      }
+
+      // Get all elements with class="tab-item" and remove the class "active"
+      const tabButtons = document.getElementsByClassName("tab-item");
+      for (let i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].classList.remove("active");
+      }
+
+      // Show the current tab, and add an "active" class to the button that opened the tab
+      const currentTab = document.getElementById(tabId);
+      if (currentTab) {
+        currentTab.classList.add("active");
+      }
+      
+      if (evt) {
+        evt.currentTarget.classList.add("active");
+      } else {
+        // Fallback search button if triggered programmatically
+        const targetBtn = Array.from(tabButtons).find(btn => btn.getAttribute("onclick").includes(tabId));
+        if (targetBtn) targetBtn.classList.add("active");
+      }
+    }
+
+    // Intercept TOC link clicks to switch to Phase 1 automatically
+    document.addEventListener("DOMContentLoaded", function() {
+      const tocLinks = document.querySelectorAll(".toc-float a");
+      tocLinks.forEach(link => {
+        link.addEventListener("click", function(e) {
+          switchTab(null, 'phase-1');
+        });
+      });
+    });
+
     // Interactive Easter egg
     function togglePerry() {
       const footer = document.querySelector('.perry-footer');
