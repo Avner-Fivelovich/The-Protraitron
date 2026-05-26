@@ -1,8 +1,8 @@
 """
 scripts/generate_mount_mesh.py
 Generates two 3D-printable STL files for the Robotiq 2F-85 grasped pen mount:
-1. Robust & Stable Model: 100mm tall, 70mm pen insertion depth, straight cuboid walls.
-2. Fast-to-Print Model: 42mm tall, 12mm insertion depth, straight cuboid walls.
+1. Robust & Stable Model: 100mm tall, 70mm pen insertion depth, with a single drilled solid core.
+2. Fast-to-Print Model: 42mm tall, 12mm insertion depth, lightweight with a single drilled solid core.
 """
 import math
 import os
@@ -52,6 +52,78 @@ def add_box(triangles, x_min, x_max, y_min, y_max, z_min, z_max):
     for tri in faces:
         normal = calculate_normal(tri[0], tri[1], tri[2])
         triangles.append((normal, tri[0], tri[1], tri[2]))
+
+def add_hexahedron(triangles, v):
+    # v is a list of 8 vertices, each a list of [x, y, z]
+    # Vertices ordering:
+    # 0, 1, 2, 3: Bottom face (counter-clockwise)
+    # 4, 5, 6, 7: Top face (corresponding to 0, 1, 2, 3)
+    faces = [
+        # Bottom Face
+        (v[0], v[2], v[1]), (v[0], v[3], v[2]),
+        # Top Face
+        (v[4], v[5], v[6]), (v[4], v[6], v[7]),
+        # Front Face
+        (v[0], v[1], v[5]), (v[0], v[5], v[4]),
+        # Back Face
+        (v[2], v[3], v[7]), (v[2], v[7], v[6]),
+        # Left Face
+        (v[0], v[4], v[7]), (v[0], v[7], v[3]),
+        # Right Face
+        (v[1], v[2], v[6]), (v[1], v[6], v[5]),
+    ]
+    
+    for tri in faces:
+        normal = calculate_normal(tri[0], tri[1], tri[2])
+        triangles.append((normal, tri[0], tri[1], tri[2]))
+
+def add_drilled_box(triangles, x_min, x_max, y_min, y_max, r_in, z_min, z_max, segments=64):
+    """
+    Generates a solid rectangular box with a perfect circular hole of radius r_in cut through it.
+    Solves the 'hollow corner gaps' and overlapping face problems by using radial wedge extrusion.
+    """
+    def get_rect_intersection(theta):
+        c, s = math.cos(theta), math.sin(theta)
+        t_candidates = []
+        if c > 0:
+            t_candidates.append(x_max / c)
+        elif c < 0:
+            t_candidates.append(x_min / c)
+        if s > 0:
+            t_candidates.append(y_max / s)
+        elif s < 0:
+            t_candidates.append(y_min / s)
+        
+        # Select the minimum positive scale factor
+        t = min([t for t in t_candidates if t > 0.0])
+        return [t * c, t * s]
+
+    for i in range(segments):
+        theta1 = 2.0 * math.pi * i / segments
+        theta2 = 2.0 * math.pi * (i + 1) / segments
+        
+        # Inner Circle points
+        p_in1 = [r_in * math.cos(theta1), r_in * math.sin(theta1)]
+        p_in2 = [r_in * math.cos(theta2), r_in * math.sin(theta2)]
+        
+        # Outer Rectangle points
+        p_out1 = get_rect_intersection(theta1)
+        p_out2 = get_rect_intersection(theta2)
+        
+        # Vertices of the extruded wedge (hexahedron)
+        # Bottom CCW face loop: Circle 1 -> Rectangle 1 -> Rectangle 2 -> Circle 2
+        v = [
+            [p_in1[0], p_in1[1], z_min],  # 0
+            [p_out1[0], p_out1[1], z_min],  # 1
+            [p_out2[0], p_out2[1], z_min],  # 2
+            [p_in2[0], p_in2[1], z_min],  # 3
+            [p_in1[0], p_in1[1], z_max],  # 4
+            [p_out1[0], p_out1[1], z_max],  # 5
+            [p_out2[0], p_out2[1], z_max],  # 6
+            [p_in2[0], p_in2[1], z_max],  # 7
+        ]
+        
+        add_hexahedron(triangles, v)
 
 def add_hollow_cylinder(triangles, r_out, r_in, z_bot, z_top, segments=32):
     for i in range(segments):
@@ -123,11 +195,9 @@ def main():
     # -------------------------------------------------------------------------
     triangles_robust = []
     
-    # Lower core (Z in [0, 70]) - hollowed for deep Z insertion (aligned to 12.0mm cylinder outer radius)
-    add_box(triangles_robust, -12.0, 12.0, -17.5, -12.0, 0.0, 70.0)  # Front
-    add_box(triangles_robust, -12.0, 12.0, 12.0, 17.5, 0.0, 70.0)    # Back
-    add_box(triangles_robust, -13.0, -12.0, -17.5, 17.5, 0.0, 70.0)   # Left
-    add_box(triangles_robust, 12.0, 13.0, -17.5, 17.5, 0.0, 70.0)    # Right
+    # Lower core (Z in [0, 70]) - single 100% solid drilled block (perfect circular cut!)
+    # No more hollow triangular corner columns or overlapping flat box faces.
+    add_drilled_box(triangles_robust, x_min=-13.0, x_max=13.0, y_min=-17.5, y_max=17.5, r_in=8.25, z_min=0.0, z_max=70.0, segments=64)
     
     # Upper core (Z in [70, 100]) - 30mm solid ceiling stop at the top
     add_box(triangles_robust, -13.0, 13.0, -17.5, 17.5, 70.0, 100.0)
@@ -142,8 +212,9 @@ def main():
     add_box(triangles_robust, 13.0, 17.0, 11.25, 17.5, 0.0, 100.0)
     add_box(triangles_robust, 13.0, 17.0, -11.25, 11.25, 0.0, 1.75) # Bottom Rim
     
-    # Hollow cylinder cage (Z in [-40, 70])
-    add_hollow_cylinder(triangles_robust, r_out=12.0, r_in=8.25, z_bot=-40.0, z_top=70.0)
+    # Free-standing hollow cylinder cage (Z in [-40, 0]) - runs underneath the block
+    # Integrates seamlessly at Z = 0 into the solid core block.
+    add_hollow_cylinder(triangles_robust, r_out=12.0, r_in=8.25, z_bot=-40.0, z_top=0.0)
     
     robust_file = "hardware/robotiq_pen_mount_robust.stl"
     write_binary_stl(robust_file, triangles_robust)
@@ -154,11 +225,8 @@ def main():
     # -------------------------------------------------------------------------
     triangles_fast = []
     
-    # Lower core (Z in [0, 12]) - hollowed for Z insertion (aligned to 10.0mm cylinder outer radius)
-    add_box(triangles_fast, -10.0, 10.0, -12.5, -10.0, 0.0, 12.0)  # Front
-    add_box(triangles_fast, -10.0, 10.0, 10.0, 12.5, 0.0, 12.0)    # Back
-    add_box(triangles_fast, -11.0, -10.0, -12.5, 12.5, 0.0, 12.0)   # Left
-    add_box(triangles_fast, 10.0, 11.0, -12.5, 12.5, 0.0, 12.0)    # Right
+    # Lower core (Z in [0, 12]) - single 100% solid drilled block
+    add_drilled_box(triangles_fast, x_min=-11.0, x_max=11.0, y_min=-12.5, y_max=12.5, r_in=8.25, z_min=0.0, z_max=12.0, segments=64)
     
     # Upper core (Z in [12, 42]) - 30mm solid ceiling stop at the top
     add_box(triangles_fast, -11.0, 11.0, -12.5, 12.5, 12.0, 42.0)
@@ -173,8 +241,8 @@ def main():
     add_box(triangles_fast, 11.0, 14.5, 11.25, 12.5, 0.0, 42.0)
     add_box(triangles_fast, 11.0, 14.5, -11.25, 11.25, 0.0, 1.75) # Bottom Rim
     
-    # Hollow cylinder cage (Z in [-30, 12]) - Outer diameter 20.0mm (radius 10.0)
-    add_hollow_cylinder(triangles_fast, r_out=10.0, r_in=8.25, z_bot=-30.0, z_top=12.0)
+    # Free-standing hollow cylinder cage (Z in [-30, 0])
+    add_hollow_cylinder(triangles_fast, r_out=10.0, r_in=8.25, z_bot=-30.0, z_top=0.0)
     
     fast_file = "hardware/robotiq_pen_mount_fast.stl"
     write_binary_stl(fast_file, triangles_fast)
