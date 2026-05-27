@@ -815,7 +815,7 @@
           <ul style="list-style-type: none; padding-left: 5px;">
             
             <li id="dir-fn-controller-init" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
-              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.__init__</strong> - Initializes control/receive sockets and sets default plane calibration values. <span style="color: var(--text-muted);">(Required to instantiate connection variables and local coordinate states.)</span>
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.__init__</strong> - Initializes control/receive sockets, safety states, and sets default plane calibration and force margin values. <span style="color: var(--text-muted);">(Required to instantiate connection variables and local coordinate states.)</span>
               <pre id="code-robot-controller-fn-init-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">__init__</span>(self, ip_address: str, config_path: str = <span class="string">"config/calibration.yaml"</span>):
     self.ip = ip_address
     self.config_path = config_path
@@ -826,11 +826,13 @@
     self.z_draw = <span class="keyword">0.0</span>
     self.z_travel = <span class="keyword">0.020</span>
     self.tool_orientation = [<span class="keyword">0.0</span>, <span class="keyword">3.1415</span>, <span class="keyword">0.0</span>]
+    self.min_drawing_force = <span class="keyword">2.0</span>  <span class="comment"># Min margin (N)</span>
+    self.max_drawing_force = <span class="keyword">8.0</span>  <span class="comment"># Max margin (N)</span>
     self.load_calibration()</code></pre>
             </li>
 
             <li id="dir-fn-controller-load-cal" style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-secondary);">
-              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.load_calibration</strong> - Loads physical paper bounds and pen contact heights from calibration YAML. <span style="color: var(--text-muted);">(Required to retrieve coordinate bounds recorded by calibration wizards.)</span>
+              <strong style="color: var(--accent-teal); font-family: var(--font-mono); font-size: 1.05rem;">UR5eController.load_calibration</strong> - Loads physical paper bounds, pen contact heights, and drawing force margins from calibration YAML. <span style="color: var(--text-muted);">(Required to retrieve coordinate bounds and force limits recorded by calibration wizards.)</span>
               <pre id="code-robot-controller-fn-load-calibration-block" style="margin: 10px 0 0 0; padding: 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 0.85rem;"><code style="font-family: var(--font-mono);"><span class="keyword">def</span> <span class="method">load_calibration</span>(self):
     <span class="keyword">try</span>:
         <span class="keyword">with</span> open(self.config_path, <span class="string">'r'</span>) <span class="keyword">as</span> f:
@@ -840,6 +842,8 @@
         self.z_draw = data[<span class="string">'z_draw'</span>]
         self.z_travel = self.z_draw + data.get(<span class="string">'z_travel_offset'</span>, <span class="keyword">0.020</span>)
         self.tool_orientation = data.get(<span class="string">'tool_orientation'</span>, [<span class="keyword">0.0</span>, <span class="keyword">3.1415</span>, <span class="keyword">0.0</span>])
+        self.min_drawing_force = data.get(<span class="string">'min_drawing_force'</span>, <span class="keyword">2.0</span>)
+        self.max_drawing_force = data.get(<span class="string">'max_drawing_force'</span>, <span class="keyword">8.0</span>)
     <span class="keyword">except</span> <span class="class">FileNotFoundError</span>:
         print(<span class="string">f"Calibration file {self.config_path} not found. Defaulting."</span>)</code></pre>
             </li>
@@ -1108,13 +1112,15 @@
 
       <div id="specs-robot-controller">
         <h3 id="specs-controller-header">2. UR5e Connection & Motion Engine: <code>src/robot/controller.py</code></h3>
-        <p id="controller-desc">Encapsulates the core control operations, linear blended path executions, and tool changes.</p>
+        <p id="controller-desc">Encapsulates the core control operations, linear blended path executions, out-of-band force safety watchers, and tool changes.</p>
         <pre id="code-controller-block"><code><span class="keyword">class</span> <span class="class">UR5eController</span>:
     <span class="keyword">def</span> <span class="method">__init__</span>(self, ip_address: str, config_path: str = <span class="string">"config/calibration.yaml"</span>):
         self.ip = ip_address
         self.config_path = config_path
         self.rtde_c = <span class="keyword">None</span>
         self.rtde_r = <span class="keyword">None</span>
+        self.min_drawing_force = <span class="keyword">2.0</span>  <span class="comment"># Min force margin (N)</span>
+        self.max_drawing_force = <span class="keyword">8.0</span>  <span class="comment"># Max force margin (N)</span>
         self.load_calibration()
 
     <span class="keyword">def</span> <span class="method">connect</span>(self) -> bool:
@@ -1124,11 +1130,11 @@
         <span class="comment">"""
         1. Hover above the stroke start point (Travel Height)
         2. Lower standard tool to drawing height (Z_draw)
-        3. Zero F/T sensor and engage compliant forceMode along base Z axis (-F_target)
-        4. Build blended path where all middle points have blend_radius, and last point has blend_radius = 0.0
-        5. Call self.rtde_c.moveL(path)
-        6. Stop forceMode control
-        7. Lift to Travel Height
+        3. Zero F/T sensor, tare gravity offset, and engage compliant forceMode along tool Z axis (+F_target)
+        4. Spawn background watchdog thread monitoring tared F_tcp_z <= force_safety_limit
+        5. Verify drawing force in tared margins: min_drawing_force <= F_tcp_z <= max_drawing_force
+        6. Stream blended paths using moveL
+        7. Stop forceMode control and lift to Travel Height
         """</span></code></pre>
       </div>
 
