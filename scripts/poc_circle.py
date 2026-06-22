@@ -12,6 +12,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.common.geometry import PlaneCalibrator, generate_semicircle_canvas
 from src.robot.controller import UR5eController
+from src.common.logger import get_logger
+
+# Initialize logger
+logger = get_logger("CirclePOC")
 
 def plot_offline(strokes_2d: list, width: float, height: float, title: str, save_formats: list = None, base_filename: str = None):
     """Plots the trajectory in physical coordinates (cm) to verify shape dimensions and optionally saves files."""
@@ -53,7 +57,7 @@ def plot_offline(strokes_2d: list, width: float, height: float, title: str, save
         for fmt in save_formats:
             filepath = f"{base_filename}.{fmt}"
             plt.savefig(filepath, dpi=300, bbox_inches='tight')
-            print(f"Saved trajectory plot to {filepath}")
+            logger.success(f"Saved trajectory plot to {filepath}")
             
     plt.show()
 
@@ -79,11 +83,11 @@ def main():
                 cal_data = yaml.safe_load(f)
             width = cal_data.get("width", 0.19)
             height = cal_data.get("height", 0.27)
-            print(f"Loaded calibration. Width={width:.3f}m, Height={height:.3f}m")
+            logger.info(f"Loaded calibration. Width={width:.3f}m, Height={height:.3f}m")
         except Exception as e:
-            print(f"Error loading config, using defaults: {e}")
+            logger.error(f"Error loading config, using defaults: {e}")
     else:
-        print("Calibration file not found. Using default page margins (19x27 cm).")
+        logger.warning("Calibration file not found. Using default page margins (19x27 cm).")
         
     # 2. Generate Semicircle coordinates
     # local X-axis: starts at center minus radius to the left
@@ -98,7 +102,7 @@ def main():
     
     # 3. Matplotlib Offline Verification
     if args.plot_only:
-        print("Running offline plotting...")
+        logger.info("Running offline plotting...")
         plot_offline(
             strokes_list, 
             width, 
@@ -111,7 +115,7 @@ def main():
         
     # 4. Robot execution setup
     if not calibration_exists:
-        print("❌ Cannot execute on robot: calibration file is missing. Please run calibrate_workspace.py first.")
+        logger.critical("Cannot execute on robot: calibration file is missing. Please run calibrate_workspace.py first.")
         sys.exit(1)
         
     controller = UR5eController(ip_address=args.robot_ip, config_path=args.config)
@@ -122,15 +126,15 @@ def main():
     try:
         # Ask operator confirmation
         mode_str = "DRY RUN (AIR RUN, +50mm normal offset)" if args.air_run else "REAL INK DRAWING"
-        print("\n" + "="*50)
-        print(f"MODE: {mode_str}")
-        print(f"Radius: {args.radius * 100:.1f} cm")
-        print(f"Angle: {args.theta:.1f} degrees")
-        print("="*50)
+        logger.info("=" * 50)
+        logger.info(f"MODE: {mode_str}")
+        logger.info(f"Radius: {args.radius * 100:.1f} cm")
+        logger.info(f"Angle: {args.theta:.1f} degrees")
+        logger.info("=" * 50)
         
         confirm = input("\nProceed to home and execute path? [y/N]: ")
         if confirm.lower() != 'y':
-            print("Execution canceled by user.")
+            logger.info("Execution canceled by user.")
             return
             
         # Home the robot using safe P0 joints
@@ -140,7 +144,7 @@ def main():
         # Set draw depth offset (air run draws 5 cm normal to the surface)
         draw_depth = -0.050 if args.air_run else 0.000
         
-        print("Executing path...")
+        logger.info("Executing path...")
         controller.execute_drawing_path(
             strokes_2d=strokes_list,
             speed=0.04,
@@ -148,7 +152,7 @@ def main():
             blend_radius=0.002,
             draw_depth_offset=draw_depth
         )
-        print("Execution complete.")
+        logger.success("Execution complete.")
         
     finally:
         # Clean shutdown of sockets
