@@ -1,8 +1,8 @@
-#!/usr/bin/env representation
 #!/usr/bin/env python3
 import os
 import sys
 import argparse
+import time
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,25 +13,48 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.common.geometry import PlaneCalibrator, generate_semicircle_canvas
 from src.robot.controller import UR5eController
 
-def plot_offline(strokes_2d: list, width: float, height: float, title: str):
-    """Plots the 2D canvas coordinates to visually verify shape dimensions."""
-    plt.figure(figsize=(7, 7))
+def plot_offline(strokes_2d: list, width: float, height: float, title: str, save_formats: list = None, base_filename: str = None):
+    """Plots the trajectory in physical coordinates (cm) to verify shape dimensions and optionally saves files."""
+    plt.figure(figsize=(7, 9))
     
-    # Draw A4 canvas boundaries
-    plt.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], 'r--', label="A4 Margins bounds")
+    # Convert page dimensions to centimeters
+    width_cm = width * 100
+    height_cm = height * 100
+    
+    # Draw A4 canvas boundaries in cm
+    plt.plot([0, width_cm, width_cm, 0, 0], [0, 0, height_cm, height_cm, 0], 'r--', label="Page boundaries")
     
     for i, stroke in enumerate(strokes_2d):
-        plt.plot(stroke[:, 0], stroke[:, 1], 'b-', marker='o', markersize=3, label=f"Stroke {i+1}")
-        # Mark start with green, end with red
-        plt.plot(stroke[0, 0], stroke[0, 1], 'go', label="Start point" if i == 0 else "")
-        plt.plot(stroke[-1, 0], stroke[-1, 1], 'ro', label="End point" if i == 0 else "")
+        # Convert stroke coordinates to cm
+        stroke_cm = np.zeros_like(stroke)
+        stroke_cm[:, 0] = stroke[:, 0] * width_cm
+        stroke_cm[:, 1] = stroke[:, 1] * height_cm
         
-    plt.title(f"{title} (Canvas space [0, 1])\nPhysical Size: {width*100:.1f}x{height*100:.1f} cm")
-    plt.xlabel("Canvas X (Horizontal)")
-    plt.ylabel("Canvas Y (Vertical)")
+        plt.plot(stroke_cm[:, 0], stroke_cm[:, 1], 'b-', marker='o', markersize=3, label=f"Stroke {i+1}")
+        # Mark start with green, end with red
+        plt.plot(stroke_cm[0, 0], stroke_cm[0, 1], 'go', label="Start point" if i == 0 else "")
+        plt.plot(stroke_cm[-1, 0], stroke_cm[-1, 1], 'ro', label="End point" if i == 0 else "")
+        
+    plt.title(f"{title}\nPhysical Coordinates (cm) - Page Size: {width_cm:.1f}x{height_cm:.1f} cm")
+    plt.xlabel("X Coordinate (cm)")
+    plt.ylabel("Y Coordinate (cm)")
     plt.grid(True)
     plt.axis("equal")
+    plt.xlim(-1, width_cm + 1)
+    plt.ylim(-1, height_cm + 1)
     plt.legend()
+    
+    if save_formats and base_filename:
+        # Create output directory if it doesn't exist
+        dir_name = os.path.dirname(base_filename)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
+            
+        for fmt in save_formats:
+            filepath = f"{base_filename}.{fmt}"
+            plt.savefig(filepath, dpi=300, bbox_inches='tight')
+            print(f"Saved trajectory plot to {filepath}")
+            
     plt.show()
 
 def main():
@@ -39,6 +62,7 @@ def main():
     parser.add_argument("--radius", type=float, default=0.04, help="Radius of semicircle in meters (default: 0.04)")
     parser.add_argument("--theta", type=float, default=180.0, help="Semicircle span angle in degrees (default: 180)")
     parser.add_argument("--plot-only", action="store_true", help="Plot trajectory offline and exit")
+    parser.add_argument("--save-plot", type=str, default="plots/trajectory_preview", help="Base filename to save plot (formats: png, svg, pdf)")
     parser.add_argument("--air-run", action="store_true", help="Dry run +50mm normal offset above page surface")
     parser.add_argument("--robot-ip", type=str, default="192.168.57.101", help="Robot IP (default: 192.168.57.101)")
     parser.add_argument("--config", type=str, default="config/calibration.yaml", help="Calibration yaml path")
@@ -75,7 +99,14 @@ def main():
     # 3. Matplotlib Offline Verification
     if args.plot_only:
         print("Running offline plotting...")
-        plot_offline(strokes_list, width, height, "Offline Semicircle Verification")
+        plot_offline(
+            strokes_list, 
+            width, 
+            height, 
+            "Offline Semicircle Verification",
+            save_formats=["png", "svg", "pdf"],
+            base_filename=args.save_plot
+        )
         sys.exit(0)
         
     # 4. Robot execution setup

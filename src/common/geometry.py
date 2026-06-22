@@ -53,8 +53,9 @@ def generate_semicircle_canvas(radius: float, width: float, height: float, theta
     ry = radius / height
     
     theta_rad = np.radians(theta_deg)
-    # Semicircle starts at the left (pi radians)
-    angles = np.linspace(np.pi, np.pi + theta_rad, num_steps)
+    # Semicircle starts at the left (pi radians) and sweeps clockwise (subtracting theta)
+    # to draw the upper side of the circle (y values increase).
+    angles = np.linspace(np.pi, np.pi - theta_rad, num_steps)
     
     x = 0.5 + rx * np.cos(angles)
     y = 0.5 + ry * np.sin(angles)

@@ -3,6 +3,7 @@ import os
 import sys
 import yaml
 import time
+import numpy as np
 
 # Add root folder to sys.path so we can import src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -18,22 +19,51 @@ except ImportError:
 ROBOT_IP = "192.168.57.101"
 OUTPUT_PATH = "config/calibration.yaml"
 
-def probe_surface_point(rtde_c, rtde_r, axis_idx: int, direction: int, target_force: float = 4.5, speed: float = 0.005, accel: float = 0.02) -> list:
+def rotation_vector_to_matrix(rv: np.ndarray) -> np.ndarray:
     """
-    Moves the tool tip slowly along specified axis until the TCP force exceeds target_force.
+    Converts a 3D rotation vector (axis-angle) to a 3x3 rotation matrix
+    using Rodrigues' rotation formula.
+    """
+    angle = np.linalg.norm(rv)
+    if angle < 1e-6:
+        return np.eye(3)
+    k = rv / angle
+    K = np.array([
+        [0.0, -k[2], k[1]],
+        [k[2], 0.0, -k[0]],
+        [-k[1], k[0], 0.0]
+    ])
+    R = np.eye(3) + np.sin(angle) * K + (1.0 - np.cos(angle)) * np.dot(K, K)
+    return R
+
+def probe_surface_point(rtde_c, rtde_r, p_start_pose: list, target_force: float = 2.0, speed: float = 0.002, accel: float = 0.02) -> list:
+    """
+    Moves the tool tip slowly along the tool's local Z-axis (pointing forward)
+    until contact force along that axis exceeds target_force.
     Returns the exact contact pose [X, Y, Z, Rx, Ry, Rz].
+    
+    Fixes:
+      - 1: Reduced target_force (2.0N) and speed (2mm/s) to prevent rigid collision stops.
+      - 2: Probes along tool Z-axis (pen direction) instead of hardcoded base axes.
     """
-    # 1. Tare force sensor
+    # 1. Zero the force sensor
     print("Zeroing force/torque sensor...")
     rtde_c.zeroFtSensor()
     time.sleep(0.5)
     
-    # 2. Build velocity vector
-    velocity = [0.0] * 6
-    velocity[axis_idx] = direction * speed
+    # 2. Compute tool Z-axis vector in base coordinates
+    # p_start_pose[3:] contains the axis-angle rotation vector [Rx, Ry, Rz]
+    rv = np.array(p_start_pose[3:])
+    R = rotation_vector_to_matrix(rv)
+    
+    # The third column of R is the tool's Z unit vector (pointing out of the tool/pen tip)
+    uz_tool = R[:, 2]
+    
+    # Construct base coordinate velocity vector (moving forward along tool Z)
+    velocity = list(uz_tool * speed) + [0.0, 0.0, 0.0]
     
     # 3. Begin probing motion
-    print(f"Probing along axis {axis_idx} (velocity: {direction * speed:.4f} m/s)...")
+    print(f"Probing along tool Z-axis (velocity unit vector: {[round(c, 4) for c in uz_tool]} at {speed * 1000:.1f} mm/s)...")
     rtde_c.speedL(velocity, accel)
     
     contact_pose = None
@@ -46,16 +76,18 @@ def probe_surface_point(rtde_c, rtde_r, axis_idx: int, direction: int, target_fo
                 print("❌ Probing timeout reached (15s) without detecting contact.")
                 break
                 
-            # Read actual force vector
-            forces = rtde_r.getActualTCPForce()
-            current_force = abs(forces[axis_idx])
+            # Read actual force vector in base coordinates
+            forces_base = np.array(rtde_r.getActualTCPForce()[:3])
+            
+            # Project base forces onto the tool Z axis to get force along the pen barrel
+            current_force = abs(np.dot(forces_base, uz_tool))
             
             # Contact confirmation
             if current_force >= target_force:
                 rtde_c.speedStop()
                 time.sleep(0.2) # Settle time
                 contact_pose = rtde_r.getActualTCPPose()
-                print(f"✅ Contact confirmed! Force: {current_force:.2f} N. Pose: {[round(c, 4) for c in contact_pose[:3]]}")
+                print(f"✅ Contact confirmed! Force along tool Z: {current_force:.2f} N. Pose: {[round(c, 4) for c in contact_pose[:3]]}")
                 break
                 
             time.sleep(0.005) # 200 Hz monitoring loop
@@ -99,15 +131,15 @@ def main():
         
         # 1. Probing P1 (Bottom-Left Surface)
         print("\n[STEP 1/3] Probing Bottom-Left Surface (P1)...")
-        # Probing in negative X direction (axis 0, direction -1)
-        p1_surface = probe_surface_point(rtde_c, rtde_r, axis_idx=0, direction=-1)
+        # Probing forward from current P0 hover along tool Z axis
+        p1_surface = probe_surface_point(rtde_c, rtde_r, p_start_pose=p0_pose)
         if not p1_surface:
             print("❌ Probing P1 failed. Aborting calibration.")
             return
             
-        # Retract back to hover pose P0
+        # Retract back to hover pose P0 using moveJ to resolve joint configurations safely
         print("Retracting to P0 hover...")
-        rtde_c.moveL(p0_pose, 0.05, 0.1)
+        rtde_c.moveJ(p0_pose, 0.2, 0.1)
         time.sleep(0.5)
         
         # 2. Probing P2 (Bottom-Right Surface)
@@ -116,45 +148,46 @@ def main():
         p2_hover = list(p0_pose)
         p2_hover[1] += 0.19
         
+        # Move to P2 hover using joint-space moveJ to prevent linear singularity errors
         print("Moving to P2 hover...")
-        rtde_c.moveL(p2_hover, 0.05, 0.1)
+        rtde_c.moveJ(p2_hover, 0.2, 0.1)
         time.sleep(0.5)
         
-        p2_surface = probe_surface_point(rtde_c, rtde_r, axis_idx=0, direction=-1)
+        p2_surface = probe_surface_point(rtde_c, rtde_r, p_start_pose=p2_hover)
         if not p2_surface:
             print("❌ Probing P2 failed. Aborting calibration.")
             return
             
         print("Retracting to P2 hover...")
-        rtde_c.moveL(p2_hover, 0.05, 0.1)
+        rtde_c.moveJ(p2_hover, 0.2, 0.1)
         time.sleep(0.5)
         
         # 3. Probing P3 (Top-Left Surface)
         print("\n[STEP 3/3] Moving to Top-Left and probing (P3)...")
         # Return to P0, then shift 27 cm up (+Z direction in base frame)
         print("Returning to P0 hover...")
-        rtde_c.moveL(p0_pose, 0.05, 0.1)
+        rtde_c.moveJ(p0_pose, 0.2, 0.1)
         time.sleep(0.5)
         
         p3_hover = list(p0_pose)
         p3_hover[2] += 0.27
         
         print("Moving to P3 hover...")
-        rtde_c.moveL(p3_hover, 0.05, 0.1)
+        rtde_c.moveJ(p3_hover, 0.2, 0.1)
         time.sleep(0.5)
         
-        p3_surface = probe_surface_point(rtde_c, rtde_r, axis_idx=0, direction=-1)
+        p3_surface = probe_surface_point(rtde_c, rtde_r, p_start_pose=p3_hover)
         if not p3_surface:
             print("❌ Probing P3 failed. Aborting calibration.")
             return
             
         print("Retracting to P3 hover...")
-        rtde_c.moveL(p3_hover, 0.05, 0.1)
+        rtde_c.moveJ(p3_hover, 0.2, 0.1)
         time.sleep(0.5)
         
         # Return to safety start pose
         print("\nCalibration probing completed. Returning to starting hover P0...")
-        rtde_c.moveL(p0_pose, 0.05, 0.1)
+        rtde_c.moveJ(p0_pose, 0.2, 0.1)
         
         # Write calibration configuration to yaml
         cal_data = {
