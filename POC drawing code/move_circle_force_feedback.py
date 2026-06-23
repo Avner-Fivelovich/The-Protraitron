@@ -32,7 +32,7 @@ try:
     NUM_STEPS = int(TOTAL_TIME / DT)
 
     # --- Force Mode Configurations (Base Relative, Pushing on X) ---
-    TARGET_FORCE = 0.5   # Target force in Newtons (0.5 N)
+    TARGET_FORCE = -0.5   # Target force in Newtons (0.5 N)
     FORCE_TYPE_BASE = 2
     base_selection_vector = [1, 0, 0, 0, 0, 0]    # Compliance ONLY on global Base X axis
     base_wrench = [TARGET_FORCE, 0.0, 0.0, 0.0, 0.0, 0.0] # Target force profile
@@ -118,11 +118,11 @@ try:
     for wp in raw_waypoints:
         actual_forces = rtde_r.getActualTCPForce()
         measured_force_x = actual_forces[0]
-        if measured_force_x > 0.7:
-            base_wrench[0] -= 0.1
-            print(f"Force exceeded target! Adjusting wrench to {base_wrench[0]:.2f} N")
-        elif measured_force_x < 0.3:
+        if measured_force_x < -0.7:
             base_wrench[0] += 0.1
+            print(f"Force exceeded target! Adjusting wrench to {base_wrench[0]:.2f} N")
+        elif measured_force_x > -0.3:
+            base_wrench[0] -= 0.1
             print(f"Force below target! Adjusting wrench to {base_wrench[0]:.2f} N")
         base_task_frame = [wp[0], wp[1], wp[2], 0.0, 0.0, 0.0]
         
