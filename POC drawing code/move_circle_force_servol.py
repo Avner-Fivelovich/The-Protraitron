@@ -18,15 +18,15 @@ rtde_r = RTDEReceiveInterface(ROBOT_IP)
 try:
     print("Reading center position...")
     center_pose = rtde_r.getActualTCPPose()
-    
+
     # --- Circle Parameters ---
     RADIUS = 0.03        # 3 centimeters radius (0.03 meters)
     ANGLE = 180          # Angle of the circle to execute in degrees
-    SPEED = 0.1         
-    ACCELERATION = 0.2  
-    
+    SPEED = 0.1
+    ACCELERATION = 0.2
+
     # Real-time streaming parameters (500Hz loop for e-Series)
-    DT = 0.002           
+    DT = 0.002
     TOTAL_TIME = 5.0     # Take 5 seconds to draw the half-circle
     NUM_STEPS = int(TOTAL_TIME / DT)
 
@@ -53,22 +53,24 @@ try:
 
     # --- Force Mode Configurations (Base Relative, Pushing on X) ---
     FORCE_TYPE_BASE = 2
-    base_selection_vector = [1, 0, 0, 0, 0, 0]    # Compliance ONLY on global Base X axis
-    base_wrench = [-5.0, 0.0, 0.0, 0.0, 0.0, 0.0] # Target force profile
+    # Compliance ONLY on global Base X axis
+    base_selection_vector = [1, 0, 0, 0, 0, 0]
+    base_wrench = [-5.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # Target force profile
     limits = [0.005, 0.05, 0.05, 0.2, 0.2, 0.2]   # Controlled slow approach
 
     # Set gain scaling and damping once before entering the loop
-    #rtde_c.forceModeSetGainScaling(0.2)
-    #rtde_c.forceModeSetDamping(1.0)
+    # rtde_c.forceModeSetGainScaling(0.2)
+    # rtde_c.forceModeSetDamping(1.0)
 
-# =========================================================================
-    # --- FIXED ENGAGEMENT PHASE: Loop until contact force is felt ---
     # =========================================================================
-    CONTACT_FORCE_THRESHOLD = 0.07  # Stop approach when 1.5N of contact resistance is felt
+    # --- ENGAGEMENT PHASE: Loop until contact force is felt ---
+    # =========================================================================
+    # Stop approach when 1.5N of contact resistance is felt
+    CONTACT_FORCE_THRESHOLD = 0.5
     MAX_APPROACH_TIME = 60.0        # Safety timeout in seconds
-    
+
     print(f"Activating Force Mode. Approaching paper along Base X...")
-    
+
     start_time = time.time()
     measured_force_x = 0.0
     consecutive_hits = 0  # Debounce counter to avoid instant noise triggers
@@ -76,33 +78,38 @@ try:
     while True:
         # 1. Calculate elapsed time accurately
         elapsed_time = time.time() - start_time
-        
+
         # 2. Check safety timeout
         if elapsed_time > MAX_APPROACH_TIME:
-            raise TimeoutError(f"Robot failed to detect paper within timeout. Ran for {elapsed_time:.2f}s")
+            raise TimeoutError(
+                f"Robot failed to detect paper within timeout. Ran for {elapsed_time:.2f}s")
 
         # 3. Apply Force Mode and Servo commands
-        base_task_frame = [first_point_pose[0], first_point_pose[1], first_point_pose[2], 0.0, 0.0, 0.0]
-        rtde_c.forceMode(base_task_frame, base_selection_vector, base_wrench, FORCE_TYPE_BASE, limits)
+        base_task_frame = [first_point_pose[0],
+                           first_point_pose[1], first_point_pose[2], 0.0, 0.0, 0.0]
+        rtde_c.forceMode(base_task_frame, base_selection_vector,
+                         base_wrench, FORCE_TYPE_BASE, limits)
         rtde_c.servoL(first_point_pose, 0.0, 0.0, DT, 0.03, 2000)
-        
+
         # 4. READ THE SENSOR
         actual_forces = rtde_r.getActualTCPForce()
         measured_force_x = actual_forces[0]
-        
+
         # DEBUG PRINT: Watch what the robot is actually seeing in real-time
         # (Printed every ~20 steps so it doesn't flood your terminal)
         if int(elapsed_time * 500) % 20 == 0:
-            print(f"Time: {elapsed_time:.2f}s | Live Base X Force: {abs(measured_force_x):.2f} N")
+            print(
+                f"Time: {elapsed_time:.2f}s | Live Base X Force: {abs(measured_force_x):.2f} N")
 
         # 5. DEBOUNCE CHECK: Must read above threshold for 5 consecutive frames (10ms)
-        if abs(measured_force_x) <= CONTACT_FORCE_THRESHOLD:
+        if abs(measured_force_x) >= CONTACT_FORCE_THRESHOLD:
             consecutive_hits += 1
             if consecutive_hits >= 5:
-                print(f"Stable contact confirmed at {abs(measured_force_x):.2f}N!")
+                print(
+                    f"Stable contact confirmed at {abs(measured_force_x):.2f}N!")
                 break
         else:
-            consecutive_hits = 0 # Reset if it was just a temporary spike/noise
+            consecutive_hits = 0  # Reset if it was just a temporary spike/noise
 
         # 6. Crucial pacing step at the very bottom of the loop execution block
         time.sleep(DT)
@@ -115,8 +122,9 @@ try:
     print("Executing smooth circle while maintaining force compliance...")
     for wp in raw_waypoints:
         base_task_frame = [wp[0], wp[1], wp[2], 0.0, 0.0, 0.0]
-        
-        rtde_c.forceMode(base_task_frame, base_selection_vector, base_wrench, FORCE_TYPE_BASE, limits)
+
+        rtde_c.forceMode(base_task_frame, base_selection_vector,
+                         base_wrench, FORCE_TYPE_BASE, limits)
         rtde_c.servoL(wp, 0.0, 0.0, DT, 0.03, 2000)
         time.sleep(DT)
 
@@ -126,16 +134,16 @@ try:
     # --- CLEANUP AND RETRACTION ---
     # =========================================================================
     print("Stopping real-time stream and force mode...")
-    rtde_c.servoStop() 
+    rtde_c.servoStop()
     rtde_c.forceModeStop()
-    time.sleep(0.2) 
+    time.sleep(0.2)
 
     print("Retracting pen away from paper...")
     current_actual_pose = rtde_r.getActualTCPPose()
-    
+
     retract_pose = list(current_actual_pose)
     retract_pose[0] += 0.04  # Pull back 4 cm clear of the paper
-    
+
     rtde_c.moveL(retract_pose, 0.05, 0.1)
     print("Pen successfully lifted.")
 

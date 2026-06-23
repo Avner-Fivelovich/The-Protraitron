@@ -1,21 +1,14 @@
-'''
-Compliant Circular Arc Script
-Approaches a surface, detects contact, and draws an arc of a user-defined angle.
-'''
-
+import os
+import sys
 import math
 import time
-from rtde_control import RTDEControlInterface
-from rtde_receive import RTDEReceiveInterface
 
-# -------------------------------------------------------------
-# BLOCK 0: User Input (Gathered before robot moves)
-# -------------------------------------------------------------
-try:
-    user_angle_input = float(input("Enter the angle for the circular arc (in degrees, e.g., 90, 180): "))
-except ValueError:
-    print("Invalid input. Defaulting to 90 degrees.")
-    user_angle_input = 90.0
+# Add root folder to sys.path so we can import src
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from rtde_control import RTDEControlInterface, Path, PathEntry
+from rtde_receive import RTDEReceiveInterface
+from src.common.robot_utils import wait_for_motion_complete
 
 # -------------------------------------------------------------
 # BLOCK 1: Robot IP Configuration
@@ -37,7 +30,16 @@ try:
     rtde_r = RTDEReceiveInterface(ROBOT_IP)
     print("RTDE Receive Interface connected successfully.")
 
-    FORWARD_FORCE = 0.5     # Force in Newtons for sliding compliance
+    # USER PARAMETERS FOR THE CIRCLE
+    # ---------------------------------------------------------
+    try:
+        USER_ANGLE = float(input("Enter the arc angle to draw in degrees (e.g., 90, 180, 360): "))
+    except ValueError:
+        print("Invalid input. Defaulting to 180 degrees.")
+        USER_ANGLE = 180.0
+
+    RADIUS = 0.03          # 3 cm radius for the drawing arc
+    FORWARD_FORCE = 0.5    # Force in Newtons (0.5 N) for sliding compliance
     
     print("Zeroing FT sensor...")
     rtde_c.zeroFtSensor()
@@ -45,6 +47,7 @@ try:
 
     print("Reading current robot position...")
     start_pose = rtde_r.getActualTCPPose()
+    print(f"Start Pose: {start_pose}")
 
     # -------------------------------------------------------------
     # BLOCK 5: Wall Approach (X-Axis)
@@ -52,7 +55,9 @@ try:
     target_pose_forward = list(start_pose)
     target_pose_forward[0] -= 0.15  # Max search distance of 15 cm
     
+    print(f"Target Forward Pose: {target_pose_forward}")
     print("Moving slowly forward to the wall along X axis...")
+    
     approach_speed = 0.01  
     approach_acceleration = 0.1
     
@@ -60,7 +65,7 @@ try:
     
     consecutive_readings = 0
     REQUIRED_READINGS = 2
-    FORCE_THRESHOLD = 1.0  
+    FORCE_THRESHOLD = 0.5  
     contact_detected = False
     
     while True:
@@ -69,6 +74,8 @@ try:
         
         actual_forces = rtde_r.getActualTCPForce()
         measured_force_x = actual_forces[0]
+        
+        print(f"Approaching... Pose X: {curr_pose[0]:.4f} | Force X: {measured_force_x:.2f}N | Count: {consecutive_readings}/{REQUIRED_READINGS}")
         
         if abs(measured_force_x) >= FORCE_THRESHOLD:
             consecutive_readings += 1
@@ -85,7 +92,7 @@ try:
             print("Reached target forward pose without detecting contact.")
             break
             
-        time.sleep(0.01) 
+        time.sleep(0.01)  
         
     if contact_detected:
         # -------------------------------------------------------------
@@ -95,85 +102,64 @@ try:
         time.sleep(0.5)
         
         contact_pose = rtde_r.getActualTCPPose()
+        print(f"Contact Pose (Surface Baseline): {contact_pose}")
         
-        # Activate force mode to maintain compliance
+        # Calculate the center point of the circle on the Y-Z plane.
+        # Starting at contact_pose assumes the circle starts at angle theta = 0.
+        # We shift down by RADIUS on the Z axis so contact_pose rests at the top edge of the circle profile.
+        circle_center_y = contact_pose[1]
+        circle_center_z = contact_pose[2] - RADIUS
+        
+        # Activate force mode
         tool_task_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        tool_selection_vector = [1, 0, 0, 0, 0, 0] 
+        tool_selection_vector = [1, 0, 0, 0, 0, 0] # Compliance ONLY on Base X axis
         tool_wrench = [FORWARD_FORCE, 0.0, 0.0, 0.0, 0.0, 0.0]
         FORCE_TYPE_TOOL = 2
         
-        # Depending on UR_RTDE version, you might need to comment this out if it throws an error
-        rtde_c.forceModeSetDamping(0.1) 
-        
+        rtde_c.forceModeSetDamping(0.1)
         limits = [0.005, 0.05, 0.05, 0.2, 0.2, 0.2]
         
         rtde_c.forceMode(tool_task_frame, tool_selection_vector, tool_wrench, FORCE_TYPE_TOOL, limits)
         print("Force mode activated, waiting for force to stabilize...")
         
-        time.sleep(2.0)
-            
-        # -------------------------------------------------------------
-        # BLOCK 7: Compliant Circular Arc
-        # Generates a blended path array based on the user's angle 
-        # and executes it seamlessly under background force compliance.
-        # -------------------------------------------------------------
-        print(f"Generating circular arc for {user_angle_input} degrees...")
-        
-        RADIUS = 0.05         # 5 cm radius
-        slide_speed = 0.02    # 2 cm/s
-        slide_accel = 0.1
-        blend_radius = 0.005  # 5 mm blend for smooth curves
-        
-        # Calculate the center of the circle so the arc starts perfectly at contact_pose
-        # Starting angle is Pi/2 (90 deg) so the initial movement vector points exactly along -Y
-        center_y = contact_pose[1]
-        center_z = contact_pose[2] - RADIUS
-        START_ANGLE = math.pi / 2 
-        
-        # Create a waypoint every ~10 degrees (minimum 5 steps to ensure smoothness)
-        NUM_STEPS = max(int(abs(user_angle_input) / 10), 5)
-        
-        arc_waypoints = []
-        
-        for i in range(1, NUM_STEPS + 1):
-            # Calculate the current angle in the sweep
-            sweep_fraction = i / NUM_STEPS
-            theta = START_ANGLE + math.radians(user_angle_input * sweep_fraction)
-            
-            wp = list(contact_pose)
-            wp[1] = center_y + RADIUS * math.cos(theta)
-            wp[2] = center_z + RADIUS * math.sin(theta)
-            
-            # UR controller expects: [X, Y, Z, Rx, Ry, Rz, speed, accel, blend]
-            # The final point must have a blend radius of 0.0 to stop cleanly
-            current_blend = blend_radius if i < NUM_STEPS else 0.0
-            wp.extend([slide_speed, slide_accel, current_blend])
-            
-            arc_waypoints.append(wp)
-            
-        print("Executing arc under force compliance...")
-        
-        # Execute the blended path asynchronously so we can monitor forces in the loop
-        rtde_c.moveL(arc_waypoints, True)
-        
-        # We track progress by looking at the distance to the very last waypoint
-        final_wp = arc_waypoints[-1][:6] 
-        
-        while True:
-            curr_pose = rtde_r.getActualTCPPose()
-            dist = math.sqrt(sum((a - b)**2 for a, b in zip(curr_pose[:3], final_wp[:3])))
-            
+        stabilize_start = time.time()
+        while time.time() - stabilize_start < 2.0:
             actual_forces = rtde_r.getActualTCPForce()
-            print(f"Drawing Arc... Dist to End: {dist:.4f}m | Live Force: Fx={actual_forces[0]:.2f}N")
-            
-            # Break loop when we are within 1 cm of the final destination
-            if dist < 0.01:
-                break
+            print(f"Stabilizing... Live Force Fx={actual_forces[0]:.2f}N")
             time.sleep(0.1)
             
-        rtde_c.waitForMotionComplete()
-        print("Arc movement complete!")
+        # -------------------------------------------------------------
+        # BLOCK 7: Compliant Circular Slide (Replaces the linear block)
+        # -------------------------------------------------------------
+        print(f"Executing circular arc of {USER_ANGLE} degrees on the Y-Z plane...")
         
+        DT = 0.002             # 500Hz real-time frequency
+        TOTAL_TIME = 6.0       # Duration of the drawing arc path execution
+        NUM_STEPS = int(TOTAL_TIME / DT)
+        
+        for i in range(NUM_STEPS + 1):
+            # Calculate current angle step in radians
+            theta = (math.radians(USER_ANGLE) * i) / NUM_STEPS
+            
+            # Recompute target waypoint relative to the circle origin
+            wp = list(contact_pose)
+            wp[1] = circle_center_y + RADIUS * math.sin(theta)
+            wp[2] = circle_center_z + RADIUS * math.cos(theta)
+            
+            # Continuously maintain background force while streaming positions
+            rtde_c.forceMode(tool_task_frame, tool_selection_vector, tool_wrench, FORCE_TYPE_TOOL, limits)
+            rtde_c.servoL(wp, 0.0, 0.0, DT, 0.03, 2000)
+            
+            # Sample telemetry logging at roughly 10Hz
+            if i % 50 == 0:
+                actual_forces = rtde_r.getActualTCPForce()
+                print(f"Drawing... Step: {i}/{NUM_STEPS} | Live Force Fx: {actual_forces[0]:.2f}N")
+                
+            time.sleep(DT)
+            
+        # Clear the trajectory streaming buffers cleanly
+        rtde_c.servoStop()
+        print("Circular slide movement complete!")
         time.sleep(1)
         
         # -------------------------------------------------------------
@@ -181,12 +167,14 @@ try:
         # -------------------------------------------------------------
         print("Moving back from the wall...")
         rtde_c.forceModeStop()
+        time.sleep(0.2)
+        
         retract_pose = list(rtde_r.getActualTCPPose())
-        retract_pose[0] += 0.09  # Pull back
-        rtde_c.moveL(retract_pose, 0.05, 0.2)
+        retract_pose[0] += 0.05  # Pull back 5 cm away along X
+        rtde_c.moveL(retract_pose, 0.05, 0.1)
         print("Retraction complete.")
     else:
-        print("Aborting drawing motion since contact was not detected.")
+        print("Aborting sliding motion since contact was not detected.")
 
 finally:
     # -------------------------------------------------------------
@@ -197,6 +185,9 @@ finally:
         try:
             rtde_c.forceModeStop()
             rtde_c.stopL(2.0)
+        except Exception as e:
+            print(f"Error stopping robot: {e}")
+        try:
             rtde_c.disconnect()
             print("RTDE Control Interface disconnected.")
         except Exception as e:
