@@ -3,10 +3,17 @@ This code is me playing around with the force mode
 with a horizontal line rather than a circle
 '''
 
+import os
+import sys
 import math
 import time
+
+# Add root folder to sys.path so we can import src
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from rtde_control import RTDEControlInterface, Path, PathEntry
 from rtde_receive import RTDEReceiveInterface
+from src.common.robot_utils import wait_for_motion_complete
 
 # -------------------------------------------------------------
 # BLOCK 1: Robot IP Configuration
@@ -63,7 +70,7 @@ try:
     
     consecutive_readings = 0
     REQUIRED_READINGS = 2
-    FORCE_THRESHOLD = 1.0  # 1 Newton
+    FORCE_THRESHOLD = 0.5  # 0.5 Newton
     contact_detected = False
     
     while True:
@@ -135,6 +142,7 @@ try:
         
         slide_speed = 0.02  # Safe sliding speed (2 cm/s)
         slide_acceleration = 0.1
+        slide_accuracy = 0.003 # 3mm accuracy 
         
         rtde_c.moveL(target_pose_left, slide_speed, slide_acceleration, True)
         
@@ -143,11 +151,14 @@ try:
             dist = math.sqrt(sum((a - b)**2 for a, b in zip(curr_pose[:3], target_pose_left[:3])))
             actual_forces = rtde_r.getActualTCPForce()
             print(f"Sliding... Dist to Target: {dist:.4f}m | Live Force: Fx={actual_forces[0]:.2f}N, Fy={actual_forces[1]:.2f}N, Fz={actual_forces[2]:.2f}N")
-            if dist < 0.01:
+            if dist < slide_accuracy:
                 break
             time.sleep(0.1)
             
-        rtde_c.waitForMotionComplete()
+        # Wait for the motion to complete
+        wait_for_motion_complete(rtde_c)
+
+        print("Asynchronous motion is fully complete!")
         print("Slide movement complete!")
         
         time.sleep(1)
@@ -159,8 +170,8 @@ try:
         print("Moving back from the wall...")
         rtde_c.forceModeStop()
         retract_pose = list(rtde_r.getActualTCPPose())
-        retract_pose[0] += 0.09  # Pull back 3 cm
-        rtde_c.moveL(retract_pose, 0.05, 0.2)
+        retract_pose[0] += 0.05  # Pull back 5 cm
+        rtde_c.moveL(retract_pose, 0.5, 0.25)
         print("Retraction complete.")
     else:
         print("Aborting sliding motion since contact was not detected.")
