@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 scripts/go_to_base_test_location.py
-Loads a recorded base test location from a YAML file, connects to the UR5e robot,
-and moves the robot joints back to that recorded position.
+Loads a recorded location from a named YAML file in config/locations/,
+connects to the UR5e robot, and moves the robot joints back to that recorded position.
 """
 import os
 import sys
@@ -16,7 +16,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.common.logger import get_logger
 
 # Initialize logger
-logger = get_logger("GoToBaseLocation")
+logger = get_logger("GoToLocation")
 
 try:
     import rtde_control
@@ -26,24 +26,33 @@ except ImportError:
     sys.exit(1)
 
 def main():
-    parser = argparse.ArgumentParser(description="Send robot to the recorded base test location")
-    parser.add_argument("--config", type=str, default="config/base_test_location.yaml", help="YAML file with target location")
+    parser = argparse.ArgumentParser(description="Send robot to a recorded location from config/locations/")
+    parser.add_argument("name", type=str, nargs="?", default="base_test", 
+                        help="Name of the location to load from config/locations/{name}.yaml")
+    parser.add_argument("--config", type=str, default=None, 
+                        help="Direct path to config YAML file (overrides name)")
     parser.add_argument("--robot-ip", type=str, default=None, help="Robot IP (overrides IP in config)")
     parser.add_argument("--speed", type=float, default=0.2, help="Joint speed in rad/s (default: 0.2)")
     parser.add_argument("--accel", type=float, default=0.1, help="Joint acceleration in rad/s^2 (default: 0.1)")
     parser.add_argument("--yes", action="store_true", help="Skip operator confirmation prompt")
     args = parser.parse_args()
 
-    if not os.path.exists(args.config):
-        logger.error(f"Config file not found: {args.config}")
-        logger.info("Please run scripts/record_base_test_location.py first to create it.")
+    # Determine source file path
+    if args.config:
+        src_path = args.config
+    else:
+        src_path = os.path.join("config", "locations", f"{args.name}.yaml")
+
+    if not os.path.exists(src_path):
+        logger.error(f"Location file not found: {src_path}")
+        logger.info(f"Please run scripts/record_base_test_location.py {args.name} first to create it.")
         sys.exit(1)
 
     try:
-        with open(args.config, "r") as f:
+        with open(src_path, "r") as f:
             data = yaml.safe_load(f)
     except Exception as e:
-        logger.error(f"Failed to read/parse {args.config}: {e}")
+        logger.error(f"Failed to read/parse {src_path}: {e}")
         sys.exit(1)
 
     joints = data.get("joints")
@@ -51,10 +60,10 @@ def main():
     ip = args.robot_ip if args.robot_ip is not None else data.get("robot_ip", "192.168.57.101")
 
     if not joints:
-        logger.error(f"No joint coordinates ('joints') found in {args.config}.")
+        logger.error(f"No joint coordinates ('joints') found in {src_path}.")
         sys.exit(1)
 
-    logger.info(f"Target location loaded from {args.config}")
+    logger.info(f"Target location '{args.name}' loaded from {src_path}")
     logger.info(f"Target joints: {[round(q, 4) for q in joints]}")
     if pose:
         logger.info(f"Target pose (meters): {[round(x, 4) for x in pose[:3]]} (XYZ)")
@@ -71,10 +80,10 @@ def main():
         rtde_c = rtde_control.RTDEControlInterface(ip)
         logger.success("Control interface connected successfully!")
 
-        logger.info(f"Moving to base test location using moveJ (speed={args.speed}, accel={args.accel})...")
+        logger.info(f"Moving to location '{args.name}' using moveJ (speed={args.speed}, accel={args.accel})...")
         # Joint move is safe and doesn't get stuck on singularities
         rtde_c.moveJ(joints, args.speed, args.accel)
-        logger.success("Robot successfully arrived at the base test location.")
+        logger.success(f"Robot successfully arrived at '{args.name}'.")
 
     except Exception as e:
         logger.error(f"Failed to communicate or move: {e}")
