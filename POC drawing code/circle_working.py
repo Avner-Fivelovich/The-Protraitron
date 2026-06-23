@@ -77,7 +77,7 @@ try:
         
         print(f"Approaching... Pose X: {curr_pose[0]:.4f} | Force X: {measured_force_x:.2f}N | Count: {consecutive_readings}/{REQUIRED_READINGS}")
         
-        if abs(measured_force_x) >= FORCE_THRESHOLD:
+        if measured_force_x >= FORCE_THRESHOLD:
             consecutive_readings += 1
         else:
             consecutive_readings = 0
@@ -116,7 +116,7 @@ try:
         tool_wrench = [FORWARD_FORCE, 0.0, 0.0, 0.0, 0.0, 0.0]
         FORCE_TYPE_TOOL = 2
         
-        rtde_c.forceModeSetDamping(0.1)
+        rtde_c.forceModeSetDamping(0.5)
         limits = [0.005, 0.05, 0.05, 0.2, 0.2, 0.2]
         
         rtde_c.forceMode(tool_task_frame, tool_selection_vector, tool_wrench, FORCE_TYPE_TOOL, limits)

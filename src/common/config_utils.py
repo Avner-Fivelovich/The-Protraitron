@@ -31,7 +31,7 @@ def load_config_from_yaml(config_path: str) -> dict:
         'polling_interval_verify': 0.05,
         'speed_slowdown_factor': 0.5,
         'settle_sleep': 0.5,
-        'force_damping': 0.1,
+        'force_damping': 0.5,
         'force_limits': [0.005, 0.05, 0.05, 0.2, 0.2, 0.2],
         'stabilize_timeout': 2.0,
         'stabilize_poll_interval': 0.1,

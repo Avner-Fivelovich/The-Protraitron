@@ -27,7 +27,7 @@ except ImportError:
 
 def main():
     parser = argparse.ArgumentParser(description="Record robot's current pose/joints to a locations YAML file")
-    parser.add_argument("name", type=str, nargs="?", default="base_test", 
+    parser.add_argument("--name", type=str, nargs="?", default="base_test", 
                         help="Name of the location (saves as config/locations/{name}.yaml)")
     parser.add_argument("--robot-ip", type=str, default="192.168.57.101", help="Robot IP (default: 192.168.57.101)")
     parser.add_argument("--output", type=str, default=None, 
