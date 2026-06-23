@@ -54,51 +54,107 @@ try:
     # -------------------------------------------------------------
     # BLOCK 5: Wall Approach (X-Axis)
     # Moves slowly forward along Base X-axis. Loops and polls force sensor.
-    # Stops motion when contact force exceeds 0.5 N for 20 consecutive readings.
+    # Stops motion when contact force exceeds 0.3 N for 2 consecutive readings.
+    # Verifies contact by checking if 10 out of 20 readings are >= 0.3 N.
+    # If 5 consecutive readings drop below 0.3 N, it continues moving slower and restarts the search.
     # -------------------------------------------------------------
     target_pose_forward = list(start_pose)
     target_pose_forward[0] -= 0.15  # Max search distance of 15 cm
     
     print(f"Target Forward Pose: {target_pose_forward}")
-    print("Moving slowly forward to the wall along X axis...")
     
-    approach_speed = 0.01  # Slow approach speed (1 cm/s)
-    approach_acceleration = 0.1
-    
-    # Execute linear movement asynchronously to allow monitoring force
-    rtde_c.moveL(target_pose_forward, approach_speed, approach_acceleration, True)
-    
-    consecutive_readings = 0
-    REQUIRED_READINGS = 2
-    FORCE_THRESHOLD = 0.5  # 0.5 Newton
+    approach_speed = 0.01  # Initial approach speed (1 cm/s)
+    approach_acceleration = 0.05
+    FORCE_THRESHOLD = 0.3  # 0.3 Newton
     contact_detected = False
     
     while True:
         curr_pose = rtde_r.getActualTCPPose()
         dist = math.sqrt(sum((a - b)**2 for a, b in zip(curr_pose[:3], target_pose_forward[:3])))
         
-        # Read the current force on the compliance axis (index 0)
-        actual_forces = rtde_r.getActualTCPForce()
-        measured_force_x = actual_forces[0]
-        
-        print(f"Approaching... Pose X: {curr_pose[0]:.4f} | Force X: {measured_force_x:.2f}N | Count: {consecutive_readings}/{REQUIRED_READINGS}")
-        
-        if abs(measured_force_x) >= FORCE_THRESHOLD:
-            consecutive_readings += 1
-        else:
-            consecutive_readings = 0
-            
-        if consecutive_readings >= REQUIRED_READINGS:
-            print(f"Contact detected! Force exceeded {FORCE_THRESHOLD}N for {REQUIRED_READINGS} consecutive readings.")
-            rtde_c.stopL(2.0)
-            contact_detected = True
-            break
-            
         if dist < 0.001:
             print("Reached target forward pose without detecting contact.")
             break
             
-        time.sleep(0.01)  # ~100Hz sampling rate
+        print(f"Starting/resuming approach at speed {approach_speed:.4f} m/s...")
+        rtde_c.moveL(target_pose_forward, approach_speed, approach_acceleration, True)
+        
+        # Phase 1: Search for 2 consecutive readings >= 0.3 N
+        consecutive_high_readings = 0
+        search_success = False
+        
+        while True:
+            curr_pose = rtde_r.getActualTCPPose()
+            dist = math.sqrt(sum((a - b)**2 for a, b in zip(curr_pose[:3], target_pose_forward[:3])))
+            
+            actual_forces = rtde_r.getActualTCPForce()
+            measured_force_x = actual_forces[0]
+            force_val = abs(measured_force_x)
+            
+            print(f"Approaching... Pose X: {curr_pose[0]:.4f} | Force X: {measured_force_x:.2f}N | Count: {consecutive_high_readings}/2")
+            
+            if force_val >= FORCE_THRESHOLD:
+                consecutive_high_readings += 1
+            else:
+                consecutive_high_readings = 0
+                
+            if consecutive_high_readings >= 2:
+                print(f"Initial contact threshold reached (2 readings >= {FORCE_THRESHOLD} N). Stopping motion...")
+                rtde_c.stopL(2.0)
+                wait_for_motion_complete(rtde_c)
+                search_success = True
+                break
+                
+            if dist < 0.001:
+                print("Reached target forward pose during search.")
+                break
+                
+            time.sleep(0.01)  # ~100Hz sampling rate
+            
+        if not search_success:
+            break
+            
+        # Phase 2: Verify contact (wait for 10 out of 20 readings >= 0.3 N)
+        print("Verifying contact while stopped...")
+        readings = []
+        consecutive_low_readings = 0
+        failed_verification = False
+        
+        for i in range(20):
+            time.sleep(0.05)  # Sample every 50ms (total ~1s)
+            actual_forces = rtde_r.getActualTCPForce()
+            measured_force_x = actual_forces[0]
+            force_val = abs(measured_force_x)
+            
+            readings.append(force_val)
+            
+            if force_val < FORCE_THRESHOLD:
+                consecutive_low_readings += 1
+            else:
+                consecutive_low_readings = 0
+                
+            print(f"Verify reading {i+1}/20: Force X: {measured_force_x:.2f}N | Consecutive Low: {consecutive_low_readings}/5")
+            
+            if consecutive_low_readings >= 5:
+                print(f"Verification failed: force dropped below {FORCE_THRESHOLD} N for 5 consecutive readings.")
+                failed_verification = True
+                break
+                
+        if not failed_verification:
+            high_count = sum(1 for f in readings if f >= FORCE_THRESHOLD)
+            print(f"Verification results: High count = {high_count}/20. Readings = {[round(f, 2) for f in readings]}")
+            if high_count >= 10:
+                print("Contact confirmed!")
+                contact_detected = True
+                break
+            else:
+                print(f"Verification failed: only {high_count} out of 20 readings were >= {FORCE_THRESHOLD} N.")
+                failed_verification = True
+                
+        if failed_verification:
+            # Continue moving but slower
+            # approach_speed = approach_speed * 0.5
+            print(f"Slowing down. New approach speed: {approach_speed:.4f} m/s. Resuming search...")
         
     if contact_detected:
         # -------------------------------------------------------------
