@@ -53,7 +53,7 @@ def _search_for_contact(rtde_c, rtde_r, target_pose: list, cfg: dict, approach_s
         measured_force_x = forces_base[0]
         
         # Monitor consecutive readings exceeding force threshold
-        if abs(measured_force_x) >= force_threshold:
+        if measured_force_x >= force_threshold:
             consecutive_high_readings += 1
         else:
             consecutive_high_readings = 0

@@ -1,6 +1,6 @@
 # Calibration and sensor configuration
 calibration:
-  forward_force: 0.5
+  forward_force: 0.3
   sensor_zero_sleep: 0.5
 
 # Wall Approach configuration
@@ -10,7 +10,7 @@ approach:
   approach_acceleration: 0.005
   force_threshold: 0.35
   target_reached_tolerance: 0.001
-  required_consecutive_high: 2
+  required_consecutive_high: 3
   stop_deceleration: 2.0
   polling_interval_search: 0.01
 

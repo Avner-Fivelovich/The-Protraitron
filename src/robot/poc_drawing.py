@@ -32,10 +32,11 @@ def get_drawing_inputs(radius: float = 0.0, theta: float = 0.0) -> tuple[float, 
             
     return radius, theta
 
-def generate_semicircle_path(controller, radius: float, theta: float) -> list:
+def generate_semicircle_path(controller, radius: float, theta: float, start_position: str = 'left') -> list:
     """
     Computes normalized canvas coordinates for a semicircle centered on the canvas (0.5, 0.5).
     Scales resolution dynamically based on arc length to ensure smooth ~1mm waypoint spacing.
+    Supports start positions: 'left', 'right', 'above', 'below'.
     """
     # Calculate scale factors relative to canvas width and height
     rx = radius / controller.width
@@ -49,31 +50,57 @@ def generate_semicircle_path(controller, radius: float, theta: float) -> list:
     num_steps = max(10, int(arc_length * 1000))
     logger.info(f"Generating semicircle sweep path with {num_steps} interpolation steps.")
     
-    # Sweep clockwise starting at pi (left edge)
-    angles = np.linspace(math.pi, math.pi - theta_rad, num_steps)
+    # Determine starting angle based on start position
+    start_pos_lower = start_position.lower().strip()
+    if start_pos_lower == 'right':
+        start_angle = 0.0
+    elif start_pos_lower == 'above':
+        start_angle = math.pi / 2.0
+    elif start_pos_lower == 'below':
+        start_angle = -math.pi / 2.0
+    else:  # 'left'
+        start_angle = math.pi
+        
+    angles = np.linspace(start_angle, start_angle - theta_rad, num_steps)
     circle_x = 0.5 + rx * np.cos(angles)
     circle_y = 0.5 + ry * np.sin(angles)
     
     return np.column_stack((circle_x, circle_y)).tolist()
 
-def generate_diameter_path(controller, radius: float, theta: float, semicircle_path: list) -> list:
+def generate_diameter_path(controller, radius: float, theta: float, semicircle_path: list, line_start_at: str = 'end') -> list:
     """
-    Generates a straight line connecting the end point of the sweep back to the start.
-    Implements a 360-degree fallback to draw a full diameter chord from right to left.
+    Generates a straight line connecting the endpoints of the semicircle.
+    - If line_start_at is 'end', it runs from the end of the semicircle back to the start.
+    - If line_start_at is 'beginning', it runs from the start of the semicircle to the end.
+    Implements a 360-degree fallback that draws a diameter passing through the center.
     """
     rx = radius / controller.width
+    ry = radius / controller.height
     x_start, y_start = semicircle_path[0]
     x_end, y_end = semicircle_path[-1]
     
-    line_start = [x_end, y_end]
-    line_end = [x_start, y_start]
-    
-    # Edge case: If 360 degrees (clockwise or counter-clockwise), start/end match, so draw a horizontal diameter instead
-    if abs(abs(theta) - 360.0) < 1e-3:
-        logger.info("360 degree detected. Drawing full diameter chord from right to left.")
-        line_start = [x_start + 2 * rx, y_start]
+    # Determine straight line endpoints based on line_start_at parameter
+    line_start_lower = line_start_at.lower().strip()
+    if line_start_lower == 'beginning':
+        line_start = [x_start, y_start]
+        line_end = [x_end, y_end]
+    else:  # default 'end'
+        line_start = [x_end, y_end]
         line_end = [x_start, y_start]
         
+    # Edge case: If 360 degrees, start and end points overlap at P_start
+    if abs(abs(theta) - 360.0) < 1e-3:
+        logger.info("360 degree detected. Drawing full diameter chord.")
+        P_start = [x_start, y_start]
+        P_opp = [1.0 - x_start, 1.0 - y_start]
+        
+        if line_start_lower == 'beginning':
+            line_start = P_start
+            line_end = P_opp
+        else:
+            line_start = P_opp
+            line_end = P_start
+            
     return [line_start, line_end]
 
 def execute_drawing(controller, paths: list):
@@ -95,23 +122,23 @@ def execute_drawing(controller, paths: list):
         draw_depth_offset=draw_depth_offset
     )
 
-def run_poc_drawing(controller, radius: float = 0.0, theta: float = 0.0):
+def run_poc_drawing(controller, radius: float = 0.0, theta: float = 0.0, start_position: str = 'left', line_start_at: str = 'end'):
     """
     Coordinates parameters collection, path generation, and controller drawing.
     """
     if radius == 0.0 and theta == 0.0:
         radius, theta = get_drawing_inputs()
         
-    logger.info(f"Generating POC paths: Radius = {radius * 100:.1f} cm, Theta = {theta:.1f} deg...")
+    logger.info(f"Generating POC paths: Radius = {radius * 100:.1f} cm, Theta = {theta:.1f} deg, Start = {start_position}, Line = {line_start_at}...")
     
     # Generate paths
-    semicircle_path = generate_semicircle_path(controller, radius, theta)
-    line_path = generate_diameter_path(controller, radius, theta, semicircle_path)
+    semicircle_path = generate_semicircle_path(controller, radius, theta, start_position)
+    line_path = generate_diameter_path(controller, radius, theta, semicircle_path, line_start_at)
     
     # Run drawing
     execute_drawing(controller, [semicircle_path, line_path])
 
-def run_poc(controller, radius: float = 0.05, theta: float = 180.0):
+def run_poc(controller, radius: float = 0.05, theta: float = 180.0, start_position: str = 'left', line_start_at: str = 'end'):
     """
     Homes to P0 hover and executes the POC drawing paths.
     """
@@ -121,7 +148,7 @@ def run_poc(controller, radius: float = 0.05, theta: float = 180.0):
         time.sleep(1.0)
         
         # Execute the POC drawing paths
-        run_poc_drawing(controller, radius, theta)
+        run_poc_drawing(controller, radius, theta, start_position, line_start_at)
         logger.success("POC drawing routine completed successfully.")
         
     except Exception as e:

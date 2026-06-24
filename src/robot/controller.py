@@ -221,22 +221,75 @@ class UR5eController:
 
     def _draw_stroke_trajectory(self, stroke: list, x_draw: float, rx: float, ry: float, rz: float, speed: float, accel: float, blend_radius: float):
         """
-        Streams and executes a stroke trajectory under compliance force control.
+        Streams and executes a stroke trajectory under compliance force control,
+        logging live forces and coordinates at 10Hz during motion.
+        Uses a real-time servoL loop to keep forceMode active and compliant.
         """
-        path = []
-        for i in range(1, len(stroke)):
-            xi, yi = stroke[i]
-            Y_i = self.p1[1] + xi * self.width
-            Z_i = self.p1[2] + yi * self.height
+        # Convert stroke normalized points to physical Y-Z coordinates
+        points = []
+        for pt in stroke:
+            Y = self.p1[1] + pt[0] * self.width
+            Z = self.p1[2] + pt[1] * self.height
+            points.append(np.array([Y, Z]))
             
-            # Blend radius must be 0.0 for the last point to stop execution cleanly
-            current_blend = blend_radius if i < (len(stroke) - 1) else 0.0
-            waypoint = [x_draw, Y_i, Z_i, rx, ry, rz, speed, accel, current_blend]
-            path.append(waypoint)
+        # Compute cumulative distance along the path
+        dists = [np.linalg.norm(points[i] - points[i-1]) for i in range(1, len(points))]
+        cum_dists = [0.0] + list(np.cumsum(dists))
+        total_dist = cum_dists[-1]
+        
+        if total_dist <= 0.0:
+            logger.warning("Stroke trajectory has zero length. Skipping execution.")
+            return
             
-        if path:
-            logger.info(f"Streaming stroke path with {len(path)} waypoints...")
-            self.rtde_c.moveL(path)
+        # Calculate execution duration based on configured slide speed
+        total_time = total_dist / speed
+        DT = 0.002  # 500Hz loop rate
+        num_steps = int(total_time / DT)
+        
+        logger.info(f"Executing compliant slide: distance={total_dist*100:.2f} cm, speed={speed*100:.2f} cm/s, time={total_time:.2f}s...")
+        
+        tool_task_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        tool_selection_vector = [1, 0, 0, 0, 0, 0] # Compliance only on Base X
+        tool_wrench = [self.cfg['forward_force'], 0.0, 0.0, 0.0, 0.0, 0.0]
+        
+        try:
+            for step in range(num_steps + 1):
+                t = step * DT
+                d = min(t * speed, total_dist)
+                
+                # Interpolate Y and Z along the path
+                Y_target = np.interp(d, cum_dists, [pt[0] for pt in points])
+                Z_target = np.interp(d, cum_dists, [pt[1] for pt in points])
+                
+                # Target pose in base frame
+                wp = [x_draw, Y_target, Z_target, rx, ry, rz]
+                
+                # Keep compliance mode active and stream position
+                self.rtde_c.forceMode(
+                    tool_task_frame, 
+                    tool_selection_vector, 
+                    tool_wrench, 
+                    self.cfg['force_type_tool'], 
+                    self.cfg['force_limits']
+                )
+                self.rtde_c.servoL(wp, 0.0, 0.0, DT, 0.03, 2000)
+                
+                # Log telemetry at 10Hz (every 50 steps at 500Hz)
+                if step % 50 == 0 or step == num_steps:
+                    actual_pose = self.rtde_r.getActualTCPPose()
+                    actual_forces = self.rtde_r.getActualTCPForce()
+                    x_canvas = (actual_pose[1] - self.p1[1]) / self.width if self.width != 0 else 0.0
+                    y_canvas = (actual_pose[2] - self.p1[2]) / self.height if self.height != 0 else 0.0
+                    
+                    logger.info(
+                        f"Drawing... TCP: [{actual_pose[0]:.4f}, {actual_pose[1]:.4f}, {actual_pose[2]:.4f}] | "
+                        f"Canvas: ({x_canvas:.3f}, {y_canvas:.3f}) | "
+                        f"Forces: Fx={actual_forces[0]:.2f}N, Fy={actual_forces[1]:.2f}N, Fz={actual_forces[2]:.2f}N"
+                    )
+                time.sleep(DT)
+        finally:
+            # Stop servo motion cleanly
+            self.rtde_c.servoStop()
 
     def _stop_compliance_and_retract(self, x_canvas: float, y_canvas: float, x_hover: float, rx: float, ry: float, rz: float):
         """
