@@ -32,7 +32,7 @@ def load_config_from_yaml(config_path: str) -> dict:
         'speed_slowdown_factor': 0.5,
         'settle_sleep': 0.5,
         'force_damping': 0.5,
-        'force_limits': [0.005, 0.05, 0.05, 0.2, 0.2, 0.2],
+        'force_limits': [0.15, 0.15, 0.15, 0.2, 0.2, 0.2],
         'stabilize_timeout': 2.0,
         'stabilize_poll_interval': 0.1,
         'force_type_tool': 2,
@@ -48,7 +48,9 @@ def load_config_from_yaml(config_path: str) -> dict:
         'retract_distance': 0.03,
         'retract_speed': 0.5,
         'retract_acceleration': 0.25,
-        'disconnect_stop_deceleration': 2.0
+        'disconnect_stop_deceleration': 2.0,
+        'blend_radius': 0.002,
+        'draw_depth_offset': 0.0
     }
 
     # -------------------------------------------------------------
@@ -62,7 +64,7 @@ def load_config_from_yaml(config_path: str) -> dict:
             
             # Flatten nested sections into defaults
             if config:
-                sections = ['calibration', 'approach', 'verification', 'compliance', 'slide', 'retraction', 'cleanup']
+                sections = ['calibration', 'approach', 'verification', 'compliance', 'slide', 'retraction', 'cleanup', 'drawing']
                 for section in sections:
                     if section in config and isinstance(config[section], dict):
                         for k, v in config[section].items():

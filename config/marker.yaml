@@ -8,7 +8,7 @@ approach:
   search_distance: 0.15
   initial_approach_speed: 0.001
   approach_acceleration: 0.005
-  force_threshold: 0.3
+  force_threshold: 0.35
   target_reached_tolerance: 0.001
   required_consecutive_high: 2
   stop_deceleration: 2.0
@@ -17,7 +17,7 @@ approach:
 # Contact Verification configuration
 verification:
   total_verify_readings: 10
-  required_verify_high: 5
+  required_verify_high: 6
   max_consecutive_low: 3
   polling_interval_verify: 0.05
   speed_slowdown_factor: 0.5
@@ -26,7 +26,7 @@ verification:
 compliance:
   settle_sleep: 0.5
   force_damping: 0.5
-  force_limits: [0.005, 0.05, 0.05, 0.2, 0.2, 0.2]
+  force_limits: [0.15, 0.15, 0.15, 0.2, 0.2, 0.2]
   stabilize_timeout: 2.0
   stabilize_poll_interval: 0.1
   force_type_tool: 2
@@ -36,8 +36,8 @@ compliance:
 # Compliant Lateral Slide configuration
 slide:
   slide_distance: 0.05
-  slide_speed: 0.02
-  slide_acceleration: 0.1
+  slide_speed: 0.01
+  slide_acceleration: 0.05
   slide_accuracy: 0.003
   slide_poll_interval: 0.1
   post_slide_sleep: 1.0
@@ -51,3 +51,8 @@ retraction:
 # Safe Cleanup configuration
 cleanup:
   disconnect_stop_deceleration: 2.0
+
+# Drawing trajectory configurations
+drawing:
+  blend_radius: 0.002
+  draw_depth_offset: 0.0
