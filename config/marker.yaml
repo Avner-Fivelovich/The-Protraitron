@@ -1,6 +1,6 @@
 # Calibration and sensor configuration
 calibration:
-  forward_force: 0.3
+  forward_force: 0.55
   sensor_zero_sleep: 0.5
 
 # Wall Approach configuration

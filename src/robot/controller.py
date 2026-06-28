@@ -144,8 +144,8 @@ class UR5eController:
         # Tool orientation is aligned normal to the paper (stored at P0 manual alignment)
         rx, ry, rz = self.p0_pose[3:]
         
-        # X hover plane is 1 cm above P1 X coordinate (positive direction points away from board)
-        X_hover = self.p1[0] + 0.01
+        # X hover plane is 5 mm above P1 X coordinate (positive direction points away from board)
+        X_hover = self.p1[0] + 0.005
         
         for idx, stroke in enumerate(strokes_2d):
             if len(stroke) == 0:

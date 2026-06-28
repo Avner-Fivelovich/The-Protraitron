@@ -13,6 +13,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from src.common.logger import get_logger
 from src.robot.controller import UR5eController
 from src.robot.poc_drawing import run_poc
+from src.robot.text_drawing import run_text_drawing
 
 # Initialize main system logger
 logger = get_logger("MainSystem")
@@ -156,20 +157,26 @@ def main():
             print("\n" + "=" * 50)
             print("PORTRAITRON 3000 - MAIN CONTROL INTERFACE")
             print("=" * 50)
-            print("1. POC")
+            print("1. POC (Semicircle & Diameter)")
+            print("2. Write Custom Text")
             print("Press Control+C to exit")
             print("=" * 50)
             
-            choice = input("Enter choice: ").strip()
+            choice = input("Enter choice (1-2): ").strip()
             
             # Dispatch choice
             if choice == "1":
                 configure_and_run_poc(controller)
+            elif choice == "2":
+                text = input("Enter text to write (default: 'doofenshmirtz evil inc.'): ").strip()
+                if not text:
+                    text = "doofenshmirtz evil inc."
+                run_text_drawing(controller, text)
             elif choice == "":
                 # Ignore empty presses
                 continue
             else:
-                logger.warning(f"Option '{choice}' is not recognized. Please choose option 1.")
+                logger.warning(f"Option '{choice}' is not recognized. Please choose option 1 or 2.")
                 
     except KeyboardInterrupt:
         print("\n\nExiting main system menu safely. Goodbye!")
