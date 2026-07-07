@@ -87,6 +87,19 @@ def main():
         logger.info(f"Recorded P0 Joints: {[round(c, 4) for c in p0_joints]}")
         
         # -------------------------------------------------------------
+        # Save initial P0 results to config/calibration.yaml
+        # -------------------------------------------------------------
+        logger.info("Saving initial P0 to calibration.yaml...")
+        cal_data = {
+            "p0_joints": [float(q) for q in p0_joints],
+            "p0_pose": [float(p) for p in p0_pose],
+            "width": 0.19,
+            "height": 0.27
+        }
+        with open(OUTPUT_PATH, "w") as f:
+            yaml.safe_dump(cal_data, f, default_flow_style=False)
+        
+        # -------------------------------------------------------------
         # Probe surface to determine physical corner position P1
         # -------------------------------------------------------------
         logger.info("Probing Bottom-Left Surface (P1)...")
@@ -96,27 +109,35 @@ def main():
             return
             
         # -------------------------------------------------------------
-        # Retract to safe starting hover pose using moveL
+        # Retract to 3 mm above P1 in the X-axis (P0 hover) using moveL
         # -------------------------------------------------------------
-        logger.info("Retracting to P0 hover using moveL...")
-        rtde_c.moveL(p0_pose, 0.05, 0.1)
+        p0_pose_new = list(p1_surface)
+        p0_pose_new[0] += 0.003  # 3 mm above/away from P1 along X-axis
+        logger.info(f"Moving to final P0 hover (3mm above P1 in X): {[round(c, 4) for c in p0_pose_new[:3]]}...")
+        rtde_c.moveL(p0_pose_new, 0.05, 0.1)
         time.sleep(0.5)
         
+        # Capture final P0 joints and pose at this position
+        p0_joints_final = rtde_r.getActualQ()
+        p0_pose_final = rtde_r.getActualTCPPose()
+        logger.info(f"Final P0 Pose (3mm above P1): {[round(c, 4) for c in p0_pose_final[:3]]}")
+        logger.info(f"Final P0 Joints: {[round(c, 4) for c in p0_joints_final]}")
+        
         # -------------------------------------------------------------
-        # Save results to config/calibration.yaml
+        # Save results (rewriting P0 and adding P1) to config/calibration.yaml
         # -------------------------------------------------------------
-        cal_data = {
-            "p0_joints": [float(q) for q in p0_joints],
-            "p0_pose": [float(p) for p in p0_pose],
+        cal_data_final = {
+            "p0_joints": [float(q) for q in p0_joints_final],
+            "p0_pose": [float(p) for p in p0_pose_final],
             "p1": [float(p) for p in p1_surface],
             "width": 0.19,
             "height": 0.27
         }
         
         with open(OUTPUT_PATH, "w") as f:
-            yaml.safe_dump(cal_data, f, default_flow_style=False)
+            yaml.safe_dump(cal_data_final, f, default_flow_style=False)
             
-        logger.success(f"Workspace calibration saved to {OUTPUT_PATH}!")
+        logger.success(f"Workspace calibration updated and saved to {OUTPUT_PATH}!")
         
     finally:
         # Safe disconnect

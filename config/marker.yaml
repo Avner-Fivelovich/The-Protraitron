@@ -8,17 +8,18 @@ approach:
   search_distance: 0.15
   initial_approach_speed: 0.001
   approach_acceleration: 0.005
-  force_threshold: 0.35
+  force_threshold: 0.9
   target_reached_tolerance: 0.001
-  required_consecutive_high: 3
+  required_consecutive_high: 1
   stop_deceleration: 2.0
   polling_interval_search: 0.01
 
 # Contact Verification configuration
 verification:
-  total_verify_readings: 10
-  required_verify_high: 6
-  max_consecutive_low: 3
+  force_verification: 0.5
+  total_verify_readings: 5
+  required_verify_high: 3
+  max_consecutive_low: 2
   polling_interval_verify: 0.05
   speed_slowdown_factor: 0.5
 

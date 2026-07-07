@@ -74,7 +74,7 @@ def _verify_contact(rtde_r, cfg: dict) -> bool:
     Helper function to perform stopped contact verification.
     Returns True if confirmed, False if verification fails.
     """
-    force_threshold = cfg['force_threshold']
+    force_verification = cfg['force_verification']
     total_verify_readings = cfg['total_verify_readings']
     required_verify_high = cfg['required_verify_high']
     max_consecutive_low = cfg['max_consecutive_low']
@@ -94,7 +94,7 @@ def _verify_contact(rtde_r, cfg: dict) -> bool:
         readings.append(force_val)
         
         # Check for consecutive low readings
-        if force_val < force_threshold:
+        if force_val < force_verification:
             consecutive_low_readings += 1
         else:
             consecutive_low_readings = 0
@@ -102,20 +102,20 @@ def _verify_contact(rtde_r, cfg: dict) -> bool:
         logger.info(f"Verify reading {i+1}/{total_verify_readings}: Force X: {measured_force_x:.2f}N | Consecutive Low: {consecutive_low_readings}/{max_consecutive_low}")
         
         if consecutive_low_readings >= max_consecutive_low:
-            logger.warning(f"Verification failed: force dropped below {force_threshold} N for {max_consecutive_low} consecutive readings.")
+            logger.warning(f"Verification failed: force dropped below {force_verification} N for {max_consecutive_low} consecutive readings.")
             failed_verification = True
             break
             
     if failed_verification:
         return False
         
-    high_count = sum(1 for f in readings if f >= force_threshold)
+    high_count = sum(1 for f in readings if f >= force_verification)
     logger.info(f"Verification results: High count = {high_count}/{total_verify_readings}. Readings = {[round(f, 2) for f in readings]}")
     if high_count >= required_verify_high:
         logger.success("Contact confirmed!")
         return True
     else:
-        logger.warning(f"Verification failed: only {high_count} out of {total_verify_readings} readings were >= {force_threshold} N.")
+        logger.warning(f"Verification failed: only {high_count} out of {total_verify_readings} readings were >= {force_verification} N.")
         return False
 
 def probe_surface_point(rtde_c, rtde_r, p_start_pose: list, cfg: dict) -> list:
