@@ -136,22 +136,67 @@ def configure_and_run_poc(controller):
     else:
         logger.warning(f"Option '{choice}' is not recognized.")
 
+def parse_args():
+    """
+    Parses command-line arguments for the Portraitron 3000 control interface.
+    """
+    import argparse
+    parser = argparse.ArgumentParser(description="Portraitron 3000 - Main Control Interface")
+    parser.add_argument("--text", "-t", type=str, help="Text to write (one-shot mode)")
+    parser.add_argument("--POC", "-p", type=str, nargs='?', const='left', choices=["left", "right", "above", "below"], help="Start position of the semicircle for POC (one-shot mode)")
+    parser.add_argument("--radius", "-r", type=float, default=5.0, help="Semicircle radius in cm (default: 5.0)")
+    parser.add_argument("--angle", "-a", type=float, default=180.0, help="Sweep angle in degrees (default: 180.0)")
+    parser.add_argument("--dryrun", "-d", action="store_true", help="Perform a dry run (plot expected drawing via matplotlib without connecting to the robot)")
+    return parser.parse_args()
+
+def run_one_shot_text(controller, text: str):
+    """
+    Executes a one-shot custom text drawing.
+    """
+    logger.info(f"One-shot text mode: writing '{text}'")
+    run_text_drawing(controller, text)
+
+def run_one_shot_poc(controller, start_position: str, radius_cm: float, angle_deg: float):
+    """
+    Executes a one-shot POC semicircle/diameter drawing.
+    """
+    logger.info(f"One-shot POC mode: position='{start_position}', radius={radius_cm}cm, angle={angle_deg}°")
+    run_poc(controller, radius=radius_cm / 100.0, theta=angle_deg, start_position=start_position, line_start_at='end')
+
 def main():
     """
-    Displays interactive options to the user and dispatches actions based on selection.
+    Displays interactive options to the user and dispatches actions based on selection,
+    or runs in one-shot mode if arguments are provided.
     """
+    args = parse_args()
+
     if not os.path.exists(CALIBRATION_PATH):
-        logger.critical("Cannot run POC: Calibration file is missing. Please run calibrate_workspace.py first.")
-        sys.exit(1)
+        if not args.dryrun:
+            logger.critical("Cannot run: Calibration file is missing. Please run calibrate_workspace.py first.")
+            sys.exit(1)
+        else:
+            logger.warning("Calibration file is missing. Using default settings for dry run.")
         
     logger.info("Initializing UR5e Controller...")
     controller = UR5eController(ROBOT_IP, calibration_path=CALIBRATION_PATH, marker_config_path=MARKER_CONFIG_PATH)
+    controller.dryrun = args.dryrun
     
     if not controller.connect():
-        logger.error("Connection failed. Aborting POC drawing.")
+        logger.error("Connection failed. Aborting.")
         sys.exit(1)
         
     try:
+        if args.text is not None:
+            run_one_shot_text(controller, args.text)
+            controller.disconnect()
+            sys.exit(0)
+            
+        elif args.POC is not None:
+            run_one_shot_poc(controller, args.POC, args.radius, args.angle)
+            controller.disconnect()
+            sys.exit(0)
+            
+        # Otherwise, run interactive menu loop
         while True:
             # Display menu banner
             print("\n" + "=" * 50)

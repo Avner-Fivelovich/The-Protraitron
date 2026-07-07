@@ -36,6 +36,7 @@ class UR5eController:
         self.marker_config_path = marker_config_path
         self.rtde_c = None
         self.rtde_r = None
+        self.dryrun = False
         
         # Calibration placeholders
         self.p0_joints = None
@@ -77,6 +78,15 @@ class UR5eController:
         """
         Initializes socket interfaces to communicate with the UR5e controller.
         """
+        if self.dryrun:
+            logger.success("[DRY RUN] Bypassing connection to physical robot.")
+            # Set default p1 and p0_pose if not loaded from calibration file
+            if self.p1 is None:
+                self.p1 = [-0.8706, 0.1412, 0.2553]
+            if self.p0_pose is None:
+                self.p0_pose = [-0.8676, 0.1412, 0.2553, 0.0, 0.0, 0.0]
+            return True
+
         if not rtde_control or not rtde_receive:
             logger.error("Cannot connect: ur_rtde library is not installed.")
             return False
@@ -97,6 +107,10 @@ class UR5eController:
         """
         Safely shuts down RTDE communication interfaces.
         """
+        if self.dryrun:
+            logger.info("[DRY RUN] Bypassing socket shutdown.")
+            return
+
         logger.info("Shutting down robot sockets...")
         if self.rtde_c:
             try:
@@ -116,6 +130,10 @@ class UR5eController:
         """
         Moves configuration linearly back to the starting hover pose P0 using moveL.
         """
+        if self.dryrun:
+            logger.info("[DRY RUN] Homing bypassed.")
+            return
+
         if not self.rtde_c:
             logger.error("Robot not connected.")
             return
@@ -133,6 +151,11 @@ class UR5eController:
         Iterates over strokes, positioning to 1cm hover plane, probing, and executing 
         trajectory under X-axis compliance mode.
         """
+        if self.dryrun:
+            logger.info("Dry run active. Plotting the expected drawing...")
+            self.plot_expected_drawing(strokes_2d)
+            return
+
         if not self.rtde_c:
             logger.error("Robot not connected.")
             return
@@ -254,15 +277,40 @@ class UR5eController:
         # Negative X points towards the drawing board, so command a negative force to push into the surface
         tool_wrench = [-self.cfg['forward_force'], 0.0, 0.0, 0.0, 0.0, 0.0]
         
+        # Pre-generate target trajectory points at 500Hz
+        raw_wp_list = []
+        for step in range(num_steps + 1):
+            t = step * DT
+            d = min(t * speed, total_dist)
+            
+            # Interpolate Y and Z along the path
+            Y_target = np.interp(d, cum_dists, [pt[0] for pt in points])
+            Z_target = np.interp(d, cum_dists, [pt[1] for pt in points])
+            raw_wp_list.append((Y_target, Z_target))
+            
+        # Apply moving average smoothing (boxcar filter) based on blend_radius
+        if blend_radius > 0.0:
+            window_size = int(blend_radius / speed / DT)
+            # Ensure window_size is at least 3 for a valid smoothing filter
+            if window_size >= 3 and len(raw_wp_list) > window_size:
+                pad_size = window_size // 2
+                kernel = np.ones(window_size) / window_size
+                
+                y_arr = np.array([wp[0] for wp in raw_wp_list])
+                z_arr = np.array([wp[1] for wp in raw_wp_list])
+                
+                # Pad edges to prevent boundary shrink artifacts
+                y_padded = np.pad(y_arr, pad_size, mode='edge')
+                z_padded = np.pad(z_arr, pad_size, mode='edge')
+                
+                y_smooth = np.convolve(y_padded, kernel, mode='valid')[:len(raw_wp_list)]
+                z_smooth = np.convolve(z_padded, kernel, mode='valid')[:len(raw_wp_list)]
+                
+                raw_wp_list = list(zip(y_smooth, z_smooth))
+                logger.info(f"Trajectory smoothed using blend_radius={blend_radius*1000:.1f}mm (moving average window={window_size} steps).")
+
         try:
-            for step in range(num_steps + 1):
-                t = step * DT
-                d = min(t * speed, total_dist)
-                
-                # Interpolate Y and Z along the path
-                Y_target = np.interp(d, cum_dists, [pt[0] for pt in points])
-                Z_target = np.interp(d, cum_dists, [pt[1] for pt in points])
-                
+            for step, (Y_target, Z_target) in enumerate(raw_wp_list):
                 # Target pose in base frame
                 wp = [x_draw, Y_target, Z_target, rx, ry, rz]
                 
@@ -277,7 +325,7 @@ class UR5eController:
                 self.rtde_c.servoL(wp, 0.0, 0.0, DT, 0.03, 2000)
                 
                 # Log telemetry at 10Hz (every 50 steps at 500Hz)
-                if step % 50 == 0 or step == num_steps:
+                if step % 50 == 0 or step == len(raw_wp_list) - 1:
                     actual_pose = self.rtde_r.getActualTCPPose()
                     actual_forces = self.rtde_r.getActualTCPForce()
                     x_canvas = (actual_pose[1] - self.p1[1]) / self.width if self.width != 0 else 0.0
@@ -306,3 +354,29 @@ class UR5eController:
         retract_pose = [x_hover, Y_last, Z_last, rx, ry, rz]
         
         self.rtde_c.moveL(retract_pose, 0.05, 0.1)
+
+    def plot_expected_drawing(self, strokes_2d: list):
+        """
+        Plots the expected drawing strokes using matplotlib.
+        """
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            logger.error("matplotlib is required for dryrun plotting. Please install it using: pip install matplotlib")
+            return
+            
+        fig, ax = plt.subplots(figsize=(5, 5 * (self.height / self.width) if self.width != 0 else 7))
+        for stroke in strokes_2d:
+            if not stroke:
+                continue
+            stroke_np = np.array(stroke)
+            ax.plot(stroke_np[:, 0], stroke_np[:, 1], 'b-', linewidth=2)
+            
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.set_aspect('equal')
+        ax.set_title("Expected Drawing Preview (Dry Run)")
+        ax.set_xlabel("Canvas X (Normalized)")
+        ax.set_ylabel("Canvas Y (Normalized)")
+        ax.grid(True)
+        plt.show()
