@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Portraitron 3000 - Roadmap & Backlog</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #070913;
+            --bg-card: rgba(13, 18, 36, 0.7);
+            --bg-sidebar: rgba(10, 14, 28, 0.85);
+            --border-glow: rgba(56, 189, 248, 0.15);
+            --border-light: rgba(255, 255, 255, 0.08);
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --color-robot: #38bdf8; /* Cyan */
+            --color-robot-glow: rgba(56, 189, 248, 0.3);
+            
+            --color-hardware: #f43f5e; /* Rose */
+            --color-hardware-glow: rgba(244, 63, 94, 0.3);
+            
+            --color-server: #a855f7; /* Purple */
+            --color-server-glow: rgba(168, 85, 247, 0.3);
+            
+            --color-success: #10b981; /* Emerald */
+            --color-warning: #f59e0b; /* Amber */
+            --color-danger: #ef4444; /* Red */
+            
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-body: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(244, 63, 94, 0.03) 0%, transparent 50%);
+        }
+
+        /* Custom Scrollbar for inner scrollable containers */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Header Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 30px;
+            background: rgba(7, 9, 19, 0.8);
+            border-bottom: 1px solid var(--border-light);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .header-title-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--color-robot), var(--color-server));
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+        }
+
+        .logo-container svg {
+            width: 24px;
+            height: 24px;
+            fill: #white;
+        }
+
+        .header-text h1 {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-text p {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid var(--border-light);
+        }
+
+        .progress-bar-wrapper {
+            width: 150px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 44%; /* Overall status: 4/9 tasks completed or close to */
+            background: linear-gradient(to right, var(--color-hardware), var(--color-robot));
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .progress-text {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-robot);
+        }
+
+        /* Main Layout */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            flex-grow: 1;
+            overflow: hidden;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-light);
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .sidebar-header h2 {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-scrollable {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .metadata-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .metadata-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+        }
+
+        .metadata-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .metadata-label {
+            color: var(--text-muted);
+        }
+
+        .metadata-value {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .team-tags {
+            display: flex;
+            gap: 6px;
+            margin-top: 5px;
+        }
+
+        .team-badge {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-light);
+            color: var(--text-secondary);
+        }
+
+        /* Detail Panel Area */
+        .detail-panel {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .detail-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 100%;
+            color: var(--text-muted);
+            gap: 15px;
+            padding: 40px 10px;
+        }
+
+        .detail-placeholder svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--text-muted);
+            opacity: 0.4;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        .detail-content {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            height: 100%;
+        }
+
+        .detail-title-wrapper {
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 12px;
+        }
+
+        .detail-track-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .detail-title {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .detail-description {
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        .detail-subsection-title {
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detail-checklist {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .detail-checklist li {
+            font-size: 0.8rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            color: var(--text-secondary);
+        }
+
+        .detail-checklist li svg {
+            flex-shrink: 0;
+            width: 14px;
+            height: 14px;
+            margin-top: 2px;
+        }
+
+        .detail-questions-box {
+            background: rgba(245, 158, 11, 0.05);
+            border: 1px dashed rgba(255, 191, 36, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.78rem;
+            line-height: 1.4;
+            color: #fcd34d;
+        }
+
+        .detail-code-ref {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-light);
+            font-size: 0.72rem;
+            color: var(--color-robot);
+            word-break: break-all;
+            display: block;
+        }
+
+        /* Workplan Columns */
+        .roadmap-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        .track-column {
+            background: rgba(10, 14, 28, 0.4);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .column-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .column-title {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .column-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .task-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Task Card Styling */
+        .task-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .task-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-hover-color, rgba(255, 255, 255, 0.15));
+            box-shadow: 0 6px 20px var(--shadow-color, rgba(0, 0, 0, 0.2));
+            background: rgba(20, 27, 50, 0.85);
+        }
+
+        .task-card.active {
+            border-color: var(--active-border-color);
+            box-shadow: 0 0 15px var(--active-shadow-color);
+            background: rgba(22, 33, 62, 0.95);
+        }
+
+        .task-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .task-card-title {
+            font-family: var(--font-display);
+            font-size: 0.88rem;
+            font-weight: 600;
+            line-height: 1.3;
+            color: var(--text-primary);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+
+        .status-dot.todo {
+            background: var(--color-warning);
+            box-shadow: 0 0 6px var(--color-warning);
+        }
+
+        .status-dot.inprogress {
+            background: var(--color-robot);
+            box-shadow: 0 0 6px var(--color-robot);
+        }
+
+        .status-dot.done {
+            background: var(--color-success);
+            box-shadow: 0 0 6px var(--color-success);
+        }
+
+        .task-card-body {
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .task-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            padding-top: 8px;
+            font-size: 0.68rem;
+        }
+
+        .task-meta-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+        }
+
+        .task-owner {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .task-tag {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-light);
+            color: var(--text-muted);
+        }
+
+        /* Specific Track Settings for Cards */
+        .track-robot {
+            --border-hover-color: rgba(56, 189, 248, 0.4);
+            --shadow-color: rgba(56, 189, 248, 0.08);
+            --active-border-color: var(--color-robot);
+            --active-shadow-color: rgba(56, 189, 248, 0.15);
+        }
+        
+        .track-hardware {
+            --border-hover-color: rgba(244, 63, 94, 0.4);
+            --shadow-color: rgba(244, 63, 94, 0.08);
+            --active-border-color: var(--color-hardware);
+            --active-shadow-color: rgba(244, 63, 94, 0.15);
+        }
+
+        .track-server {
+            --border-hover-color: rgba(168, 85, 247, 0.4);
+            --shadow-color: rgba(168, 85, 247, 0.08);
+            --active-border-color: var(--color-server);
+            --active-shadow-color: rgba(168, 85, 247, 0.15);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+        }
+
+        /* Responsive Layout Constraints to ensure one-frame sizing */
+        @media (max-height: 800px) {
+            header {
+                padding: 10px 20px;
+            }
+            .dashboard-container {
+                padding: 10px;
+                gap: 12px;
+            }
+            .task-card {
+                padding: 10px;
+            }
+            .sidebar-scrollable {
+                padding: 12px;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Block -->
+    <header>
+        <div class="header-title-area">
+            <div class="logo-container">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2a10 10 0 0 0-10 10v4a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-4a6 6 0 0 1 12 0v4a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-4A10 10 0 0 0 12 2zm-5 13H5v-3h2zm14 0h-2v-3h2z" fill="#ffffff"/>
+                    <path d="M8 12h8v2H8z" fill="#ffffff"/>
+                </svg>
+            </div>
+            <div class="header-text">
+                <h1>THE PORTRAITRON 3000</h1>
+                <p>Interactive Roadmap & System Integration Dashboard • Week 10-12 Execution</p>
+            </div>
+        </div>
+        <div class="progress-container">
+            <span class="metadata-label" style="font-size: 0.75rem;">Total Work Completion:</span>
+            <div class="progress-bar-wrapper">
+                <div class="progress-bar" id="overall-progress-bar"></div>
+            </div>
+            <span class="progress-text" id="overall-progress-text">44%</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace Dashboard -->
+    <div class="dashboard-container">
+        
+        <!-- Sidebar Panel for Live Details & Interactions -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                    </svg>
+                    Details & Operations
+                </h2>
+            </div>
+            <div class="sidebar-scrollable">
+                <!-- Project Status Metadata -->
+                <div class="metadata-section">
+                    <div class="metadata-row">
+                        <span class="metadata-label">Active Workspace</span>
+                        <span class="metadata-value">The Protraitron</span>
+                    </div>
+                    <div class="metadata-row">
+                        <span class="metadata-label">Active Team</span>
+                        <div class="team-tags">
+                            <span class="team-badge" style="border-color: rgba(56, 189, 248, 0.4);">Avner</span>
+                            <span class="team-badge" style="border-color: rgba(244, 63, 94, 0.4);">Hila</span>
+                            <span class="team-badge" style="border-color: rgba(168, 85, 247, 0.4);">Shira</span>
+                        </div>
+                    </div>
+                    <div class="metadata-row">
+                        <span class="metadata-label">Calibration State</span>
+                        <span class="metadata-value" style="color: var(--color-success)">ACTIVE (P0 & P1)</span>
+                    </div>
+                    <div class="metadata-row">
+                        <span class="metadata-label">System Controller</span>
+                        <span class="metadata-value">UR5e Arm (192.168.57.101)</span>
+                    </div>
+                </div>
+
+                <!-- Active Details Panel (Populated dynamically) -->
+                <div class="detail-panel" id="detail-panel-container">
+                    <div class="detail-placeholder" id="detail-placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+                        </svg>
+                        <p style="font-size: 0.85rem; font-weight: 500;">Select any assignment card on the right to load elaborated implementation details, code locations, checklist items, and key architectural questions.</p>
+                    </div>
+                    
+                    <!-- Dynamic Content Container -->
+                    <div class="detail-content" id="detail-content">
+                        <div class="detail-title-wrapper">
+                            <div class="detail-track-label" id="det-track">TRACK NAME</div>
+                            <div class="detail-title" id="det-title">Assignment Title</div>
+                        </div>
+                        
+                        <div>
+                            <div class="detail-subsection-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                Elaboration & Strategy
+                            </div>
+                            <p class="detail-description" id="det-description" style="margin-top: 6px;">Detailed description here.</p>
+                        </div>
+                        
+                        <div>
+                            <div class="detail-subsection-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21-12v7a9 9 0 1 1-9-9h7"></path></svg>
+                                Task Breakdown
+                            </div>
+                            <ul class="detail-checklist" id="det-checklist" style="margin-top: 6px;">
+                                <!-- items inserted by js -->
+                            </ul>
+                        </div>
+
+                        <div id="det-questions-section">
+                            <div class="detail-subsection-title" style="color: #fbbf24;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke="#fbbf24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                Open Questions / Risks
+                            </div>
+                            <div class="detail-questions-box" id="det-questions" style="margin-top: 6px;">
+                                Questions here.
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="detail-subsection-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                Code Context Reference
+                            </div>
+                            <span class="detail-code-ref" id="det-code" style="margin-top: 6px;">file_path.py</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Columns Area containing Tracks of Assignments -->
+        <main class="roadmap-grid">
+            
+            <!-- COLUMN 1: ROBOT PATH & DRAWING TRACK -->
+            <section class="track-column" style="border-top: 3px solid var(--color-robot)">
+                <div class="column-header">
+                    <span class="column-title" style="color: var(--color-robot)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>
+                        1. Robot & Vector Drawing
+                    </span>
+                    <span class="column-badge" style="background: rgba(56, 189, 248, 0.1); color: var(--color-robot)">Track A</span>
+                </div>
+                <div class="task-list">
+                    
+                    <!-- Task A1 -->
+                    <article class="task-card track-robot" onclick="selectTask('A1')">
+                        <div class="task-card-header">
+                            <h3 class="task-card-title">SVG Vector Drawing Engine</h3>
+                            <span class="status-dot todo" title="To Do"></span>
+                        </div>
+                        <p class="task-card-body">Test and finalize the robot's capability to read an external SVG file as input and execute it in force-compliance mode.</p>
+                        <div class="task-card-footer">
+                            <div class="task-meta-left">
+                                <span class="task-owner">TBD</span>
+                                <span class="task-tag">Phase 2</span>
+                            </div>
+                            <span style="color: var(--text-muted)">High Priority</span>
+                        </div>
+                    </article>
+
+                    <!-- Task A2 -->
+                    <article class="task-card track-robot" onclick="selectTask('A2')">
+                        <div class="task-card-header">
+                            <h3 class="task-card-title">TSP Stroke Order Optimization</h3>
+                            <span class="status-dot todo" title="To Do"></span>
+                        </div>
+                        <p class="task-card-body">Apply Traveling Salesperson algorithms to re-order and reverse paths in the SVG to minimize robot air transition time.</p>
+                        <div class="task-card-footer">
+                            <div class="task-meta-left">
+                                <span class="task-owner">TBD</span>
+                                <span class="task-tag">Optimization</span>
+                            </div>
+                            <span style="color: var(--text-muted)">Medium Priority</span>
+                        </div>
+                    </article>
+
+                    <!-- Task A3 -->
+                    <article class="task-card track-robot" onclick="selectTask('A3')">
+                        <div class="task-card-header">
+                            <h3 class="task-card-title">SwiftSketch Core Integration</h3>
+                            <span class="status-dot todo" title="To Do"></span>
+                        </div>
+                        <p class="task-card-body">Add SwiftSketch diffusion/refinement to the project workspace and coordinate python scripts to pipeline image to arm.</p>
+                        <div class="task-card-footer">
+                            <div class="task-meta-left">
+                                <span class="task-owner">TBD</span>
+                                <span class="task-tag">Core ML</span>
+                            </div>
+                            <span style="color: var(--text-muted)">High Priority</span>
+                        </div>
+                    </article>
+
+                </div>
+            </section>
+
+            <!-- COLUMN 2: HARDWARE & BRANDING TRACK -->
+            <section class="track-column" style="border-top: 3px solid var(--color-hardware)">
+                <div class="column-header">
+                    <span class="column-title" style="color: var(--color-hardware)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                        2. physical, Stamps & Ink
+                    </span>
+                    <span class="column-badge" style="background: rgba(244, 63, 94, 0.1); color: var(--color-hardware)">Track B</span>
+                </div>
+                <div class="task-list">
+                    
+                    <!-- Task B1 -->
+                    <article class="task-card track-hardware" onclick="selectTask('B1')">
+                        <div class="task-card-header">
+                            <h3 class="task-card-title">Stamp Branding Graphic Design</h3>
+                            <span class="status-dot done" title="Completed"></span>
+                        </div>
+                        <p class="task-card-body">Create a distinct, high-contrast vector logo of the team (Hila, Shira, Avner) to act as the signature commemorative mark.</p>
+                        <div class="task-card-footer">
+                            <div class="task-meta-left">
+                                <span class="task-owner">TBD</span>
+                                <span class="task-tag">Design</span>
+                            </div>
+                            <span style="color: var(--color-success)">Completed</span>
+                        </div>
+                    </article>
+
+                    <!-- Task B2 -->
+                    <article class="task-card track-hardware" onclick="selectTask('B2')">
+                        <div class="task-card-header">
+                            <h3 class="task-card-title">3D Modeling & Printing Stamp</h3>
+                            <span class="status-dot inprogress" title="In Progress"></span>
+                        </div>
+                        <p class="task-card-body">Model a 3D-printable holder and rubber/flexible face stamp for the UR5e robot hand mount. Print and test mechanical tolerance.</p>
+                        <div class="task-card-footer">
+                            <div class="task-meta-left">
+                                <span class="task-owner">TBD</span>
+                                <span class="task-tag">3D Print</span>
+                            </div>
+                            <span style="color: var(--color-robot)">In Progress</span>
+                        </div>
+                    </article>
+
+                    <!-- Task B3 -->
+                    <article class="task-card track-hardware" onclick="selectTask('B3')">
+                        <div class="task-card-header">
+                            <h3 class="task-card-title">Procure Stamp Ink & Pads</h3>
+                            <span class="status-dot todo" title="To Do"></span>
+                        </div>
+                        <p class="task-card-body">Buy high-quality stamp ink (pigment/dye based) and stamp pads suitable for automatic robot execution without manual wetting.</p>
+                        <div class="task-card-footer">
+                            <div class="task-meta-left">
+                                <span class="task-owner">TBD</span>
+                                <span class="task-tag">Hardware</span>
+                            </div>
+                            <span style="color: var(--text-muted)">Low Priority</span>
+                        </div>
+                    </article>
+
+                </div>
+            </section>
+
+            <!-- COLUMN 3: SERVER & CLIENT DIGITAL TRACK -->
+            <section class="track-column" style="border-top: 3px solid var(--color-server)">
+                <div class="column-header">
+                    <span class="column-title" style="color: var(--color-server)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+                        3. Server, Camera & UX
+                    </span>
+                    <span class="column-badge" style="background: rgba(168, 85, 247, 0.1); color: var(--color-server)">Track C</span>
+                </div>
+                <div class="task-list">
+                    
+                    <!-- Task C1 -->
+                    <article class="task-card track-server" onclick="selectTask('C1')">
+                        <div class="task-card-header">
+                            <h3 class="task-card-title">Direct Camera/Phone Capture</h3>
+                            <span class="status-dot todo" title="To Do"></span>
+                        </div>
+                        <p class="task-card-body">Integrate external capture devices directly to control PC via USB/IP camera protocols, handling auto-cropping and face bounding box.</p>
+                        <div class="task-card-footer">
+                            <div class="task-meta-left">
+                                <span class="task-owner">TBD</span>
+                                <span class="task-tag">Computer Vision</span>
+                            </div>
+                            <span style="color: var(--text-muted)">Medium Priority</span>
+                        </div>
+                    </article>
+
+                    <!-- Task C2 -->
+                    <article class="task-card track-server" onclick="selectTask('C2')">
+                        <div class="task-card-header">
+                            <h3 class="task-card-title">FastAPI Server & Web Portal</h3>
+                            <span class="status-dot inprogress" title="In Progress"></span>
+                        </div>
+                        <p class="task-card-body">Build a Python backend server on M4 Max (MPS PyTorch) to run SwiftSketch, returning SVG results to a beautiful web UI for preview.</p>
+                        <div class="task-card-footer">
+                            <div class="task-meta-left">
+                                <span class="task-owner">TBD</span>
+                                <span class="task-tag">Web App</span>
+                            </div>
+                            <span style="color: var(--color-robot)">In Progress</span>
+                        </div>
+                    </article>
+
+                    <!-- Task C3 -->
+                    <article class="task-card track-server" onclick="selectTask('C3')">
+                        <div class="task-card-header">
+                            <h3 class="task-card-title">Souvenir Delivery Model</h3>
+                            <span class="status-dot todo" title="To Do"></span>
+                        </div>
+                        <p class="task-card-body">Evaluate and implement a physical paper-delivery mechanism (clamping, drawing, stamp force control, and retrieval zone).</p>
+                        <div class="task-card-footer">
+                            <div class="task-meta-left">
+                                <span class="task-owner">TBD</span>
+                                <span class="task-tag">Robotics UX</span>
+                            </div>
+                            <span style="color: var(--text-muted)">High Priority</span>
+                        </div>
+                    </article>
+
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- Javascript for Dynamic Interactions -->
+    <script>
+        // Full database of task details (elaborated backlog information)
+        const taskDatabase = {
+            'A1': {
+                track: 'Robot & Vector Drawing',
+                trackColor: 'var(--color-robot)',
+                title: 'SVG Vector Drawing Engine',
+                description: 'Write an SVG parser module and integrate it into the physical UR5e execution loop. The robot currently supports line strokes (array of coordinates) generated from text and circles. We need to expand this to parse standard SVG files, extract the path nodes (coordinates and quadratic/cubic Bézier curves), and normalize the coordinate space to fit our drawing page.',
+                checklist: [
+                    'Implement XML parser to extract <path> elements and path commands (M, L, C, Q, Z, etc.).',
+                    'Convert Bézier vectors to interpolated list of physical (x, y) coordinates using custom Bezier resolution functions similar to those in text_drawing.py.',
+                    'Test normalization function to center and fit paths inside physical canvas limits (19x27 cm).',
+                    'Implement coordinate transform from normalized canvas [0,1] to UR5e Base frame coordinate system via calibration references P1 and width/height.'
+                ],
+                questions: '<strong>1. SVG Bounds:</strong> How should we treat out-of-bounds or non-uniform aspect ratio SVGs? Do we force-center and letterbox, or stretch?<br><strong>2. Complex Elements:</strong> Do we support native shapes like &lt;rect&gt;, &lt;circle&gt;, &lt;polyline&gt; or should we mandate that input SVGs must contain only vectorized paths?',
+                codeRef: 'src/robot/controller.py (specifically integrate into execute_drawing_path)'
+            },
+            'A2': {
+                track: 'Robot & Vector Drawing',
+                trackColor: 'var(--color-robot)',
+                title: 'TSP Stroke Order Optimization',
+                description: 'SwiftSketch generates drawings containing hundreds of independent, short lines. If drawn in the default sequence, the robot arm will spend a huge amount of time lifting the marker, hovering to the next start point, and lowering. We need to implement a fast heuristic optimizer to minimize total idle "air time" by sorting path draw order and choosing optimal path direction (left-to-right vs. right-to-left).',
+                checklist: [
+                    'Write a path order optimizer module (e.g. Nearest Neighbor search or 2-opt heuristic).',
+                    'Implement "Double-Ended TSP" where each path can be reversed to make its start point closer to the previous endpoint.',
+                    'Plot/compare overall travel distance (air vs. drawing) before and after optimization to measure success.',
+                    'Compare execution times in dryrun mode on complex portrait layouts.'
+                ],
+                questions: '<strong>1. Reverse direction limits:</strong> Does reversing the stroke direction impact drawing quality? (e.g. ink flow/brush behavior).<br><strong>2. Complexity:</strong> For drawings with >500 strokes, full optimization can be slow. Do we limit optimization to nearest-neighbor to ensure fast server response times?',
+                codeRef: 'New file src/robot/path_optimizer.py to run before execute_drawing_path'
+            },
+            'A3': {
+                track: 'Robot & Vector Drawing',
+                trackColor: 'var(--color-robot)',
+                title: 'SwiftSketch Core Integration',
+                description: 'Port the SwiftSketch code into the Portraitron workspace. SwiftSketch generates raster sketch drawings using diffvg (differentiable vector graphics). We need to create a wrapper function that receives a raster image, runs the optimization/refinement pipeline, and saves the final result as a clean, standardized SVG path array.',
+                checklist: [
+                    'Install pydiffvg and its PyTorch dependency inside the robot environment.',
+                    'Create python interface that accepts image file path and model parameters (e.g., number of paths, iterations).',
+                    'Expose key parameters as optional CLI flags or config options.',
+                    'Verify output curves are properly exported into clean SVG format without overlapping or redundant paths.'
+                ],
+                questions: '<strong>1. Environment Dependencies:</strong> pydiffvg/PyTorch can be complex to compile on certain OS configurations. Will we run SwiftSketch locally on the robot PC, or will it reside strictly on the M4 Max Macbook server?<br><strong>2. Output resolution:</strong> What pixel canvas grid size (e.g., 224x224, 512x512) yields the best sketch resolution for a physical marker tip?',
+                codeRef: 'New module under src/vision/swiftsketch_runner.py'
+            },
+            'B1': {
+                track: 'physical, Stamps & Ink',
+                trackColor: 'var(--color-hardware)',
+                title: 'Stamp Branding Graphic Design',
+                description: 'Design the branding logo/emblem representing the team (Hila, Shira, Avner) to stamp onto every completed portrait. The design needs to be exported as a high-contrast binary vector graphic, suitable for physical carving/extrusion into a 3D-printable stamp head.',
+                checklist: [
+                    'Draft logo vector concept including name references (Hila, Shira, Avner) and robot/artist iconography.',
+                    'Refine design for maximum contrast (pure solid black and pure white background).',
+                    'Export vector design as .SVG and a high-resolution .PNG for mold generation.'
+                ],
+                questions: '<strong>1. Stamp size constraints:</strong> What is the target physical dimensions of the stamp? (Typically around 3x3 cm to 4x4 cm to fit nicely in corner margins).<br><strong>2. Level of Detail:</strong> Very fine detail might bleed/smudge on physical paper when inked, so keep elements thick and distinct.',
+                codeRef: 'assets/stamp_logo.svg'
+            },
+            'B2': {
+                track: 'physical, Stamps & Ink',
+                trackColor: 'var(--color-hardware)',
+                title: '3D Modeling & Printing Stamp',
+                description: 'Model and build the physical stamp tool. This includes designing a custom tool adapter to mount onto the UR5e end-effector, and printing the positive stamp surface (using a flexible elastomer filament like TPU, or casting silicone into a 3D-printed mold) for high-quality ink transfers.',
+                checklist: [
+                    'Design CAD model for the stamp bracket that securely slides or bolts onto the robot tool adapter.',
+                    'Translate logo SVG into a raised 3D surface model (height offset 2-3 mm).',
+                    'Perform test prints using flexible material (TPU) to evaluate surface flatness and rigidity.',
+                    'Define the tool offset parameters (X, Y, Z translation from the robotic tool center point).'
+                ],
+                questions: '<strong>1. Tool-Changer Logic:</strong> Will the arm have a dual pen-and-stamp mount (two tool tips offset from each other), or must the operator physically change the tool? If dual-mounted, we must verify collision models during drawing.',
+                codeRef: 'hardware/stamp_mount.stl'
+            },
+            'B3': {
+                track: 'physical, Stamps & Ink',
+                trackColor: 'var(--color-hardware)',
+                title: 'Procure Stamp Ink & Pads',
+                description: 'Source the optimal ink and pads for the robotic workspace. Because the process is automated, the inkpad must sit in a designated, calibrated position within the robot’s workspace. The robot must be programmed to hover over the pad, tap down with specific compliance force to wet the stamp, and then apply it to the drawing.',
+                checklist: [
+                    'Identify and order stamp ink that doesn’t dry out quickly on an open pad.',
+                    'Calibrate the physical 3D coordinate of the inkpad base.',
+                    'Create robot routines to "refill ink" by pressing the stamp onto the pad using controlled force.'
+                ],
+                questions: '<strong>1. Inkpad position:</strong> Where will the inkpad be located relative to the drawing board? Does it fit inside the current table reach?<br><strong>2. Wetting Frequency:</strong> Does the stamp need ink before every drawing, or can it hold enough ink for multiple portraits?',
+                codeRef: 'config/marker.yaml (add inkpad_offset and stamping_force thresholds)'
+            },
+            'C1': {
+                track: 'Server, Camera & UX',
+                trackColor: 'var(--color-server)',
+                title: 'Direct Camera/Phone Capture',
+                description: 'Implement a vision input interface to take real-time photos of subjects. We need to support connecting a camera (webcam/DSLR) or a smartphone directly to the system, taking a photo programmatically, running a background segmenter (like face bounding boxes or background removal) to output a clean cropped face, and forwarding the image to the drawing pipeline.',
+                checklist: [
+                    'Implement video capture interface (e.g. OpenCV VideoCapture for USB webcam or HTTP fetch for smart IP cameras).',
+                    'Write automatic face cropping logic (e.g., using MediaPipe Face Detection).',
+                    'Add a background removal/masking filter to exclude chairs, lights, and room background.',
+                    'Build a preview loop to confirm the subject is centered and lit properly.'
+                ],
+                questions: '<strong>1. Camera Hardware:</strong> What specific camera/phone protocol are we supporting? (e.g. standard USB webcam or smart phone over Wi-Fi)?<br><strong>2. Lighting/Contrast:</strong> Portrait sketching works best under high-contrast portrait lighting. Do we need to apply auto-contrast/histogram equalization inside our vision code?',
+                codeRef: 'New folder src/vision/camera_capture.py'
+            },
+            'C2': {
+                track: 'Server, Camera & UX',
+                trackColor: 'var(--color-server)',
+                title: 'FastAPI Server & Web Portal',
+                description: 'Develop a server backend (FastAPI) and a frontend web interface. The user will upload a photo to the website. The photo is sent to the server (running on the M4 Max Macbook with MPS/GPU acceleration), which runs the SwiftSketch model and returns the SVG path preview. Once confirmed, the website sends a trigger command to the robot controller to initiate the physical drawing.',
+                checklist: [
+                    'Initialize a FastAPI server with endpoints for image upload, parameter configuration, and SVG retrieval.',
+                    'Build a responsive web dashboard to upload images, preview the generated SVG sketch overlaid with the stamp, and click "Start Draw".',
+                    'Integrate a queue management system to handle multiple uploads, displaying queue status to active users.',
+                    'Implement security handshakes to ensure only authorized clients can trigger physical robot movements.'
+                ],
+                questions: '<strong>1. Web Hosting:</strong> Will this server run on a local offline LAN network in the lab, or will it be exposed to the internet?<br><strong>2. Status Feedback:</strong> Should the web page show a live camera feed or live robot coordinates while drawing is in progress?',
+                codeRef: 'New folder src/server/ (main.py, static/index.html)'
+            },
+            'C3': {
+                track: 'Server, Camera & UX',
+                trackColor: 'var(--color-server)',
+                title: 'Souvenir Delivery Model',
+                description: 'Finalize the delivery mechanism so the drawing acts as a high-quality physical souvenir. The system must operate reliably: the paper must remain perfectly flat under the compliant arm force, and we must design an automatic or safe manual method to secure and release the finished portrait without causing smudges or robot collisions.',
+                checklist: [
+                    'Design and test a clamping/board plate fixture that keeps paper flat (e.g. magnetic margins or a suction vacuum plate).',
+                    'Determine safety zones for the robot arm retract/homing routines so the user can easily take the drawing.',
+                    'Select high-quality paper stock (thick cards or sketch paper) that holds ink well and feels like a keepsake.'
+                ],
+                questions: '<strong>1. Sheet feeding:</strong> Is paper feeding manual (operator replaces sheet after each run) or automated? If manual, how does the program verify paper is loaded before drawing?<br><strong>2. Safety:</strong> How do we safeguard the workspace when the user retrieves their drawing? Do we implement joint-safety stops or a physical barrier?',
+                codeRef: 'src/robot/controller.py (home and retract safety limits)'
+            }
+        };
+
+        // Select task function
+        function selectTask(taskId) {
+            // Remove active class from all cards
+            document.querySelectorAll('.task-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            // Add active class to clicked card
+            // Find parent elements to highlight
+            const activeCard = event.currentTarget;
+            activeCard.classList.add('active');
+
+            const task = taskDatabase[taskId];
+            if (!task) return;
+
+            // Update details panel
+            document.getElementById('detail-placeholder').style.display = 'none';
+            
+            const content = document.getElementById('detail-content');
+            content.style.display = 'flex';
+            
+            const detTrack = document.getElementById('det-track');
+            detTrack.innerText = task.track;
+            detTrack.style.color = task.trackColor;
+            
+            document.getElementById('det-title').innerText = task.title;
+            document.getElementById('det-description').innerText = task.description;
+            
+            // Build checklist
+            const checklistElement = document.getElementById('det-checklist');
+            checklistElement.innerHTML = '';
+            task.checklist.forEach(item => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: ${task.trackColor}">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>${item}</span>
+                `;
+                checklistElement.appendChild(li);
+            });
+            
+            // Set open questions
+            document.getElementById('det-questions').innerHTML = task.questions;
+            
+            // Set code ref
+            document.getElementById('det-code').innerText = task.codeRef;
+        }
+
+        // Set overall progress on load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Let's set default progress to 44% (representing 4 tasks out of 9 either done or in-progress)
+            const progressVal = '44%';
+            document.getElementById('overall-progress-bar').style.width = progressVal;
+            document.getElementById('overall-progress-text').innerText = progressVal;
+        });
+    </script>
+</body>
+</html>
