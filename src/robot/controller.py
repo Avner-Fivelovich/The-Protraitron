@@ -201,7 +201,8 @@ class UR5eController:
         
         tool_task_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         tool_selection_vector = [1, 0, 0, 0, 0, 0] # Compliance only on Base X
-        tool_wrench = [self.cfg['forward_force'], 0.0, 0.0, 0.0, 0.0, 0.0]
+        # Negative X points towards the drawing board, so command a negative force to push into the surface
+        tool_wrench = [-self.cfg['forward_force'], 0.0, 0.0, 0.0, 0.0, 0.0]
         
         self.rtde_c.forceModeSetDamping(self.cfg['force_damping'])
         self.rtde_c.forceMode(
@@ -250,7 +251,8 @@ class UR5eController:
         
         tool_task_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         tool_selection_vector = [1, 0, 0, 0, 0, 0] # Compliance only on Base X
-        tool_wrench = [self.cfg['forward_force'], 0.0, 0.0, 0.0, 0.0, 0.0]
+        # Negative X points towards the drawing board, so command a negative force to push into the surface
+        tool_wrench = [-self.cfg['forward_force'], 0.0, 0.0, 0.0, 0.0, 0.0]
         
         try:
             for step in range(num_steps + 1):
