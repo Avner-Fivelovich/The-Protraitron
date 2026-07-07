@@ -1,0 +1,1580 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The PORTRAITRON 3000 - POC Phase Update</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700;900&family=Inter:ital,wght@0,400;0,700;0,900;1,400&family=JetBrains+Mono&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #1a1a1c;
+      --dark: #0f0f10;
+      --accent: #26a69a;
+      --purple: #9c27b0;
+      --deep: #4a148c;
+      --card: #252528;
+      --silver: #e0e0e0;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-sans: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--dark);
+      color: var(--silver);
+      font-family: var(--font-sans);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Slide Layout */
+    .presentation {
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      /* Controlled by JS */
+      flex-direction: column;
+      padding: 100px 80px 80px 80px;
+      background-color: var(--bg);
+      border: 15px solid var(--dark);
+      overflow: hidden;
+    }
+
+    .slide.active {
+      display: flex;
+      animation: slideIn 0.4s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.98);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Background Texture */
+    .slide::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--dark) 1px, transparent 1px),
+        linear-gradient(90deg, var(--dark) 1px, transparent 1px);
+      background-size: 100px 100px;
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    /* Header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--dark);
+      padding: 15px 40px;
+      border-bottom: 3px solid var(--deep);
+    }
+
+    .brand {
+      background: var(--purple);
+      color: white;
+      font-family: var(--font-display);
+      font-weight: 900;
+      padding: 6px 20px;
+      transform: skewX(-12deg);
+      font-size: 1.2rem;
+      box-shadow: 4px 4px 0 var(--deep);
+    }
+
+    .lab-meta {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* Content Styling */
+    h1,
+    h2,
+    h3 {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+    }
+
+    .slide-title {
+      font-size: 4.5rem;
+      font-weight: 900;
+      color: var(--purple);
+      margin-bottom: 40px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .slide-title::before {
+      content: '';
+      width: 12px;
+      height: 60px;
+      background: var(--accent);
+    }
+
+    /* Card Grid */
+    .grid {
+      display: grid;
+      gap: 25px;
+      flex: 1;
+    }
+
+    .card {
+      background: var(--card);
+      border: 2px solid var(--deep);
+      padding: 40px;
+      position: relative;
+      box-shadow: 8px 8px 0 var(--dark);
+    }
+
+    .card h3 {
+      color: var(--accent);
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      margin-bottom: 12px;
+      border-left: 5px solid var(--purple);
+    }
+
+    .step-label {
+      color: var(--accent);
+      font-weight: 900;
+      font-size: 1.4rem;
+      min-width: 80px;
+    }
+
+    /* Navigation */
+    .nav-controls {
+      position: fixed;
+      bottom: 60px;
+      right: 60px;
+      display: flex;
+      gap: 15px;
+      z-index: 200;
+    }
+
+    .nav-btn {
+      width: 60px;
+      height: 60px;
+      background: var(--purple);
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 900;
+      box-shadow: 4px 4px 0 var(--deep);
+      transition: transform 0.1s;
+    }
+
+    .nav-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 var(--deep);
+    }
+
+    .nav-btn:hover {
+      background: var(--accent);
+    }
+
+    .progress-bar {
+      position: fixed;
+      bottom: 45px;
+      left: 80px;
+      right: 80px;
+      height: 4px;
+      background: var(--card);
+      z-index: 150;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Specific Layouts */
+    .title-slide {
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .behold {
+      font-size: 7.5rem;
+      color: var(--accent);
+      font-weight: 900;
+      margin-bottom: 10px;
+      text-shadow: 6px 6px 0 var(--deep);
+      line-height: 1.1;
+    }
+
+    /* Footer */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 0 40px;
+      background: var(--dark);
+      border-top: 2px solid var(--deep);
+      color: #555;
+    }
+
+    .timeline-item {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 50px;
+      font-size: 1.4rem;
+      align-items: flex-start;
+    }
+
+    .marker {
+      padding: 8px 20px;
+      background: var(--accent);
+      color: black;
+      font-weight: 900;
+      height: fit-content;
+      font-size: 1.2rem;
+      min-width: 280px;
+      text-align: center;
+      transform: skewX(-5deg);
+    }
+
+    .circle-visual {
+      width: 260px;
+      height: 260px;
+      border: 4px dashed var(--purple);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: spin 15s linear infinite;
+      position: relative;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .labor-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 20px;
+      background: var(--dark);
+      border-right: 10px solid var(--purple);
+      margin-bottom: 15px;
+    }
+
+    /* Memorial Slide Styling */
+    .memorial-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      height: calc(100% - 60px);
+      width: 100%;
+      align-items: stretch;
+    }
+
+    .memorial-card {
+      background: linear-gradient(135deg, #2a2235 0%, #171120 100%);
+      border: 3px solid #ffeb3b;
+      /* Gold trim */
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(255, 235, 59, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .memorial-card::before {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      right: 4px;
+      bottom: 4px;
+      border: 1px dashed rgba(255, 235, 59, 0.4);
+      pointer-events: none;
+    }
+
+    .plaque-title {
+      font-family: var(--font-display);
+      color: #ffeb3b;
+      font-size: 1.15rem;
+      margin-bottom: 8px;
+      text-align: center;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+      letter-spacing: 0.05em;
+    }
+
+    .plaque-details {
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      line-height: 1.3;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .plaque-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 3px;
+      margin-bottom: 4px;
+      gap: 5px;
+    }
+
+    .plaque-row.incident-row {
+      flex-direction: column;
+      align-items: flex-start;
+      border-bottom: none;
+    }
+
+    .plaque-label {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .plaque-value {
+      flex: 1;
+      font-size: 0.75rem;
+      text-align: right;
+      color: var(--silver);
+      word-break: break-word;
+    }
+
+    .plaque-row.incident-row .plaque-value {
+      text-align: left;
+      margin-top: 2px;
+      font-size: 0.7rem;
+      line-height: 1.2;
+    }
+
+    .memorial-frame {
+      position: relative;
+      width: 100%;
+      height: 360px;
+      background: rgba(15, 15, 16, 0.6);
+      border: 3px double var(--purple);
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(156, 39, 176, 0.2), inset 0 0 10px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: auto;
+    }
+
+    .memorial-img {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 1;
+      transition: opacity 0.3s ease-in-out;
+      filter: grayscale(100%);
+    }
+
+    .memorial-ribbon {
+      position: absolute;
+      top: 8px;
+      left: -35px;
+      background: #000;
+      color: #fff;
+      padding: 3px 30px;
+      transform: rotate(-45deg);
+      font-family: var(--font-mono);
+      font-size: 0.55rem;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      border: 1px solid #333;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .candle-container {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin: 8px 0;
+    }
+
+    .candle {
+      position: relative;
+      width: 12px;
+      height: 30px;
+      background: linear-gradient(to right, #4a148c, #9c27b0, #4a148c);
+      border-radius: 2px / 4px;
+      box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .candle::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: 5px;
+      width: 2px;
+      height: 5px;
+      background: #111;
+    }
+
+    .flame {
+      position: absolute;
+      top: -15px;
+      left: 3px;
+      width: 6px;
+      height: 12px;
+      background: radial-gradient(ellipse at bottom, #ffeb3b 0%, #ff9800 50%, #ff3d00 100%);
+      border-radius: 50% 50% 20% 20%;
+      box-shadow: 0 0 8px rgba(255, 152, 0, 0.6);
+      animation: flicker 0.15s ease-in-out infinite alternate;
+      transform-origin: center bottom;
+    }
+
+    /* NEW EVIL ACCESSORIES & EASTER EGGS */
+    .scheme-btn {
+      background: #e040fb;
+      color: #0f0f10;
+      border: 3px solid #aa00ff;
+      padding: 5px 15px;
+      font-family: var(--font-display);
+      font-weight: 900;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      box-shadow: 0 4px 0 #aa00ff;
+      margin-left: 20px;
+      transition: transform 0.1s;
+      border-radius: 4px;
+    }
+
+    .scheme-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #aa00ff;
+    }
+
+    /* Scheme Speech Bubble Popup */
+    .scheme-bubble {
+      position: fixed;
+      top: 80px;
+      left: 250px;
+      background: #fff9c4;
+      color: black;
+      border: 3px solid #ff9800;
+      padding: 15px;
+      border-radius: 12px;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 0.95rem;
+      box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      max-width: 380px;
+      display: none;
+      animation: bubblePop 0.3s ease-out;
+    }
+
+    .scheme-bubble::after {
+      content: '';
+      position: absolute;
+      top: -15px;
+      left: 30px;
+      border-width: 0 15px 15px;
+      border-style: solid;
+      border-color: #fff9c4 transparent;
+      display: block;
+      width: 0;
+    }
+
+    .scheme-bubble::before {
+      content: '';
+      position: absolute;
+      top: -19px;
+      left: 28px;
+      border-width: 0 17px 17px;
+      border-style: solid;
+      border-color: #ff9800 transparent;
+      display: block;
+      width: 0;
+      z-index: -1;
+    }
+
+    @keyframes bubblePop {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Platypus Detector Radar */
+    .platypus-detector {
+      position: fixed;
+      bottom: 20px;
+      left: 40px;
+      width: 140px;
+      height: 140px;
+      background: radial-gradient(circle, #2e7d32 10%, #1b5e20 80%, #000 100%);
+      border: 6px solid #455a64;
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(76, 175, 80, 0.4), inset 0 0 20px #000;
+      z-index: 100;
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      color: #81c784;
+      font-size: 0.65rem;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .platypus-detector::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent 48%, rgba(76, 175, 80, 0.3) 50%, transparent 52%);
+      animation: radarSweep 2s linear infinite;
+      pointer-events: none;
+    }
+
+    .platypus-fedora {
+      position: absolute;
+      font-size: 2.2rem;
+      top: 25%;
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      transform: translateY(-20px);
+    }
+
+    .platypus-detector.detected .platypus-fedora {
+      opacity: 1;
+      transform: translateY(0) rotate(-10deg);
+    }
+
+    @keyframes radarSweep {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Backstory Tragedy Drawer (Replaces sticky note on the right) */
+    .backstory-drawer {
+      position: fixed;
+      top: 15vh;
+      right: -320px;
+      /* Hidden by default */
+      width: 350px;
+      background: #2d1b4e;
+      border: 4px solid var(--purple);
+      border-right: none;
+      box-shadow: -10px 10px 30px rgba(0, 0, 0, 0.6);
+      color: #e1bee7;
+      z-index: 200;
+      transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      border-radius: 12px 0 0 12px;
+    }
+
+    .backstory-drawer.open {
+      right: 0;
+    }
+
+    .backstory-handle {
+      position: absolute;
+      left: -44px;
+      top: 40px;
+      background: var(--purple);
+      color: white;
+      padding: 15px 8px;
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      writing-mode: vertical-lr;
+      transform: rotate(180deg);
+      cursor: pointer;
+      border-radius: 0 8px 8px 0;
+      box-shadow: -4px 4px 8px rgba(0, 0, 0, 0.3);
+      letter-spacing: 0.1em;
+    }
+
+    .backstory-content {
+      padding: 30px;
+    }
+
+    .backstory-title {
+      color: #ffeb3b;
+      font-size: 1.3rem;
+      margin-bottom: 15px;
+      border-b: 2px solid var(--purple);
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .backstory-text {
+      font-style: italic;
+      font-size: 1.1rem;
+      line-height: 1.5;
+      min-height: 120px;
+    }
+
+    .backstory-btn {
+      background: var(--accent);
+      color: black;
+      border: none;
+      padding: 8px 16px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      margin-top: 15px;
+      width: 100%;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .backstory-btn:hover {
+      background: #4db6ac;
+    }
+
+    /* Explosion & Self-Destruct Styling */
+    .self-destruct {
+      background: #d32f2f;
+      color: white;
+      border: 4px solid #7f0000;
+      padding: 5px 15px;
+      font-family: var(--font-display);
+      font-weight: 900;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      box-shadow: 0 4px 0 #7f0000;
+      margin-left: 15px;
+      transition: transform 0.1s;
+      border-radius: 4px;
+    }
+
+    .self-destruct:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #7f0000;
+    }
+
+    .self-destruct:hover {
+      background: #b71c1c;
+    }
+
+    @keyframes evil-shake {
+
+      0%,
+      100% {
+        transform: translate(0, 0);
+      }
+
+      10% {
+        transform: translate(-10px, -10px);
+      }
+
+      20% {
+        transform: translate(10px, 10px);
+      }
+
+      30% {
+        transform: translate(-10px, 10px);
+      }
+
+      40% {
+        transform: translate(10px, -10px);
+      }
+    }
+
+    .shaking {
+      animation: evil-shake 0.1s linear infinite;
+    }
+
+    @keyframes rapid-shake {
+
+      0%,
+      100% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      10% {
+        transform: translate(-15px, 10px) rotate(-2deg);
+      }
+
+      30% {
+        transform: translate(15px, -10px) rotate(2deg);
+      }
+
+      50% {
+        transform: translate(-12px, -12px) rotate(-1.5deg);
+      }
+
+      70% {
+        transform: translate(12px, 12px) rotate(2deg);
+      }
+
+      90% {
+        transform: translate(-10px, 8px) rotate(-0.5deg);
+      }
+    }
+
+    .wild-shaking {
+      animation: rapid-shake 0.05s linear infinite;
+    }
+
+    @keyframes textPulse {
+      from {
+        transform: scale(0.95);
+        text-shadow: 0 0 20px #ff3d00, 0 0 40px #ff3d00;
+      }
+
+      to {
+        transform: scale(1.05);
+        text-shadow: 0 0 50px #ffeb3b, 0 0 20px #ff3d00;
+      }
+    }
+
+    @keyframes debrisBlow {
+      0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(0) rotate(var(--rot));
+        opacity: 0;
+      }
+    }
+
+    /* Burn filter applied to main presentation on explosion */
+    .burnt-out {
+      filter: grayscale(0.9) blur(3px) contrast(1.6) sepia(0.6) brightness(0.2) !important;
+      pointer-events: none !important;
+      transition: filter 1s ease;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Explosion & Self Destruct Overlay Screen -->
+  <div id="explosion-screen"
+    style="display: none; position: fixed; inset: 0; z-index: 99999; background: transparent; pointer-events: none;">
+    <div id="flash-overlay"
+      style="position: absolute; inset: 0; background: white; opacity: 0; transition: opacity 0.05s ease;"></div>
+    <div id="burnt-overlay"
+      style="position: absolute; inset: 0; background: radial-gradient(circle, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.95) 100%), #120c1f; opacity: 0; transition: opacity 1.5s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #ff3d00; pointer-events: none;">
+      <h1
+        style="font-family: 'Space Grotesk', sans-serif; font-size: 5rem; font-weight: 900; text-transform: uppercase; text-shadow: 0 0 30px #ff3d00; margin-bottom: 20px; animation: textPulse 1s infinite alternate; line-height: 1.1;">
+        CURSE YOU, PERRY THE PLATYPUS!!!</h1>
+      <p
+        style="font-family: 'JetBrains Mono', monospace; font-size: 1.4rem; color: #ffeb3b; margin-bottom: 30px; padding: 0 40px; max-width: 800px; line-height: 1.5;">
+        The Portraitron 3000 Inator has self-destructed in a spectacular explosion of metal, smoke, and pure evil
+        cartoon science!</p>
+      <button onclick="resetSelfDestruct()"
+        style="background: #ffeb3b; color: black; border: none; padding: 15px 35px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 1.3rem; cursor: pointer; box-shadow: 0 6px 0 #b2a300; text-transform: uppercase; border-radius: 6px; transition: transform 0.1s; pointer-events: auto;">Rebuild
+        Inator</button>
+    </div>
+    <div id="debris-container" style="position: absolute; inset: 0; overflow: hidden; pointer-events: none;"></div>
+  </div>
+
+  <header>
+    <div style="display: flex; align-items: center;">
+      <div class="brand">DOOFENSHMIRTZ EVIL INC.</div>
+      <button class="self-destruct" id="sd-btn" onclick="selfDestruct()">Self-Destruct</button>
+    </div>
+    <div class="lab-meta">ROBOTICS DIVISION // THE PORTRAITRON</div>
+  </header>
+
+  <!-- Scheme-Inator Speech Bubble -->
+  <div class="scheme-bubble" id="scheme-bubble">
+    "Behold! The No-More-Tol-Inator!"
+  </div>
+
+  <!-- Retractable Backstory Tragedy Drawer -->
+  <div class="backstory-drawer" id="backstory-drawer">
+    <div class="backstory-handle" onclick="toggleBackstory()">Tragic Backstory</div>
+    <div class="backstory-content">
+      <h3 class="backstory-title">⚡ Child History Log ⚡</h3>
+      <p class="backstory-text" id="backstory-text">
+        "Neither of my parents showed up to my actual birth..."
+      </p>
+      <button class="backstory-btn" onclick="nextBackstory()">Next Sad Memory</button>
+    </div>
+  </div>
+
+  <!-- Platypus Radar Detector -->
+  <div class="platypus-detector" id="platypus-detector" onclick="detectPlatypus()">
+    <div class="platypus-fedora" id="radar-emoji">🦆</div>
+    <span style="font-size: 0.75rem; color: #ffeb3b; margin-bottom: 5px; z-index: 10;">RADAR 3000</span>
+    <span id="detector-status" style="z-index: 10;">SCANNING...</span>
+  </div>
+
+  <div class="presentation">
+    <!-- SLIDE 1 -->
+    <section class="slide active title-slide">
+      <h1 class="behold">BEHOLD!</h1>
+      <h2 style="font-size: 2.5rem; margin-bottom: 20px;">The PORTRAITRON 3000<br><span
+          style="color: var(--accent); font-size: 2rem;">Proof of Concept (POC) Phase Update</span></h2>
+      <p style="font-size: 1.4rem; color: var(--silver); max-width: 800px; font-style: italic; opacity: 0.8;">
+        Avner Fivelovich, Hila Regev Shabath, Shira Shmuely
+      </p>
+    </section>
+
+    <!-- SLIDE 2: Memorial Page -->
+    <section class="slide">
+      <h2 class="slide-title" style="color: #ffeb3b; margin-bottom: 20px;">In Memoriam: Fallen Research Assets</h2>
+      <div class="memorial-grid">
+
+        <!-- Card 0: Group A, Offset 0 -->
+        <div class="memorial-card">
+          <div>
+            <h3 class="plaque-title" id="plaque-title-0">MARKER ALPHA</h3>
+            <div class="plaque-details">
+              <div class="plaque-row">
+                <div class="plaque-label">Class:</div>
+                <div class="plaque-value" id="plaque-class-0">Chisel Sharpie</div>
+              </div>
+              <div class="plaque-row">
+                <div class="plaque-label">Date:</div>
+                <div class="plaque-value" id="plaque-date-0">May 27, 2026</div>
+              </div>
+              <div class="plaque-row">
+                <div class="plaque-label">Test:</div>
+                <div class="plaque-value" id="plaque-test-0">Force Calibration</div>
+              </div>
+              <div class="plaque-row incident-row">
+                <div class="plaque-label">Incident:</div>
+                <div class="plaque-value" id="plaque-incident-0">Catastrophic Z-axis tip crush due to force mode
+                  velocity parameter mismatch.</div>
+              </div>
+            </div>
+          </div>
+          <div class="candle-container">
+            <div class="candle">
+              <div class="flame"></div>
+            </div>
+          </div>
+          <div class="memorial-frame">
+            <div class="memorial-ribbon">M.I.A.</div>
+            <img class="memorial-img" src="../pictures/the first marker - 27:5:26.jpg" alt="Fallen Asset"
+              id="memorial-pic-0">
+          </div>
+        </div>
+
+        <!-- Card 1: Group B, Offset 0 -->
+        <div class="memorial-card">
+          <div>
+            <h3 class="plaque-title" id="plaque-title-1">MARKER DELTA</h3>
+            <div class="plaque-details">
+              <div class="plaque-row">
+                <div class="plaque-label">Class:</div>
+                <div class="plaque-value" id="plaque-class-1">Purple felt pen</div>
+              </div>
+              <div class="plaque-row">
+                <div class="plaque-label">Date:</div>
+                <div class="plaque-value" id="plaque-date-1">June 16, 2026</div>
+              </div>
+              <div class="plaque-row">
+                <div class="plaque-label">Test:</div>
+                <div class="plaque-value" id="plaque-test-1">servoL Vector Test</div>
+              </div>
+              <div class="plaque-row incident-row">
+                <div class="plaque-label">Incident:</div>
+                <div class="plaque-value" id="plaque-incident-1">Tip dried out during real-time movement profiling.
+                  Replaced mid-draw.</div>
+              </div>
+            </div>
+          </div>
+          <div class="candle-container">
+            <div class="candle">
+              <div class="flame"></div>
+            </div>
+          </div>
+          <div class="memorial-frame">
+            <div class="memorial-ribbon">M.I.A.</div>
+            <img class="memorial-img" src="../pictures/the purple pen - 16:6:26.jpg" alt="Fallen Asset"
+              id="memorial-pic-1">
+          </div>
+        </div>
+
+        <!-- Card 2: Group A, Offset 2 -->
+        <div class="memorial-card">
+          <div>
+            <h3 class="plaque-title" id="plaque-title-2">MARKER GAMMA</h3>
+            <div class="plaque-details">
+              <div class="plaque-row">
+                <div class="plaque-label">Class:</div>
+                <div class="plaque-value" id="plaque-class-2">Standard Chisel</div>
+              </div>
+              <div class="plaque-row">
+                <div class="plaque-label">Date:</div>
+                <div class="plaque-value" id="plaque-date-2">June 2, 2026</div>
+              </div>
+              <div class="plaque-row">
+                <div class="plaque-label">Test:</div>
+                <div class="plaque-value" id="plaque-test-2">Continuous Jog</div>
+              </div>
+              <div class="plaque-row incident-row">
+                <div class="plaque-label">Incident:</div>
+                <div class="plaque-value" id="plaque-incident-2">Died during the final moments of Z-limit search. Found
+                  bleeding out ink on target canvas.</div>
+              </div>
+            </div>
+          </div>
+          <div class="candle-container">
+            <div class="candle">
+              <div class="flame"></div>
+            </div>
+          </div>
+          <div class="memorial-frame">
+            <div class="memorial-ribbon">M.I.A.</div>
+            <img class="memorial-img" src="../pictures/the second victem last moment.jpg" alt="Fallen Asset"
+              id="memorial-pic-2">
+          </div>
+        </div>
+
+        <!-- Card 3: Group B, Offset 1 -->
+        <div class="memorial-card">
+          <div>
+            <h3 class="plaque-title" id="plaque-title-3">MARKER EPSILON</h3>
+            <div class="plaque-details">
+              <div class="plaque-row">
+                <div class="plaque-label">Class:</div>
+                <div class="plaque-value" id="plaque-class-3">Pink felt pen</div>
+              </div>
+              <div class="plaque-row">
+                <div class="plaque-label">Date:</div>
+                <div class="plaque-value" id="plaque-date-3">June 23, 2026</div>
+              </div>
+              <div class="plaque-row">
+                <div class="plaque-label">Test:</div>
+                <div class="plaque-value" id="plaque-test-3">High-speed drawing</div>
+              </div>
+              <div class="plaque-row incident-row">
+                <div class="plaque-label">Incident:</div>
+                <div class="plaque-value" id="plaque-incident-3">High-speed drawing caused the tip to separate from the
+                  pen body. A tragic loss.</div>
+              </div>
+            </div>
+          </div>
+          <div class="candle-container">
+            <div class="candle">
+              <div class="flame"></div>
+            </div>
+          </div>
+          <div class="memorial-frame">
+            <div class="memorial-ribbon">M.I.A.</div>
+            <img class="memorial-img" src="../pictures/the pink ped - 23:6:26.jpg" alt="Fallen Asset"
+              id="memorial-pic-3">
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SLIDE 2 -->
+    <section class="slide">
+      <h2 class="slide-title">Reminder: Project Functionality & Plan</h2>
+      <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="card" style="border-color: var(--accent); background: rgba(0,0,0,0.2);">
+          <h3 style="color: var(--accent); font-weight: 900; margin-bottom: 15px;">What We Plan To Do</h3>
+          <ul style="font-size: 1.15rem; list-style: square; padding-left: 20px;">
+            <li style="padding: 6px 0;"><strong>Capture high-definition picture</strong> of the subject (3s delay)</li>
+            <li style="padding: 6px 0;"><strong>Convert camera input</strong> to vectors & stroke trajectories</li>
+            <li style="padding: 6px 0;"><strong>Optimize strokes order</strong> utilizing our sorting algorithm</li>
+            <li style="padding: 6px 0;"><strong>Pick up & draw</strong> strokes on page (Main POC Objective)</li>
+            <li style="padding: 6px 0;"><strong>Stamp the page</strong> with a commemorative stamp & hand over (Nice to
+              have)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3 -->
+    <section class="slide">
+      <h2 class="slide-title">Updates: Mount Design & Approach Force</h2>
+      <div class="grid" style="grid-template-columns: 1.2fr 1fr;">
+        <div class="card">
+          <h3 style="color: var(--purple);">1. Pen Mount Evolution</h3>
+          <p style="font-size: 1.25rem; line-height: 1.6; margin-bottom: 20px;">
+            We successfully designed & printed the custom pen mount! However...
+            <span style="color: #ef5350; font-weight: bold;">it doesn’t fit the current drawing tool.</span>
+          </p>
+
+          <h3 style="color: var(--accent); margin-top: 20px;">2. Maintaining Constant Force</h3>
+          <div style="font-size: 1.15rem; line-height: 1.6; margin-top: 10px;" class="step">
+            <span>
+              <strong>Approaching the page:</strong> Originally done using <strong>force mode</strong>, but now done
+              rigidly applying <strong>manual control</strong>. Our hypothesis is that force mode didn't work because of
+              the velocity parameter configuration. We may try force mode again in the near future!
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4 -->
+    <section class="slide">
+      <h2 class="slide-title">Updates: Movement & Page Control</h2>
+      <div class="grid" style="grid-template-columns: 1fr 1.2fr;">
+        <div style="display: flex; align-items: center; justify-content: center;">
+          <div class="circle-visual">
+            <div style="width: 160px; height: 160px; border: 2px solid white; border-radius: 50%; opacity: 0.4;"></div>
+            <span
+              style="position: absolute; font-family: var(--font-mono); font-size: 0.9rem; color: var(--accent);">servoL
+              vs moveL</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--accent); margin-bottom: 15px;">Reviewed Movement Modes</h3>
+          <p style="font-size: 1.25rem; line-height: 1.6; margin-bottom: 25px;">
+            To maintain absolute control while moving on the page surface, we thoroughly reviewed the core UR5e control
+            behaviors:
+          </p>
+          <div class="step" style="border-left-color: var(--purple); margin-bottom: 20px;">
+            <span>
+              <strong style="color: var(--purple); font-size: 1.2rem; display: block; margin-bottom: 5px;">moveL (Linear
+                Position Control)</strong>
+              Position control receives higher priority than force mode control. Highly predictable but less compliant
+              with minor paper surface warps.
+            </span>
+          </div>
+          <div class="step" style="border-left-color: var(--accent);">
+            <span>
+              <strong style="color: var(--accent); font-size: 1.2rem; display: block; margin-bottom: 5px;">servoL
+                (Real-Time Control)</strong>
+              Allows you to inject positions dynamically in real-time. We discovered that force mode control works best
+              when combined with real-time servo loops!
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5 -->
+    <section class="slide">
+      <h2 class="slide-title">Challenges: The Infamous Ink Stain</h2>
+      <div class="grid" style="grid-template-columns: 1.1fr 1fr;">
+        <div class="card" style="border-color: #d32f2f;">
+          <h3 style="color: #ef5350; font-size: 2rem; margin-bottom: 20px;">The Lingering Marker Problem</h3>
+          <p style="font-size: 1.25rem; line-height: 1.7; color: var(--silver);">
+            While validating that the pen has reached the page (filtering out high force values caused by noisy sensor
+            readings), the marker lingers at the starting coordinate for the contact validation period.
+          </p>
+          <div
+            style="background: rgba(211,47,47,0.1); border-left: 5px solid #d32f2f; padding: 15px; margin-top: 20px; font-style: italic;">
+            "Behold! The Unintentional Blot-Inator! It stains the paper before the drawing even begins!"
+          </div>
+        </div>
+        <div class="card" style="border-color: var(--accent);">
+          <h3 style="color: var(--accent); margin-bottom: 15px;">Our Solution Path</h3>
+          <p style="font-size: 1.2rem; line-height: 1.6; margin-bottom: 20px;">
+            We want to find a clean way to get rid of this initial dwell time blot.
+          </p>
+          <ul style="list-style: square; padding-left: 20px; font-size: 1.15rem; line-height: 1.8;">
+            <li>Change our drawing tool to a less bleed-heavy medium (e.g. ballpoint, pencil, or spring-loaded tip).
+            </li>
+            <li>We have the ability to calculate the touch plane using empirical numbers. Using this, we can reduce the
+              error space of the force sensor to be 0.5 millimeters away from the drawing plane.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6 -->
+    <section class="slide">
+      <h2 class="slide-title">Proof of Concept Goals Reached</h2>
+      <div class="grid" style="grid-template-columns: 1.2fr 1fr;">
+        <div class="card">
+          <h3 style="color: var(--accent); margin-bottom: 15px;">POC Accomplishments</h3>
+          <div class="step" style="margin-bottom: 15px;">
+            <span>
+              <strong>Approaching the page:</strong> Successfully approached the page until point of contact, without
+              breaking the tip.
+            </span>
+          </div>
+          <div class="step" style="margin-bottom: 15px; border-left-color: var(--purple);">
+            <span>
+              <strong>Semicircle Vector Execution:</strong> Successfully generated and drew an automated
+              circle/semicircle trajectory, while maintaining a constant force on the page surface, despite wall angle.
+            </span>
+          </div>
+          <div class="step" style="border-left-color: var(--accent);">
+            <span>
+              <strong>Multiple stroke drawing:</strong> Successfully executed sequential strokes on the page, both
+              linear and curved.
+            </span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center;">
+          <div class="circle-visual">
+            <div style="width: 200px; height: 200px; border: 2px solid white; border-radius: 50%; opacity: 0.4;"></div>
+            <span
+              style="position: absolute; font-family: var(--font-mono); font-size: 1rem; color: #fff; font-weight: bold;">POC
+              SUCCESS</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7 -->
+    <section class="slide">
+      <h2 class="slide-title">Feasibility & Future Plans</h2>
+      <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="card">
+          <h3 style="color: var(--accent); margin-bottom: 15px;">What We Learned</h3>
+          <p style="font-size: 1.2rem; line-height: 1.6; margin-bottom: 15px;">
+            The application is <strong>highly feasible</strong>! The UR5e arm is precise enough to draw complex
+            high-definition lines on paper.
+          </p>
+          <p style="font-size: 1.2rem; line-height: 1.6;">
+            However, noisy force feedback and physical drawing tool behavior (like initial bleed) require careful
+            control loop optimization to ensure a clean visual finish.
+          </p>
+        </div>
+        <div class="card" style="border-color: var(--purple);">
+          <h3 style="color: var(--purple); margin-bottom: 15px;">Did Our Plans Change?</h3>
+          <p style="font-size: 1.4rem; font-weight: 900; color: white; line-height: 1.5; margin-bottom: 20px;"
+            class="glow-teal">
+            NOPE!
+          </p>
+          <p style="font-size: 1.2rem; line-height: 1.6; color: var(--silver); margin-bottom: 20px;">
+            We still fully intend to do everything we originally planned! All milestones, from SwiftSketch integration
+            to full face vector drawing, remain on track.
+          </p>
+          <p style="font-size: 1.4rem; font-weight: 900; color: white; line-height: 1.5; margin-bottom: 20px;"
+            class="glow-teal">
+            What we don't know yet:
+          </p>
+          <p style="font-size: 1.2rem; line-height: 1.6; color: var(--silver);">
+            We haven't begun working on camera integration, page handing, and tool grabbing and dropping.
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8 -->
+    <section class="slide title-slide">
+      <h1 class="behold">THE TRI-STATE AREA IS ALMOST OURS!</h1>
+      <h2 style="font-size: 2.5rem; margin-top: 20px; color: var(--accent);">Thanks for Listening!</h2>
+    </section>
+
+  </div>
+
+  <div class="nav-controls">
+    <button class="nav-btn" onclick="prev()">&#8592;</button>
+    <button class="nav-btn" onclick="next()">&#8594;</button>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="p-fill"></div>
+  </div>
+
+  <footer>
+    <div>VER_SS.2.06_POC</div>
+    <div style="font-weight: 900; color: var(--accent);">LOCATION: TRI-STATE AREA SECRET LAB</div>
+    <div>&copy; 2026 DOOFENSHMIRTZ EVIL INC.</div>
+  </footer>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const progress = document.getElementById('p-fill');
+
+    function update() {
+      slides.forEach((s, i) => {
+        s.classList.toggle('active', i === currentSlide);
+      });
+      progress.style.width = ((currentSlide + 1) / slides.length * 100) + '%';
+    }
+
+    function next() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        update();
+      }
+    }
+
+    function prev() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        update();
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') next();
+      if (e.key === 'ArrowLeft') prev();
+    });
+
+    /* NEW EASTER EGG SCRIPTS */
+
+    // Scheme-Inator 3000 Trigger
+    const schemeInators = [
+      "\"The No-More-Tol-Inator! To vaporize standard engineering tolerances so our custom pen mounts finally fit!\"",
+      "\"The Ink-Blot-Eraser-Inator! To instantly dissolve dwell-time marker stains before they ruin my canvas!\"",
+      "\"The Force-Mode-Activator-Inator! To force all velocity limit parameters on our UR5e to obey me!\"",
+      "\"The Roger-Statue-Toppler-Inator! To replace Roger's giant bronze statue with a portrait-drawing machine!\"",
+      "\"The Balloony-Finder-Inator! To scan the Tri-State Area stratosphere for my lost companion!\"",
+      "\"The Lawn-Gnome-Liberator-Inator! To free all garden gnomes from their terrible standing positions!\""
+    ];
+    let schemeIndex = 0;
+    function triggerSchemeInator() {
+      const bubble = document.getElementById('scheme-bubble');
+      bubble.innerText = schemeInators[schemeIndex];
+      bubble.style.display = 'block';
+
+      schemeIndex = (schemeIndex + 1) % schemeInators.length;
+
+      setTimeout(() => {
+        bubble.style.display = 'none';
+      }, 4000);
+    }
+
+    // Backstory tragedy logic
+    const tragedies = [
+      "\"Neither of my parents showed up to my actual birth...\"",
+      "\"I was forced to stand completely still as a garden lawn gnome!\"",
+      "\"My only true friend was a balloon named Balloony, who floated away...\"",
+      "\"Roger won the favor of mother with a painting of our dog, while my work was ignored!\"",
+      "\"I was raised by ocelots in the dark wilderness!\""
+    ];
+    let backstoryIndex = 0;
+    function toggleBackstory() {
+      const drawer = document.getElementById('backstory-drawer');
+      drawer.classList.toggle('open');
+    }
+    function nextBackstory() {
+      backstoryIndex = (backstoryIndex + 1) % tragedies.length;
+      document.getElementById('backstory-text').innerText = tragedies[backstoryIndex];
+    }
+
+    // Platypus Detector Radar
+    let detectorState = 0; // 0 = scanning, 1 = platypus, 2 = PERRY!
+    function detectPlatypus() {
+      const detector = document.getElementById('platypus-detector');
+      const status = document.getElementById('detector-status');
+      const emoji = document.getElementById('radar-emoji');
+
+      if (detectorState === 0) {
+        detector.classList.add('detected');
+        emoji.innerText = "🦆";
+        status.innerText = "A PLATYPUS?";
+        detectorState = 1;
+      } else if (detectorState === 1) {
+        emoji.innerText = "🕶️"; // Secret agent sunglasses!
+        status.innerText = "PERRY THE PLATYPUS?!";
+        detectorState = 2;
+      } else {
+        detector.classList.remove('detected');
+        status.innerText = "SCANNING...";
+        detectorState = 0;
+      }
+    }
+
+    // Self-Destruct Explosion Sequence
+    let isExploded = false;
+    function selfDestruct() {
+      if (isExploded) return;
+      isExploded = true;
+
+      const sdBtn = document.getElementById('sd-btn');
+      const presentation = document.querySelector('.presentation');
+
+      // Step 1: Play countdown & shakes
+      sdBtn.innerText = "ACTIVATING...";
+      sdBtn.style.background = "#ff9800";
+      sdBtn.style.borderColor = "#e65100";
+      document.body.classList.add('shaking');
+
+      setTimeout(() => {
+        sdBtn.innerText = "DETONATION IN 3...";
+      }, 600);
+
+      setTimeout(() => {
+        sdBtn.innerText = "DETONATION IN 2...";
+        document.body.classList.remove('shaking');
+        document.body.classList.add('wild-shaking');
+      }, 1400);
+
+      setTimeout(() => {
+        sdBtn.innerText = "DETONATION IN 1...";
+      }, 2200);
+
+      setTimeout(() => {
+        // BOOM!
+        document.body.classList.remove('wild-shaking');
+        document.body.classList.add('shaking'); // Slower rumble afterwards
+        sdBtn.innerText = "BOOM!";
+        sdBtn.style.background = "#ff3d00";
+
+        // Show explosion elements
+        const explosionScreen = document.getElementById('explosion-screen');
+        const flashOverlay = document.getElementById('flash-overlay');
+        const burntOverlay = document.getElementById('burnt-overlay');
+        const debrisContainer = document.getElementById('debris-container');
+
+        explosionScreen.style.display = 'block';
+
+        // Flash white instantly
+        flashOverlay.style.opacity = '1';
+        setTimeout(() => {
+          flashOverlay.style.opacity = '0';
+        }, 150);
+
+        // Spawn physical particles & debris
+        const colors = ['#ff3d00', '#ffeb3b', '#ff9100', '#212121', '#424242', '#9e9e9e', '#d50000'];
+        const totalDebris = 120;
+        const rect = sdBtn.getBoundingClientRect();
+        const startX = rect.left + rect.width / 2;
+        const startY = rect.top + rect.height / 2;
+
+        for (let i = 0; i < totalDebris; i++) {
+          const el = document.createElement('div');
+          const size = Math.random() * 24 + 6;
+          el.style.position = 'absolute';
+          el.style.left = startX + 'px';
+          el.style.top = startY + 'px';
+          el.style.width = size + 'px';
+          el.style.height = size + 'px';
+          el.style.borderRadius = Math.random() > 0.4 ? '50%' : '3px';
+          el.style.background = colors[Math.floor(Math.random() * colors.length)];
+          el.style.boxShadow = '0 0 10px ' + el.style.background;
+
+          const angle = Math.random() * Math.PI * 2;
+          const distance = Math.random() * Math.max(window.innerWidth, window.innerHeight) * 0.9;
+          const tx = Math.cos(angle) * distance;
+          const ty = Math.sin(angle) * distance;
+          const rot = Math.random() * 720 - 360;
+
+          el.style.setProperty('--tx', tx + 'px');
+          el.style.setProperty('--ty', ty + 'px');
+          el.style.setProperty('--rot', rot + 'deg');
+          el.style.animation = 'debrisBlow ' + (Math.random() * 1.5 + 0.6) + 's cubic-bezier(0.1, 0.8, 0.25, 1) forwards';
+
+          debrisContainer.appendChild(el);
+        }
+
+        // Apply burnt state to presentation
+        presentation.classList.add('burnt-out');
+
+        // Smooth fade in for the custom burnt overlay
+        setTimeout(() => {
+          burntOverlay.style.opacity = '1';
+          burntOverlay.style.pointerEvents = 'auto';
+        }, 300);
+
+      }, 3000);
+    }
+
+    function resetSelfDestruct() {
+      isExploded = false;
+
+      const sdBtn = document.getElementById('sd-btn');
+      sdBtn.innerText = "Self-Destruct";
+      sdBtn.style.background = "#d32f2f";
+      sdBtn.style.borderColor = "#7f0000";
+
+      document.body.classList.remove('shaking', 'wild-shaking');
+
+      const presentation = document.querySelector('.presentation');
+      presentation.classList.remove('burnt-out');
+
+      const explosionScreen = document.getElementById('explosion-screen');
+      explosionScreen.style.display = 'none';
+
+      const burntOverlay = document.getElementById('burnt-overlay');
+      burntOverlay.style.opacity = '0';
+      burntOverlay.style.pointerEvents = 'none';
+
+      const debrisContainer = document.getElementById('debris-container');
+      debrisContainer.innerHTML = '';
+    }
+
+    // Memorial slide slideshow logic
+    const groupA = [
+      {
+        title: "MARKER ALPHA",
+        class: "Chisel Sharpie",
+        date: "May 27, 2026",
+        test: "Force Calibration",
+        incident: "Catastrophic Z-axis tip crush due to force mode velocity parameter mismatch. Died so that we might transition to servoL control.",
+        img: "../pictures/the first marker - 27:5:26.jpg"
+      },
+      {
+        title: "MARKER BETA",
+        class: "Standard Chisel",
+        date: "June 2, 2026",
+        test: "Approach Validation",
+        incident: "Bravely sustained severe structural split of the plastic tip during rigid manual jog.",
+        img: "../pictures/the second victem-2:6:26.jpg"
+      },
+      {
+        title: "MARKER GAMMA",
+        class: "Standard Chisel",
+        date: "June 2, 2026",
+        test: "Continuous Jog",
+        incident: "Died during the final moments of Z-limit search. Found bleeding out ink on target canvas.",
+        img: "../pictures/the second victem last moment.jpg"
+      },
+      {
+        title: "PEN HOLDER V1",
+        class: "PLA 3D Print",
+        date: "May 27, 2026",
+        test: "Structural Fit",
+        incident: "Printed pen holder did not fit the tool. Melted down to make way for V2.",
+        img: "../pictures/the failed pen holder print - 27:5:26.jpg"
+      }
+    ];
+
+    const groupB = [
+      {
+        title: "MARKER DELTA",
+        class: "Purple felt pen",
+        date: "June 16, 2026",
+        test: "servoL Vector Test",
+        incident: "Tip dried out during real-time movement profiling. Replaced mid-draw.",
+        img: "../pictures/the purple pen - 16:6:26.jpg"
+      },
+      {
+        title: "MARKER EPSILON",
+        class: "Pink felt pen",
+        date: "June 23, 2026",
+        test: "High-speed drawing",
+        incident: "High-speed drawing caused the tip to separate from the pen body. A tragic loss.",
+        img: "../pictures/the pink ped - 23:6:26.jpg"
+      },
+      {
+        title: "MARKER ZETA",
+        class: "Fine-point felt",
+        date: "June 23, 2026",
+        test: "Continuous Loop",
+        incident: "Experienced massive ink leakage under high pressure. Left a huge, dark stain.",
+        img: "../pictures/the latest death- 23:6:26.jpg"
+      }
+    ];
+
+    let memorialTime = 0;
+    function cycleMemorial() {
+      memorialTime++;
+
+      const item0 = groupA[memorialTime % groupA.length];
+      const item1 = groupB[memorialTime % groupB.length];
+      const item2 = groupA[(memorialTime + 2) % groupA.length];
+      const item3 = groupB[(memorialTime + 1) % groupB.length];
+
+      updateCard(0, item0);
+      updateCard(1, item1);
+      updateCard(2, item2);
+      updateCard(3, item3);
+    }
+
+    function updateCard(cardIndex, item) {
+      const titleEl = document.getElementById(`plaque-title-${cardIndex}`);
+      const classEl = document.getElementById(`plaque-class-${cardIndex}`);
+      const dateEl = document.getElementById(`plaque-date-${cardIndex}`);
+      const testEl = document.getElementById(`plaque-test-${cardIndex}`);
+      const incidentEl = document.getElementById(`plaque-incident-${cardIndex}`);
+      const imgEl = document.getElementById(`memorial-pic-${cardIndex}`);
+
+      if (!titleEl || !classEl || !dateEl || !testEl || !incidentEl || !imgEl) return;
+
+      imgEl.style.opacity = 0;
+      setTimeout(() => {
+        titleEl.innerText = item.title;
+        classEl.innerText = item.class;
+        dateEl.innerText = item.date;
+        testEl.innerText = item.test;
+        incidentEl.innerText = item.incident;
+        imgEl.src = item.img;
+        imgEl.style.opacity = 1;
+      }, 300);
+    }
+
+    setInterval(cycleMemorial, 3000);
+
+    update();
+  </script>
+</body>
+
+</html>
