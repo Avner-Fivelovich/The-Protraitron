@@ -1,0 +1,591 @@
+/* CSS variables matching the workplan presentation */
+:root {
+    --bg-dark: #0f0f10;
+    --bg-light: #1a1a1c;
+    --card-bg: #252528;
+    --silver: #e0e0e0;
+    
+    --primary-color: #26a69a;      /* Teal/accent */
+    --accent-color: #9c27b0;       /* Purple */
+    --deep-color: #4a148c;         /* Deep purple border */
+    
+    --text-primary: var(--silver);
+    --text-secondary: #88888b;
+    
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-sans: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Reset and Basic Settings */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Grid background texture matching workplan presentation */
+body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(var(--bg-light) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-light) 1px, transparent 1px);
+    background-size: 100px 100px;
+    opacity: 0.2;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Header styling */
+header {
+    background: var(--bg-dark);
+    padding: 15px 40px;
+    border-bottom: 3px solid var(--deep-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.brand-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.brand {
+    background: var(--accent-color);
+    color: white;
+    font-family: var(--font-display);
+    font-weight: 900;
+    padding: 6px 20px;
+    transform: skewX(-12deg);
+    font-size: 1.2rem;
+    box-shadow: 4px 4px 0 var(--deep-color);
+    letter-spacing: 0.05em;
+}
+
+.lab-meta {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Self Destruct Button */
+.self-destruct {
+    background: #d32f2f;
+    color: white;
+    border: 4px solid #7f0000;
+    padding: 5px 15px;
+    font-family: var(--font-display);
+    font-weight: 900;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 0 #7f0000;
+    transition: all 0.1s ease;
+}
+
+.self-destruct:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #7f0000;
+}
+
+/* Floating accessories */
+.evil-sticky {
+    position: fixed;
+    top: 20vh;
+    right: -180px; /* Hidden state */
+    background: #fff176;
+    color: #333;
+    padding: 20px 40px 20px 20px;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    transform: rotate(-3deg);
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+    font-size: 0.85rem;
+    z-index: 50;
+    max-width: 210px;
+    border-left: 5px solid #f9a825;
+    transition: right 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+}
+
+.evil-sticky:hover {
+    right: -30px; /* Visible expanded */
+}
+
+.evil-sticky::before {
+    content: 'TODO';
+    position: absolute;
+    left: -25px;
+    top: 20px;
+    background: #f9a825;
+    color: white;
+    padding: 2px 8px;
+    font-family: var(--font-display);
+    font-weight: 900;
+    transform: rotate(-90deg);
+    font-size: 0.6rem;
+    border-radius: 4px 4px 0 0;
+}
+
+.perry-spotter {
+    position: fixed;
+    bottom: -70px;
+    left: 40px;
+    padding: 15px;
+    background: #00838f;
+    border: 4px solid #005662;
+    color: white;
+    font-family: var(--font-display);
+    font-weight: 700;
+    z-index: 100;
+    transition: bottom 0.5s ease;
+    cursor: help;
+    box-shadow: 4px 4px 15px rgba(0,0,0,0.5);
+}
+
+.perry-spotter:hover {
+    bottom: 20px;
+}
+
+/* Layout Containers */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: space-between;
+}
+
+/* Behold Main Title style */
+.behold-wrapper {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.behold {
+    font-family: var(--font-display);
+    font-size: 5.5rem;
+    color: var(--primary-color);
+    font-weight: 900;
+    margin-bottom: 10px;
+    text-shadow: 4px 4px 0 var(--deep-color);
+    letter-spacing: -1px;
+}
+
+.title-sub {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    font-weight: 300;
+}
+
+/* Grid Layout */
+.grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+@media (max-width: 900px) {
+    .grid-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Card Styling (Presentation Block style) */
+.card {
+    background: var(--card-bg);
+    border: 2px solid var(--deep-color);
+    border-radius: 4px; /* Sharp retro feel */
+    padding: 2rem;
+    box-shadow: 8px 8px 0 var(--bg-dark);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    transition: border-color 0.3s ease;
+}
+
+.card:hover {
+    border-color: var(--primary-color);
+}
+
+.card h2 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.card h2::before {
+    content: '';
+    width: 6px;
+    height: 24px;
+    background: var(--accent-color);
+    display: inline-block;
+}
+
+/* Camera Containers */
+.camera-container, .fallback-container, .result-placeholder {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    border: 2px dashed var(--deep-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.camera-container {
+    border-style: solid;
+    padding: 0;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+}
+
+/* Button & Controls styles */
+.btn {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 900;
+    padding: 0.85rem 1.75rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    transition: all 0.1s ease;
+    text-decoration: none;
+    width: 100%;
+}
+
+.btn-primary {
+    background: var(--accent-color);
+    color: #fff;
+    box-shadow: 4px 4px 0 var(--deep-color);
+}
+
+.btn-primary:hover {
+    background: var(--primary-color);
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--deep-color);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translate(2px, 2px);
+}
+
+.camera-actions {
+    position: absolute;
+    bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    width: calc(100% - 3rem);
+    justify-content: center;
+    z-index: 10;
+}
+
+.camera-actions .btn {
+    min-width: 150px;
+    background: rgba(15, 15, 16, 0.9);
+    border: 2px solid var(--primary-color);
+    box-shadow: 4px 4px 0 var(--deep-color);
+    font-size: 0.85rem;
+    padding: 0.6rem 1rem;
+}
+
+.camera-actions .btn:hover {
+    background: var(--primary-color);
+    color: #000;
+    transform: none;
+}
+
+/* File Upload Native Wrapper */
+#native-camera {
+    display: none;
+}
+
+.btn-label {
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
+.icon-placeholder {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    color: var(--accent-color);
+    animation: float 4s ease-in-out infinite;
+}
+
+.fallback-container p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    max-width: 300px;
+}
+
+.file-select-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.file-select-hint input[type="file"] {
+    display: none;
+}
+
+.link-label {
+    color: var(--primary-color);
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.link-label:hover {
+    color: #fff;
+}
+
+/* Results / Outputs styling */
+.result-placeholder p {
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+/* Comparison container */
+.comparison-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    width: 100%;
+}
+
+.img-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.img-box h3 {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--primary-color);
+}
+
+.img-box img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 2px solid var(--deep-color);
+    background: #000;
+}
+
+#sketch-preview {
+    background: #ffffff;
+    object-fit: contain;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+}
+
+/* Status indicator on header */
+.status-indicator {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+/* Loader / Spinner */
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(38, 166, 154, 0.1);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1.5rem;
+}
+
+.loader p {
+    font-family: var(--font-display);
+    font-weight: 900;
+    color: var(--primary-color);
+}
+
+/* Footer & QR Layout matching workplan presentation footer metadata */
+footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    margin-top: 2rem;
+    border-top: 3px solid var(--deep-color);
+    padding-top: 2rem;
+}
+
+.qr-card {
+    background: var(--card-bg);
+    border: 2px solid var(--deep-color);
+    border-radius: 4px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    max-width: 550px;
+    width: 100%;
+    box-shadow: 8px 8px 0 var(--bg-dark);
+}
+
+.qr-info h3 {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: var(--primary-color);
+    margin-bottom: 0.4rem;
+}
+
+.qr-info p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.qr-image-wrapper {
+    background: white;
+    padding: 0.5rem;
+    border-radius: 4px;
+    width: 110px;
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qr-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding-top: 1rem;
+    color: #555;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.location-banner {
+    font-weight: 900;
+    color: var(--primary-color);
+}
+
+@media (max-width: 600px) {
+    .qr-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.2rem;
+    }
+    .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+}
+
+/* Keyframes & Animations */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+@keyframes evil-shake {
+    0%, 100% { transform: translate(0, 0); }
+    10% { transform: translate(-10px, -10px); }
+    20% { transform: translate(10px, 10px); }
+    30% { transform: translate(-10px, 10px); }
+    40% { transform: translate(10px, -10px); }
+}
+
+.shaking {
+    animation: evil-shake 0.12s linear infinite;
+}

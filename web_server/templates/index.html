@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The PORTRAITRON 3000</title>
+    <!-- Presentation Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700;900&family=Inter:ital,wght@0,400;0,700;0,900;1,400&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Doofenshmirtz Evil Accessories -->
+    <header>
+      <div class="brand-row">
+        <div class="brand">DOOFENSHMIRTZ EVIL INC.</div>
+        <button class="self-destruct" id="sd-btn">Self-Destruct</button>
+      </div>
+      <div class="lab-meta">ROBOTICS DIVISION // THE PORTRAITRON</div>
+    </header>
+
+    <div class="evil-sticky">
+      <strong>TODO:</strong><br>
+      - Buy more aluminum foil<br>
+      - Catch platypus<br>
+      - Finish the -Tron<br>
+      - Move to Tri-State Area
+    </div>
+
+    <div class="perry-spotter">
+      HE'S A SEMI-AQUATIC...<br>
+      <span style="font-size: 0.7rem; opacity: 0.7;">(Wait, where's Perry?)</span>
+    </div>
+    
+    <div class="container">
+        <!-- Logo / Title Section matching Behold slide -->
+        <div class="behold-wrapper">
+            <h1 class="behold">BEHOLD!</h1>
+            <h2 class="title-sub">The PORTRAITRON 3000</h2>
+            <p class="subtitle">Process subject face vectors using the sketch-o-matic generator</p>
+        </div>
+
+        <main class="grid-layout">
+            <!-- Left Side: Camera / Capture Card -->
+            <section class="card capture-card">
+                <div class="card-header">
+                    <h2>Capture Subject</h2>
+                    <span class="status-indicator" id="camera-status">Checking Camera...</span>
+                </div>
+                
+                <!-- Live Video Container -->
+                <div class="camera-container" id="video-wrapper" style="display: none;">
+                    <video id="webcam" autoplay playsinline muted></video>
+                    <canvas id="photo-canvas" style="display: none;"></canvas>
+                    <div class="camera-actions">
+                        <button class="btn btn-primary" id="btn-snap">
+                            📸 Capture Subject
+                        </button>
+                        <button class="btn btn-secondary" id="btn-switch-camera">
+                            🔄 Switch Camera
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Fallback Camera Button -->
+                <div class="fallback-container" id="fallback-wrapper">
+                    <div class="icon-placeholder">📷</div>
+                    <p>Standard HTTP access mode. Capture portrait using subject's local device camera.</p>
+                    <input type="file" id="native-camera" accept="image/*" capture="environment">
+                    <label for="native-camera" class="btn btn-primary btn-label">
+                        📸 Take Photo
+                    </label>
+                </div>
+
+                <div class="file-select-hint">
+                    <span>or</span>
+                    <input type="file" id="file-upload" accept="image/*">
+                    <label for="file-upload" class="link-label">Upload local raster image</label>
+                </div>
+            </section>
+
+            <!-- Right Side: Processed Output -->
+            <section class="card result-card">
+                <h2>Vector Output</h2>
+                
+                <div class="result-placeholder" id="result-placeholder">
+                    <div class="loader" id="loader" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>GENERATING VECTOR MAP...</p>
+                    </div>
+                    <div class="placeholder-text" id="placeholder-text">
+                        <div class="icon-placeholder">🎨</div>
+                        <p>Vectors will generate here upon capturing subject image</p>
+                    </div>
+                </div>
+
+                <!-- Comparison View -->
+                <div class="comparison-container" id="comparison-view" style="display: none;">
+                    <div class="img-box">
+                        <h3>Subject Raster</h3>
+                        <img id="raw-preview" src="" alt="Subject Raster">
+                    </div>
+                    <div class="img-box">
+                        <h3>Sketch Strokes</h3>
+                        <img id="sketch-preview" src="" alt="Sketch Strokes">
+                    </div>
+                </div>
+                
+                <div class="action-buttons" id="result-actions" style="display: none;">
+                    <button class="btn btn-secondary" id="btn-reset">
+                        🔄 Clear Canvas
+                    </button>
+                    <a class="btn btn-primary" id="btn-download" download="portraitron_vector.jpg">
+                        💾 Download Vectors
+                    </a>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer / QR Share Section matching Doof footer style -->
+        <footer>
+            <div class="qr-card">
+                <div class="qr-info">
+                    <h3>Invite Co-Conspirators</h3>
+                    <p>Let people scan this code to access the PORTRAITRON page from their mobile devices!</p>
+                </div>
+                <div class="qr-image-wrapper">
+                    <img src="/static/qr.png" alt="Server Access QR Code" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + window.location.href">
+                </div>
+            </div>
+            <div class="footer-bottom">
+              <div>VER_SS.2.05</div>
+              <div class="location-banner">LOCATION: TRI-STATE AREA SECRET LAB</div>
+              <div>&copy; 2026 DOOFENSHMIRTZ EVIL INC.</div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Frontend logic -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

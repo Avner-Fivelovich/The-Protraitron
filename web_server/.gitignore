@@ -1,0 +1,36 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Subprocess log
+pipeline_error.log
+
+# SwiftSketch model weights/outputs
+swiftsketch_model/SwiftSketch/save/
+swiftsketch_model/SwiftSketch/test_out_manual/
+
+# diffvg compilation artifacts
+diffvg/build/
+diffvg/dist/
+diffvg/*.egg-info/
+diffvg/.eggs/
+diffvg/CMakeCache.txt
+diffvg/CMakeFiles/
+diffvg/Makefile
+diffvg/cmake_install.cmake
+diffvg/libdevice.a
+diffvg/*.so
+diffvg/*.dylib
+diffvg/*.dll
+diffvg/*.lib
+diffvg/*.obj
+
+# OS files
+.DS_Store
+Thumbs.db
