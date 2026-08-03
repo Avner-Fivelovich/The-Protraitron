@@ -3,6 +3,13 @@ import yaml
 import time
 import math
 import numpy as np
+import datetime
+
+try:
+    import matplotlib.pyplot as plt
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
 
 # -------------------------------------------------------------
 # Import loggers and shared robot control utilities
@@ -56,10 +63,9 @@ class UR5eController:
         if not os.path.exists(self.calibration_path):
             logger.warning(f"Calibration file {self.calibration_path} not found. Running in uncalibrated mode.")
             return
-            
         try:
             with open(self.calibration_path, "r") as f:
-                data = yaml.safe_load(f)
+                data = yaml.safe_load(f) or {}
             
             self.p0_joints = data.get("p0_joints")
             self.p0_pose = data.get("p0_pose")
@@ -146,22 +152,44 @@ class UR5eController:
         self.rtde_c.moveL(self.p0_pose, 0.1, 0.2)
         logger.success("Robot arrived at P0.")
         
-    def execute_drawing_path(self, strokes_2d: list, speed: float = 0.05, accel: float = 0.1, blend_radius: float = 0.002, draw_depth_offset: float = 0.0):
+    def log_event(self, event_name: str):
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        logger.info(f"[TIMESTAMP] {now_str} - Event: {event_name}")
+
+    def execute_drawing_path(self, strokes_2d: list, speed: float = 0.05, accel: float = 0.1, blend_radius: float = 0.002, draw_depth_offset: float = 0.0, progress_callback = None, plot_path_prefix: str = None, connections: list = None, original_strokes: list = None):
         """
         Iterates over strokes, positioning to 1cm hover plane, probing, and executing 
-        trajectory under X-axis compliance mode.
+        trajectory under X-axis compliance mode. Passes original_strokes to preview plotting if in dryrun mode.
         """
+        self.log_event("Drawing execution loop started")
         if self.dryrun:
-            logger.info("Dry run active. Plotting the expected drawing...")
-            self.plot_expected_drawing(strokes_2d)
+            logger.info("Dry run active. Simulating/plotting expected drawing...")
+            self.log_event("Dry run simulation started")
+            if progress_callback:
+                for idx in range(len(strokes_2d)):
+                    if progress_callback(idx + 1, len(strokes_2d)) == False:
+                        logger.warning("Simulated drawing cancelled via progress callback.")
+                        break
+                    time.sleep(0.05) # short sleep to show animation progress
+            
+            # Format the output display paths
+            display_png = f"{plot_path_prefix}.png" if plot_path_prefix else "plots/expected_drawing_preview.png"
+            display_pdf = f"{plot_path_prefix}.pdf" if plot_path_prefix else "plots/expected_drawing_preview.pdf"
+            self.log_event(f"Saving expected drawing preview to {display_png} and {display_pdf}")
+            
+            self.plot_expected_drawing(strokes_2d, plot_path_prefix=plot_path_prefix, connections=connections, original_strokes=original_strokes)
+            self.log_event("Dry run simulation completed")
+            self.log_event("Drawing execution loop completed successfully")
             return
 
         if not self.rtde_c:
             logger.error("Robot not connected.")
+            self.log_event("Drawing execution loop failed: Robot not connected")
             return
             
         if not self.p0_pose or not self.p1:
             logger.error("Calibration parameters not loaded. Execute calibration first.")
+            self.log_event("Drawing execution loop failed: Calibration parameters missing")
             return
             
         # Tool orientation is aligned normal to the paper (stored at P0 manual alignment)
@@ -170,38 +198,70 @@ class UR5eController:
         # X hover plane is 5 mm above P1 X coordinate (positive direction points away from board)
         X_hover = self.p1[0] + 0.005
         
+        total_strokes = len(strokes_2d)
         for idx, stroke in enumerate(strokes_2d):
             if len(stroke) == 0:
                 continue
                 
-            logger.info(f"Drawing stroke {idx + 1}/{len(strokes_2d)} containing {len(stroke)} waypoints...")
+            if progress_callback:
+                if progress_callback(idx + 1, len(strokes_2d)) == False:
+                    logger.warning("Drawing execution cancelled via progress callback.")
+                    break
+                
+            # Calculate physical length of the current stroke (in meters)
+            pts = np.array(stroke)
+            pts_phys = pts * np.array([self.width, self.height])
+            stroke_length_m = float(np.sum(np.linalg.norm(pts_phys[1:] - pts_phys[:-1], axis=1))) if len(stroke) > 1 else 0.0
+            
+            # Calculate transition air distance from the end of the previous stroke to start of this stroke
+            air_dist_m = 0.0
+            if idx > 0 and len(strokes_2d[idx-1]) > 0:
+                p_prev_last = np.array(strokes_2d[idx-1][-1]) * np.array([self.width, self.height])
+                p_curr_first = np.array(stroke[0]) * np.array([self.width, self.height])
+                air_dist_m = float(np.linalg.norm(p_curr_first - p_prev_last))
+
+            self.log_event(f"Stroke {idx + 1}/{total_strokes} - Started (Length: {stroke_length_m:.4f} m / {stroke_length_m*100:.2f} cm, Air transition: {air_dist_m:.4f} m / {air_dist_m*100:.2f} cm)")
             
             # 1. Move to the safe hover pose above the start of the stroke in the Y-Z plane
             x0, y0 = stroke[0]
+            self.log_event(f"Stroke {idx + 1}/{total_strokes} - Safe hover move started")
             hover_pose = self._move_to_hover(x0, y0, X_hover, rx, ry, rz)
+            self.log_event(f"Stroke {idx + 1}/{total_strokes} - Safe hover move completed")
             
             # 2. Probe surface point along X-axis at this Y-Z coordinate
-            logger.info("Probing surface point for stroke start...")
+            self.log_event(f"Stroke {idx + 1}/{total_strokes} - Probing surface started")
             p_contact = probe_surface_point(self.rtde_c, self.rtde_r, hover_pose, self.cfg)
             if not p_contact:
                 logger.error(f"Probing failed for stroke {idx + 1}. Skipping this stroke.")
+                self.log_event(f"Stroke {idx + 1}/{total_strokes} - Probing failed")
                 continue
+            self.log_event(f"Stroke {idx + 1}/{total_strokes} - Surface contact established")
                 
             # Apply drawing depth offset to contact X pose (decreasing X pushes closer to board)
             x_draw = p_contact[0] - draw_depth_offset
             
             # 3. Settle and activate force compliance
+            self.log_event(f"Stroke {idx + 1}/{total_strokes} - Force compliance enabled")
             self._enable_force_compliance()
             
             # 4. Stream and execute stroke waypoints
+            start_draw_time = time.time()
+            self.log_event(f"Stroke {idx + 1}/{total_strokes} - Drawing trajectory started")
             self._draw_stroke_trajectory(stroke, x_draw, rx, ry, rz, speed, accel, blend_radius)
+            elapsed_draw_time = time.time() - start_draw_time
+            avg_speed = (stroke_length_m / elapsed_draw_time) if elapsed_draw_time > 0 else 0.0
+            self.log_event(f"Stroke {idx + 1}/{total_strokes} - Drawing trajectory completed (Duration: {elapsed_draw_time:.2f}s, Avg speed: {avg_speed*100:.2f} cm/s)")
             
             # 5. Disable force compliance and retract to hover plane
+            self.log_event(f"Stroke {idx + 1}/{total_strokes} - Compliance disabled and retract started")
             x_last, y_last = stroke[-1]
             self._stop_compliance_and_retract(x_last, y_last, X_hover, rx, ry, rz)
+            self.log_event(f"Stroke {idx + 1}/{total_strokes} - Compliance disabled and retract completed")
             
         # Return to safe starting joint configuration
+        self.log_event("Robot returning to home configuration")
         self.home()
+        self.log_event("Drawing execution loop completed successfully")
 
     def _move_to_hover(self, x_canvas: float, y_canvas: float, x_hover: float, rx: float, ry: float, rz: float) -> list:
         """
@@ -272,11 +332,6 @@ class UR5eController:
         
         logger.info(f"Executing compliant slide: distance={total_dist*100:.2f} cm, speed={speed*100:.2f} cm/s, time={total_time:.2f}s...")
         
-        tool_task_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        tool_selection_vector = [1, 0, 0, 0, 0, 0] # Compliance only on Base X
-        # Negative X points towards the drawing board, so command a negative force to push into the surface
-        tool_wrench = [-self.cfg['forward_force'], 0.0, 0.0, 0.0, 0.0, 0.0]
-        
         # Pre-generate target trajectory points at 500Hz
         raw_wp_list = []
         for step in range(num_steps + 1):
@@ -311,17 +366,13 @@ class UR5eController:
 
         try:
             for step, (Y_target, Z_target) in enumerate(raw_wp_list):
+                # Initialize period starting time for real-time control (500Hz)
+                t_start = self.rtde_c.initPeriod()
+                
                 # Target pose in base frame
                 wp = [x_draw, Y_target, Z_target, rx, ry, rz]
                 
-                # Keep compliance mode active and stream position
-                self.rtde_c.forceMode(
-                    tool_task_frame, 
-                    tool_selection_vector, 
-                    tool_wrench, 
-                    self.cfg['force_type_tool'], 
-                    self.cfg['force_limits']
-                )
+                # Stream position using servoL
                 self.rtde_c.servoL(wp, 0.0, 0.0, DT, 0.03, 2000)
                 
                 # Log telemetry at 10Hz (every 50 steps at 500Hz)
@@ -336,7 +387,9 @@ class UR5eController:
                         f"Canvas: ({x_canvas:.3f}, {y_canvas:.3f}) | "
                         f"Forces: Fx={actual_forces[0]:.2f}N, Fy={actual_forces[1]:.2f}N, Fz={actual_forces[2]:.2f}N"
                     )
-                time.sleep(DT)
+                
+                # Wait to maintain real-time period
+                self.rtde_c.waitPeriod(t_start)
         finally:
             # Stop servo motion cleanly
             self.rtde_c.servoStop()
@@ -355,28 +408,112 @@ class UR5eController:
         
         self.rtde_c.moveL(retract_pose, 0.05, 0.1)
 
-    def plot_expected_drawing(self, strokes_2d: list):
+    def plot_expected_drawing(self, strokes_2d: list, plot_path_prefix: str = None, connections: list = None, original_strokes: list = None):
         """
-        Plots the expected drawing strokes using matplotlib.
+        Plots the expected drawing strokes using matplotlib and saves the plots
+        to the specified path/directory. Highlights merged connection lines in red
+        and overlays a stats card showing stroke optimizations.
         """
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
+        if not MATPLOTLIB_AVAILABLE:
             logger.error("matplotlib is required for dryrun plotting. Please install it using: pip install matplotlib")
             return
             
-        fig, ax = plt.subplots(figsize=(5, 5 * (self.height / self.width) if self.width != 0 else 7))
-        for stroke in strokes_2d:
+        fig, ax = plt.subplots(figsize=(5.5, 5.5 * (self.height / self.width) if self.width != 0 else 7))
+        
+        # Plot each stroke
+        for idx, stroke in enumerate(strokes_2d):
             if not stroke:
                 continue
             stroke_np = np.array(stroke)
-            ax.plot(stroke_np[:, 0], stroke_np[:, 1], 'b-', linewidth=2)
+            # Plot stroke path in blue
+            ax.plot(stroke_np[:, 0], stroke_np[:, 1], 'b-', linewidth=2.5, label='Drawing stroke' if idx == 0 else "")
             
+        # Highlight connection lines in red dashed style
+        if connections:
+            for c_idx, (p1, p2) in enumerate(connections):
+                ax.plot([p1[0], p2[0]], [p1[1], p2[1]], 'r--', linewidth=2.5, label='Merged Connection' if c_idx == 0 else "")
+        
+        # Compute path metrics
+        def _get_path_metrics(strokes):
+            draw_d = 0.0
+            for s in strokes:
+                if len(s) > 1:
+                    pts = np.array(s) * np.array([self.width, self.height])
+                    draw_d += np.sum(np.linalg.norm(np.diff(pts, axis=0), axis=1))
+            
+            air_d = 0.0
+            cleaned = [s for s in strokes if len(s) > 0]
+            if len(cleaned) > 1:
+                for i in range(len(cleaned) - 1):
+                    p_end = np.array(cleaned[i][-1]) * np.array([self.width, self.height])
+                    p_start = np.array(cleaned[i+1][0]) * np.array([self.width, self.height])
+                    air_d += np.linalg.norm(p_end - p_start)
+            return draw_d, air_d
+
+        opt_draw_d, opt_air_d = _get_path_metrics(strokes_2d)
+        opt_total_d = opt_draw_d + opt_air_d
+        opt_lifts = len(strokes_2d)
+
+        # ── Rich Stats Card Overlay ───────────────────────────────────────────
+        info_lines = []
+        info_lines.append(r"$\bf{DRAWING\ STATS}$")
+        info_lines.append(f"Pen Lifts (Strokes): {opt_lifts}")
+
+        if original_strokes:
+            orig_draw_d, orig_air_d = _get_path_metrics(original_strokes)
+            orig_lifts = len([s for s in original_strokes if len(s) > 0])
+            saved_lifts = orig_lifts - opt_lifts
+            if saved_lifts > 0:
+                info_lines.append(f"  (Saved {saved_lifts} lifts via merging)")
+            
+            info_lines.append(f"Drawing Dist: {opt_draw_d:.2f}m ({opt_draw_d*100:.0f}cm)")
+            info_lines.append(f"Air Distance: {opt_air_d:.2f}m ({opt_air_d*100:.0f}cm)")
+            
+            air_saved = orig_air_d - opt_air_d
+            if orig_air_d > 0 and air_saved > 0:
+                pct = air_saved / orig_air_d * 100
+                info_lines.append(f"  (Saved {air_saved:.2f}m | {pct:.1f}% air via TSP)")
+            info_lines.append(f"Total Distance: {opt_total_d:.2f}m ({opt_total_d*100:.0f}cm)")
+        else:
+            info_lines.append(f"Drawing Dist: {opt_draw_d:.2f}m ({opt_draw_d*100:.0f}cm)")
+            info_lines.append(f"Air Distance: {opt_air_d:.2f}m ({opt_air_d*100:.0f}cm)")
+            info_lines.append(f"Total Distance: {opt_total_d:.2f}m ({opt_total_d*100:.0f}cm)")
+
+        textstr = "\n".join(info_lines)
+        props = dict(boxstyle='round,pad=0.5', facecolor='#f8f9fa', alpha=0.9, edgecolor='#cccccc', linewidth=1)
+        ax.text(0.02, 0.98, textstr, transform=ax.transAxes, fontsize=8.5,
+                verticalalignment='top', bbox=props, fontfamily='sans-serif')
+
+        # Show legend if we had labels
+        handles, labels = ax.get_legend_handles_labels()
+        if labels:
+            ax.legend(handles, labels, loc='upper right', framealpha=0.9)
+
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.set_aspect('equal')
         ax.set_title("Expected Drawing Preview (Dry Run)")
         ax.set_xlabel("Canvas X (Normalized)")
         ax.set_ylabel("Canvas Y (Normalized)")
-        ax.grid(True)
+        ax.grid(True, linestyle=':', alpha=0.5)
+        
+        # Determine saving paths
+        if plot_path_prefix:
+            png_path = f"{plot_path_prefix}.png"
+            pdf_path = f"{plot_path_prefix}.pdf"
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(plot_path_prefix), exist_ok=True)
+        else:
+            os.makedirs("plots", exist_ok=True)
+            png_path = "plots/expected_drawing_preview.png"
+            pdf_path = "plots/expected_drawing_preview.pdf"
+        
+        try:
+            plt.savefig(png_path, dpi=300, bbox_inches='tight')
+            plt.savefig(pdf_path, bbox_inches='tight')
+            logger.info(f"Saved expected drawing preview plots to '{png_path}' and '{pdf_path}'")
+        except Exception as e:
+            logger.error(f"Failed to save preview plots: {e}")
+            
+        # Display the plot
         plt.show()

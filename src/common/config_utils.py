@@ -51,7 +51,8 @@ def load_config_from_yaml(config_path: str) -> dict:
         'retract_acceleration': 0.25,
         'disconnect_stop_deceleration': 2.0,
         'blend_radius': 0.002,
-        'draw_depth_offset': 0.0
+        'draw_depth_offset': 0.0,
+        'optimize_strokes': True
     }
 
     # -------------------------------------------------------------

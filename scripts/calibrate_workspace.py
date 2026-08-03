@@ -56,6 +56,9 @@ def main():
         
     cfg = load_config_from_yaml(config_file_path)
     
+    rtde_c = None
+    rtde_r = None
+
     # -------------------------------------------------------------
     # Establish connection with the robot
     # -------------------------------------------------------------
@@ -141,8 +144,10 @@ def main():
         
     finally:
         # Safe disconnect
-        rtde_c.disconnect()
-        rtde_r.disconnect()
+        if rtde_c:
+            rtde_c.disconnect()
+        if rtde_r:
+            rtde_r.disconnect()
         logger.info("Calibration script finished.")
 
 if __name__ == "__main__":
