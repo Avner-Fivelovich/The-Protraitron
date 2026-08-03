@@ -1,4 +1,4 @@
 [submodule "SwiftSketch-Protraitron-experimental"]
-	path = SwiftSketch-Protraitron-experimental
+	path = SwiftSketch-Protraitron
 	url = https://github.com/Avner-Fivelovich/SwiftSketch-Protraitron.git
 	branch = main
