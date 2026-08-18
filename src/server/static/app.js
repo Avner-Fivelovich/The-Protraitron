@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCloseCamera = document.getElementById('btn-close-camera');
     const btnOpenCamera = document.getElementById('btn-open-camera');
     const nativeCameraInput = document.getElementById('native-camera');
-    const fileUploadInput = document.getElementById('file-upload');
+    const captureCard = document.querySelector('.capture-card');
+    const resultCard = document.querySelector('.result-card');
     
     const resultPlaceholder = document.getElementById('result-placeholder');
     const placeholderText = document.getElementById('placeholder-text');
@@ -104,13 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Gallery File Upload
-    fileUploadInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            uploadImageFile(file, file.name);
-        }
-    });
 
     // Send photo to Flask Server
     async function uploadImageFile(fileBlob, filename) {
@@ -165,6 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
         loader.style.display = 'none';
         comparisonView.style.display = 'grid';
         
+        // Hide capture card and expand result card
+        if (captureCard) captureCard.style.display = 'none';
+        if (resultCard) resultCard.classList.add('full-width');
+        
         // Setup download button
         btnDownload.href = sketchUrl;
         resultActions.style.display = 'flex';
@@ -182,7 +180,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Reset file inputs
         nativeCameraInput.value = '';
-        fileUploadInput.value = '';
+        
+        // Show capture card and shrink result card
+        if (captureCard) captureCard.style.display = 'flex';
+        if (resultCard) resultCard.classList.remove('full-width');
     }
 
     // Reset Click Handler
@@ -278,6 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Run camera initialization
-    initCamera();
+    // Default to closed camera / fallback mode on startup
+    useFallbackMode();
 });

@@ -589,3 +589,7 @@ footer {
 .shaking {
     animation: evil-shake 0.12s linear infinite;
 }
+
+.full-width {
+    grid-column: 1 / -1;
+}
