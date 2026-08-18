@@ -8,6 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700;900&family=Inter:ital,wght@0,400;0,700;0,900;1,400&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <!-- Cropper.js for image cropping -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -80,6 +84,19 @@
                 </div>
             </section>
 
+            <!-- Crop Card -->
+            <section class="card crop-card full-width" id="crop-card" style="display: none;">
+                <div class="card-header">
+                    <h2>Crop Subject</h2>
+                </div>
+                <div class="camera-container" style="padding: 0; background: #000; height: 60vh; max-height: 500px;">
+                    <img id="crop-image" src="" style="max-width: 100%; max-height: 100%; display: block;">
+                </div>
+                <div class="action-buttons" style="margin-top: 1rem; display: flex; justify-content: center; gap: 1rem;">
+                    <button class="btn btn-primary" id="btn-confirm-crop">✅ Confirm & Generate</button>
+                    <button class="btn btn-secondary" id="btn-retake-crop">↩️ Retake</button>
+                </div>
+            </section>
             <!-- Right Side: Processed Output -->
             <section class="card result-card" style="display: none;">
                 <h2>Vector Output</h2>

@@ -22,6 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const sketchPreview = document.getElementById('sketch-preview');
     const sketchPreview96 = document.getElementById('sketch-preview-96');
     
+    // Crop Elements
+    const cropCard = document.getElementById('crop-card');
+    const cropImage = document.getElementById('crop-image');
+    const btnConfirmCrop = document.getElementById('btn-confirm-crop');
+    const btnRetakeCrop = document.getElementById('btn-retake-crop');
+    let cropper = null;
+    let currentCropperBlob = null;
+    let currentCropperFilename = null;
+    
     const resultActions = document.getElementById('result-actions');
     const btnReset = document.getElementById('btn-reset');
     const btnDraw = document.getElementById('btn-draw');
@@ -91,20 +100,85 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Convert canvas image to Blob and send
         canvas.toBlob((blob) => {
-            if (blob) {
-                uploadImageFile(blob, 'captured_photo.jpg');
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
             }
-        }, 'image/jpeg', 0.9);
+            showCropView(blob, 'captured_photo.jpg');
+        }, 'image/jpeg', 0.95);
     });
 
     // Native Camera File Selection
     nativeCameraInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
-            uploadImageFile(file, file.name);
+            showCropView(file, file.name);
         }
     });
 
+
+    // --- Cropping Logic ---
+    function showCropView(fileBlob, filename) {
+        currentCropperBlob = fileBlob;
+        currentCropperFilename = filename || "capture.jpg";
+        
+        // Hide capture card and show crop card
+        captureCard.style.display = 'none';
+        captureCard.classList.remove('full-width');
+        cropCard.style.display = 'flex';
+        
+        // Load image into cropper
+        const objectUrl = URL.createObjectURL(fileBlob);
+        cropImage.src = objectUrl;
+        
+        // Initialize CropperJS
+        if (cropper) {
+            cropper.destroy();
+        }
+        
+        cropper = new Cropper(cropImage, {
+            aspectRatio: 1, // enforce 1:1 square
+            viewMode: 1,    // restrict crop box to not exceed canvas size
+            autoCropArea: 0.9,
+            background: false,
+            responsive: true,
+        });
+    }
+
+    btnConfirmCrop.addEventListener('click', () => {
+        if (!cropper) return;
+        
+        // Get the cropped canvas
+        const canvas = cropper.getCroppedCanvas({
+            width: 1024,
+            height: 1024,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high'
+        });
+        
+        // Convert to blob and upload
+        canvas.toBlob((blob) => {
+            if (blob) {
+                cropper.destroy();
+                cropper = null;
+                cropCard.style.display = 'none';
+                uploadImageFile(blob, currentCropperFilename);
+            }
+        }, 'image/jpeg', 0.95);
+    });
+
+    btnRetakeCrop.addEventListener('click', () => {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        cropCard.style.display = 'none';
+        captureCard.style.display = 'flex';
+        // Restart camera if it was running
+        if (videoWrapper.style.display === 'block') {
+            initCamera();
+        }
+    });
+    // --- End Cropping Logic ---
 
     // Send photo to Flask Server
     async function uploadImageFile(fileBlob, filename) {
@@ -213,6 +287,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sketchPreview96) sketchPreview96.src = '';
         comparisonView.style.display = 'none';
         resultActions.style.display = 'none';
+        
+        if (cropCard) cropCard.style.display = 'none';
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
         
         resultPlaceholder.style.display = 'flex';
         placeholderText.style.display = 'flex';
