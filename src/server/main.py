@@ -211,7 +211,7 @@ async def upload_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/generate/{strokes}")
-async def generate_sketch(strokes: int, job_id: str = Form(...)):
+def generate_sketch(strokes: int, job_id: str = Form(...)):
     """
     Generates an SVG for the given job_id and stroke configuration.
     """
