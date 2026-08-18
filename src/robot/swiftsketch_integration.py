@@ -43,7 +43,7 @@ def preprocess_image_to_square(input_path: str, output_path: str, size: int = 10
 
         new_img.save(output_path)
 
-def run_swiftsketch_inference(input_image_path: str, output_svg_path: str, config: dict) -> bool:
+def run_swiftsketch_inference(input_image_path: str, output_svg_path: str, config: dict, override_model_path: str = None) -> bool:
     """
     Runs SwiftSketch inference on the input image using the conda environment
     and saves the resulting SVG to output_svg_path.
@@ -51,13 +51,14 @@ def run_swiftsketch_inference(input_image_path: str, output_svg_path: str, confi
     :param input_image_path: Path to the input portrait image (JPEG/PNG).
     :param output_svg_path: Path where the output SVG should be copied/saved.
     :param config: Configuration dictionary (typically loaded from marker.yaml).
+    :param override_model_path: Optional relative path to override the default model.
     :return: True if successful, False otherwise.
     """
     # 1. Load parameters from config
     swiftsketch_cfg = config.get("swiftsketch", {})
     conda_env = swiftsketch_cfg.get("conda_env", "swiftsketch_env")
     repo_rel_path = swiftsketch_cfg.get("repo_path", "../swiftsketch")
-    model_rel_path = swiftsketch_cfg.get("model_path", "SwiftSketch/save/sketch-diffusion/model000450000.pt")
+    model_rel_path = override_model_path or swiftsketch_cfg.get("model_path", "SwiftSketch/save/sketch-diffusion/model000450000.pt")
     refine_model_rel_path = swiftsketch_cfg.get("refine_model_path", "SwiftSketch/save/refinement-network/model000430000.pt")
     guidance_param = swiftsketch_cfg.get("guidance_param", 2.5)
     use_refine = swiftsketch_cfg.get("use_refine", 1)

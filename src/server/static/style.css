@@ -414,9 +414,15 @@ video {
 /* Comparison container */
 .comparison-container {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 1rem;
     width: 100%;
+}
+
+@media (max-width: 768px) {
+    .comparison-container {
+        grid-template-columns: 1fr;
+    }
 }
 
 .img-box {

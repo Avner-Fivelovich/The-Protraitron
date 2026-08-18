@@ -198,28 +198,34 @@ async def upload_image(file: UploadFile = File(...)):
         logger.info(f"Preprocessing uploaded image: {file.filename} -> {preprocessed_path}")
         preprocess_image_to_square(raw_path, preprocessed_path)
         
-        # Run SwiftSketch inference
-        svg_filename = f"{job_id}_sketch.svg"
-        svg_path = os.path.join(SKETCH_DIR, svg_filename)
-        
         # Load calibration/parameters
         controller = UR5eController("192.168.57.101", calibration_path=CALIBRATION_PATH, marker_config_path=MARKER_CONFIG_PATH)
         
-        logger.info(f"Generating sketch for {job_id} using SwiftSketch...")
-        success = run_swiftsketch_inference(preprocessed_path, svg_path, controller.cfg)
+        # 1. Run standard inference
+        svg_filename_default = f"{job_id}_sketch.svg"
+        svg_path_default = os.path.join(SKETCH_DIR, svg_filename_default)
+        logger.info(f"Generating default sketch for {job_id} using SwiftSketch...")
+        success_default = run_swiftsketch_inference(preprocessed_path, svg_path_default, controller.cfg)
+
+        # 2. Run 96 strokes inference
+        svg_filename_96 = f"{job_id}_sketch_96.svg"
+        svg_path_96 = os.path.join(SKETCH_DIR, svg_filename_96)
+        logger.info(f"Generating 96-stroke sketch for {job_id} using SwiftSketch...")
+        success_96 = run_swiftsketch_inference(
+            preprocessed_path, 
+            svg_path_96, 
+            controller.cfg, 
+            override_model_path="models/model000040000.pt"
+        )
         
-        if not success:
+        if not success_default or not success_96:
             raise HTTPException(status_code=500, detail="SwiftSketch generative model failed to vectorize image.")
-            
-        # Return job details and SVG content
-        with open(svg_path, "r") as f:
-            svg_content = f.read()
             
         return JSONResponse(content={
             "jobId": job_id,
             "filename": file.filename,
-            "svgContent": svg_content,
-            "svgUrl": f"/api/svg/{svg_filename}",
+            "svgUrl": f"/api/svg/{svg_filename_default}",
+            "svgUrl96": f"/api/svg/{svg_filename_96}",
             "rawUrl": f"/api/raw/{raw_filename}"
         })
         

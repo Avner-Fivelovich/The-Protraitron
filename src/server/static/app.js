@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const comparisonView = document.getElementById('comparison-view');
     const rawPreview = document.getElementById('raw-preview');
     const sketchPreview = document.getElementById('sketch-preview');
+    const sketchPreview96 = document.getElementById('sketch-preview-96');
     
     const resultActions = document.getElementById('result-actions');
     const btnReset = document.getElementById('btn-reset');
@@ -125,9 +126,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             currentJobId = data.jobId;
-            currentOriginalName = data.filename;
-            currentSvgFilename = data.svgUrl.split('/').pop();
-            displayResults(data.rawUrl, data.svgUrl);
+            currentSvgFilename = data.svgUrl96.split('/').pop();
+            currentOriginalName = fileBlob.name || "capture.jpg";
+            displayResults(data.rawUrl, data.svgUrl, data.svgUrl96);
         } catch (error) {
             alert(`Error: ${error.message}`);
             setLoadingState(false);
@@ -156,11 +157,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function displayResults(rawUrl, sketchUrl) {
+    function displayResults(rawUrl, sketchUrl, sketchUrl96) {
         // Append cache-busting timestamp to bypass browser caching when repeating captures
         const timestamp = new Date().getTime();
         rawPreview.src = `${rawUrl}?t=${timestamp}`;
         sketchPreview.src = `${sketchUrl}?t=${timestamp}`;
+        if (sketchPreview96 && sketchUrl96) {
+            sketchPreview96.src = `${sketchUrl96}?t=${timestamp}`;
+        }
         
         // Transition display states
         resultPlaceholder.style.display = 'none';
@@ -177,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetView() {
         rawPreview.src = '';
         sketchPreview.src = '';
+        if (sketchPreview96) sketchPreview96.src = '';
         comparisonView.style.display = 'none';
         resultActions.style.display = 'none';
         
