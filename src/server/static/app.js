@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const resultActions = document.getElementById('result-actions');
     const btnReset = document.getElementById('btn-reset');
-    const btnDownload = document.getElementById('btn-download');
     const btnDraw = document.getElementById('btn-draw');
     
     let stream = null;
@@ -172,8 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (captureCard) captureCard.style.display = 'none';
         if (resultCard) resultCard.classList.add('full-width');
         
-        // Setup download button
-        btnDownload.href = sketchUrl;
         resultActions.style.display = 'flex';
     }
 
