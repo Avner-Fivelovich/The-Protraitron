@@ -445,10 +445,10 @@ video {
     object-fit: cover;
     border-radius: 4px;
     border: 2px solid var(--deep-color);
-    background: #000;
+    background: #fff;
 }
 
-#sketch-preview {
+#sketch-preview, #sketch-preview-96 {
     background: #ffffff;
     object-fit: contain;
 }
