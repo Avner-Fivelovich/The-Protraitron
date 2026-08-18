@@ -61,7 +61,7 @@ def run_swiftsketch_inference(input_image_path: str, output_svg_path: str, confi
     refine_model_rel_path = swiftsketch_cfg.get("refine_model_path", "SwiftSketch/save/refinement-network/model000430000.pt")
     guidance_param = swiftsketch_cfg.get("guidance_param", 2.5)
     use_refine = swiftsketch_cfg.get("use_refine", 1)
-    use_residual = swiftsketch_cfg.get("use_residual", True)
+    use_residual = swiftsketch_cfg.get("use_residual", False)
 
     # 2. Get absolute paths
     # Resolve relative paths with respect to this project's root folder
@@ -118,9 +118,14 @@ def run_swiftsketch_inference(input_image_path: str, output_svg_path: str, confi
         logger.info(f"Command: {' '.join(cmd)}")
 
         # Run command inside SwiftSketch source directory so imports resolve correctly
+        # Pass the parent directory in PYTHONPATH so 'SwiftSketch' module imports work
+        env = os.environ.copy()
+        env["PYTHONPATH"] = swiftsketch_dir
+        
         result = subprocess.run(
             cmd,
             cwd=swiftsketch_src_dir,
+            env=env,
             capture_output=True,
             text=True,
             check=True

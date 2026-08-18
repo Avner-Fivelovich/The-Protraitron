@@ -2,10 +2,12 @@ import os
 import sys
 import uuid
 import time
+import socket
 import threading
 from typing import Optional
 import uvicorn
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+import qrcode
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
@@ -217,7 +219,8 @@ async def upload_image(file: UploadFile = File(...)):
             "jobId": job_id,
             "filename": file.filename,
             "svgContent": svg_content,
-            "svgUrl": f"/api/svg/{svg_filename}"
+            "svgUrl": f"/api/svg/{svg_filename}",
+            "rawUrl": f"/api/raw/{raw_filename}"
         })
         
     except HTTPException:
@@ -226,14 +229,23 @@ async def upload_image(file: UploadFile = File(...)):
         logger.error(f"Error handling upload: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        # Clean up temporary uploaded and preprocessed image files to prevent disk leaks
-        for path in (raw_path, preprocessed_path):
-            if path and os.path.exists(path):
-                try:
-                    os.remove(path)
-                    logger.info(f"Cleaned up temporary upload file: {path}")
-                except Exception as e:
-                    logger.warning(f"Failed to clean up temporary file {path}: {e}")
+        # Clean up temporary preprocessed image files to prevent disk leaks
+        if preprocessed_path and os.path.exists(preprocessed_path):
+            try:
+                os.remove(preprocessed_path)
+                logger.info(f"Cleaned up temporary file: {preprocessed_path}")
+            except Exception as e:
+                logger.warning(f"Failed to clean up temporary file {preprocessed_path}: {e}")
+
+@app.get("/api/raw/{filename}")
+async def get_raw_file(filename: str):
+    """
+    Returns the uploaded raw image file.
+    """
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Raw image file not found.")
+    return FileResponse(file_path)
 
 @app.get("/api/svg/{filename}")
 async def get_svg_file(filename: str):
@@ -329,8 +341,72 @@ async def cancel_job(job_id: str = Form(...)):
                     
     raise HTTPException(status_code=404, detail="Job not found in queue.")
 
+def get_local_ip():
+    """Get the local IP address of the machine on the network."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except Exception:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
+
+def generate_startup_qr(ip_address, port=8000):
+    """Generates a QR code pointing to the server and saves it to static/qr.png."""
+    url = f"http://{ip_address}:{port}"
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(url)
+    qr.make(fit=True)
+
+    # Save image to static folder
+    qr_img = qr.make_image(fill_color="black", back_color="white")
+    qr_img.save(os.path.join(STATIC_DIR, 'qr.png'))
+    
+    # Also print an ASCII QR Code to terminal for instant scanning
+    print("\n" + "="*50)
+    print(" SCAN THIS QR CODE WITH YOUR PHONE TO OPEN THE CAMERA PAGE:")
+    print("="*50)
+    try:
+        import sys
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8')
+        qr.print_ascii(invert=True)
+    except Exception:
+        print("[ASCII QR Code could not be rendered in this console - see static/qr.png or visit the link below]")
+    print("="*50)
+    print(f" Server URL: {url}")
+    print(f" Local URL:  http://localhost:{port}")
+    print("="*50 + "\n")
+
+@app.get("/api/qr-data")
+async def get_qr_data(request: Request):
+    local_ip = get_local_ip()
+    current_port = 8000
+    if ":" in request.url.netloc:
+        try:
+            current_port = int(request.url.netloc.split(":")[-1])
+        except ValueError:
+            pass
+    return JSONResponse(content={
+        'local_ip_url': f"http://{local_ip}:{current_port}"
+    })
+
+@app.get("/")
+async def serve_index():
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
 # Serve static files
-app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = 8000
+    local_ip = get_local_ip()
+    generate_startup_qr(local_ip, port=port)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
