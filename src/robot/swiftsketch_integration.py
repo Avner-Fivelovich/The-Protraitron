@@ -89,7 +89,9 @@ def run_swiftsketch_inference(input_image_path: str, output_svg_path: str, confi
         return False
 
     # 3. Create a temporary output folder inside our workspace
-    temp_output_dir = os.path.abspath(os.path.join(project_root, "plots", "swiftsketch_temp"))
+    import uuid
+    unique_id = uuid.uuid4().hex
+    temp_output_dir = os.path.abspath(os.path.join(project_root, "plots", f"swiftsketch_temp_{unique_id}"))
     os.makedirs(temp_output_dir, exist_ok=True)
 
     try:

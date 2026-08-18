@@ -109,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Send photo to Flask Server
     async function uploadImageFile(fileBlob, filename) {
         setLoadingState(true);
+        if (btnDraw) btnDraw.disabled = true;
         
         const formData = new FormData();
         formData.append('file', fileBlob, filename);
@@ -126,13 +127,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             currentJobId = data.jobId;
-            currentSvgFilename = data.svgUrl96.split('/').pop();
+            currentSvgFilename = "";
             currentOriginalName = fileBlob.name || "capture.jpg";
-            displayResults(data.rawUrl, data.svgUrl, data.svgUrl96);
+            
+            // Display raw photo immediately and show grid
+            displayRawImage(data.rawUrl);
+            
+            // Kick off generation asynchronously
+            generateModel(32);
+            generateModel(96);
         } catch (error) {
             alert(`Error: ${error.message}`);
             setLoadingState(false);
             resetView();
+        }
+    }
+
+    async function generateModel(strokes) {
+        const formData = new FormData();
+        formData.append('job_id', currentJobId);
+        try {
+            const response = await fetch(`/api/generate/${strokes}`, {
+                method: 'POST',
+                body: formData
+            });
+            if (!response.ok) {
+                console.error(`Failed to generate ${strokes} model`);
+                return;
+            }
+            const data = await response.json();
+            displaySvgImage(strokes, data.svgUrl);
+        } catch (error) {
+            console.error(`Error with ${strokes} strokes:`, error);
         }
     }
 
@@ -157,25 +183,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function displayResults(rawUrl, sketchUrl, sketchUrl96) {
-        // Append cache-busting timestamp to bypass browser caching when repeating captures
+    function displayRawImage(rawUrl) {
         const timestamp = new Date().getTime();
         rawPreview.src = `${rawUrl}?t=${timestamp}`;
-        sketchPreview.src = `${sketchUrl}?t=${timestamp}`;
-        if (sketchPreview96 && sketchUrl96) {
-            sketchPreview96.src = `${sketchUrl96}?t=${timestamp}`;
-        }
         
-        // Transition display states
         resultPlaceholder.style.display = 'none';
-        loader.style.display = 'none';
         comparisonView.style.display = 'grid';
-        
-        // Hide capture card and expand result card
-        if (captureCard) captureCard.style.display = 'none';
-        if (resultCard) resultCard.classList.add('full-width');
-        
         resultActions.style.display = 'flex';
+    }
+
+    function displaySvgImage(strokes, svgUrl) {
+        const timestamp = new Date().getTime();
+        if (strokes === 32) {
+            sketchPreview.src = `${svgUrl}?t=${timestamp}`;
+            if (!currentSvgFilename) currentSvgFilename = svgUrl.split('/').pop();
+            if (btnDraw) btnDraw.disabled = false;
+        } else if (strokes === 96) {
+            if (sketchPreview96) sketchPreview96.src = `${svgUrl}?t=${timestamp}`;
+            currentSvgFilename = svgUrl.split('/').pop(); // Prefer 96 strokes for drawing
+            if (btnDraw) btnDraw.disabled = false;
+            // Done!
+            loader.style.display = 'none';
+        }
     }
 
     function resetView() {

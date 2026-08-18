@@ -198,34 +198,9 @@ async def upload_image(file: UploadFile = File(...)):
         logger.info(f"Preprocessing uploaded image: {file.filename} -> {preprocessed_path}")
         preprocess_image_to_square(raw_path, preprocessed_path)
         
-        # Load calibration/parameters
-        controller = UR5eController("192.168.57.101", calibration_path=CALIBRATION_PATH, marker_config_path=MARKER_CONFIG_PATH)
-        
-        # 1. Run standard inference
-        svg_filename_default = f"{job_id}_sketch.svg"
-        svg_path_default = os.path.join(SKETCH_DIR, svg_filename_default)
-        logger.info(f"Generating default sketch for {job_id} using SwiftSketch...")
-        success_default = run_swiftsketch_inference(preprocessed_path, svg_path_default, controller.cfg)
-
-        # 2. Run 96 strokes inference
-        svg_filename_96 = f"{job_id}_sketch_96.svg"
-        svg_path_96 = os.path.join(SKETCH_DIR, svg_filename_96)
-        logger.info(f"Generating 96-stroke sketch for {job_id} using SwiftSketch...")
-        success_96 = run_swiftsketch_inference(
-            preprocessed_path, 
-            svg_path_96, 
-            controller.cfg, 
-            override_model_path="models/model000040000.pt"
-        )
-        
-        if not success_default or not success_96:
-            raise HTTPException(status_code=500, detail="SwiftSketch generative model failed to vectorize image.")
-            
         return JSONResponse(content={
             "jobId": job_id,
             "filename": file.filename,
-            "svgUrl": f"/api/svg/{svg_filename_default}",
-            "svgUrl96": f"/api/svg/{svg_filename_96}",
             "rawUrl": f"/api/raw/{raw_filename}"
         })
         
@@ -234,14 +209,54 @@ async def upload_image(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Error handling upload: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        # Clean up temporary preprocessed image files to prevent disk leaks
-        if preprocessed_path and os.path.exists(preprocessed_path):
-            try:
-                os.remove(preprocessed_path)
-                logger.info(f"Cleaned up temporary file: {preprocessed_path}")
-            except Exception as e:
-                logger.warning(f"Failed to clean up temporary file {preprocessed_path}: {e}")
+
+@app.post("/api/generate/{strokes}")
+async def generate_sketch(strokes: int, job_id: str = Form(...)):
+    """
+    Generates an SVG for the given job_id and stroke configuration.
+    """
+    try:
+        preprocessed_filename = f"{job_id}_square.png"
+        preprocessed_path = os.path.join(UPLOAD_DIR, preprocessed_filename)
+        
+        if not os.path.exists(preprocessed_path):
+            raise HTTPException(status_code=404, detail="Uploaded image not found. Please re-upload.")
+            
+        # Load calibration/parameters
+        controller = UR5eController("192.168.57.101", calibration_path=CALIBRATION_PATH, marker_config_path=MARKER_CONFIG_PATH)
+        
+        if strokes == 32:
+            model_override = None
+            svg_filename = f"{job_id}_sketch.svg"
+            logger.info(f"Generating 32-stroke sketch for {job_id} using SwiftSketch...")
+        elif strokes == 96:
+            model_override = "models/model000040000.pt"
+            svg_filename = f"{job_id}_sketch_96.svg"
+            logger.info(f"Generating 96-stroke sketch for {job_id} using SwiftSketch...")
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported stroke count")
+            
+        svg_path = os.path.join(SKETCH_DIR, svg_filename)
+        
+        success = run_swiftsketch_inference(
+            preprocessed_path, 
+            svg_path, 
+            controller.cfg, 
+            override_model_path=model_override
+        )
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="SwiftSketch generative model failed to vectorize image.")
+            
+        return JSONResponse(content={
+            "svgUrl": f"/api/svg/{svg_filename}"
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating {strokes} strokes: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/raw/{filename}")
 async def get_raw_file(filename: str):
