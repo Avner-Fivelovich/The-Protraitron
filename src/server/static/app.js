@@ -138,6 +138,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setLoadingState(isLoading) {
         if (isLoading) {
+            if (captureCard) {
+                captureCard.style.display = 'none';
+                captureCard.classList.remove('full-width');
+            }
+            if (resultCard) {
+                resultCard.style.display = 'flex';
+                resultCard.classList.add('full-width');
+            }
+            
             resultPlaceholder.style.display = 'flex';
             placeholderText.style.display = 'none';
             loader.style.display = 'block';
@@ -179,11 +188,17 @@ document.addEventListener('DOMContentLoaded', () => {
         loader.style.display = 'none';
         
         // Reset file inputs
-        nativeCameraInput.value = '';
+        if (nativeCameraInput) nativeCameraInput.value = '';
         
-        // Show capture card and shrink result card
-        if (captureCard) captureCard.style.display = 'flex';
-        if (resultCard) resultCard.classList.remove('full-width');
+        // Show capture card full-width and hide result card entirely
+        if (captureCard) {
+            captureCard.style.display = 'flex';
+            captureCard.classList.add('full-width');
+        }
+        if (resultCard) {
+            resultCard.style.display = 'none';
+            resultCard.classList.remove('full-width');
+        }
     }
 
     // Reset Click Handler
