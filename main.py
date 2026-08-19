@@ -25,6 +25,7 @@ from src.robot.mask_filtering import (
 from src.vision.camera_capture import (
     capture_image_from_camera, detect_and_crop_face, apply_background_removal_vignette
 )
+from src.robot.paper_handler import PaperHandler
 
 # Initialize main system logger
 logger = get_logger("MainSystem")
@@ -33,8 +34,18 @@ def log_event(event_name: str):
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
     logger.info(f"[TIMESTAMP] {now_str} - Event: {event_name}")
 
-# Sockets and configurations defaults
-ROBOT_IP = "192.168.57.101"
+import yaml
+
+
+
+# Load Server Config for IP
+SERVER_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config", "server.yaml")
+server_cfg = {}
+if os.path.exists(SERVER_CONFIG_PATH):
+    with open(SERVER_CONFIG_PATH, "r") as f:
+        server_cfg = yaml.safe_load(f)
+
+ROBOT_IP = server_cfg.get("hardware", {}).get("robot_ip", "192.168.57.101")
 CALIBRATION_PATH = "config/calibration.yaml"
 MARKER_CONFIG_PATH = "config/marker.yaml"
 
@@ -170,6 +181,7 @@ def parse_args():
     parser.add_argument("--mask", type=str, default=None, help="Path to binary mask image to filter noisy strokes (default: None)")
     parser.add_argument("--mask-keep-ratio", type=float, default=0.7, help="Minimum ratio of points inside mask to keep a stroke (default: 0.7)")
     parser.add_argument("--approve", action="store_true", help="Display drawing preview and require approval before starting physical robot drawing")
+    parser.add_argument("--paper-swap", action="store_true", help="Execute the hardware paper swap sequence after drawing completes")
     return parser.parse_args()
 
 def run_one_shot_text(controller, text: str):
@@ -186,7 +198,7 @@ def run_one_shot_poc(controller, start_position: str, radius_cm: float, angle_de
     logger.info(f"One-shot POC mode: position='{start_position}', radius={radius_cm}cm, angle={angle_deg}°")
     run_poc(controller, radius=radius_cm / 100.0, theta=angle_deg, start_position=start_position, line_start_at='end')
 
-def run_one_shot_svg(controller, svg_path: str, optimize: bool = None, merge_threshold: float = 0.002, mask_path: str = None, mask_keep_ratio: float = 0.7, approve: bool = False):
+def run_one_shot_svg(controller, svg_path: str, optimize: bool = None, merge_threshold: float = 0.002, mask_path: str = None, mask_keep_ratio: float = 0.7, approve: bool = False, paper_swap: bool = False, paper_handler: PaperHandler = None):
     """
     Executes a one-shot SVG vector drawing.
     """
@@ -410,10 +422,19 @@ def run_one_shot_svg(controller, svg_path: str, optimize: bool = None, merge_thr
             original_strokes=filtered_strokes
         )
         log_event("All drawing paths completed successfully")
+        
+        if paper_swap and not controller.dryrun:
+            log_event("Starting paper swap sequence...")
+            if paper_handler is None:
+                paper_handler = PaperHandler(controller.rtde_c, controller.rtde_r)
+            success = paper_handler.execute_paper_swap()
+            if not success:
+                logger.warning("Paper swap sequence failed.")
+            
     except Exception as e:
         logger.error(f"Error during SVG execution: {e}")
 
-def run_one_shot_sketch(controller, image_path: str, optimize: bool = None, merge_threshold: float = 0.002, approve: bool = False):
+def run_one_shot_sketch(controller, image_path: str, optimize: bool = None, merge_threshold: float = 0.002, approve: bool = False, paper_swap: bool = False, paper_handler: PaperHandler = None):
     """
     Runs SwiftSketch to generate a vector portrait, then draws it.
     """
@@ -431,7 +452,7 @@ def run_one_shot_sketch(controller, image_path: str, optimize: bool = None, merg
         
     # Draw the generated SVG
     logger.info("SwiftSketch generation completed. Proceeding to draw...")
-    run_one_shot_svg(controller, output_svg_path, optimize, merge_threshold, approve=approve)
+    run_one_shot_svg(controller, output_svg_path, optimize, merge_threshold, approve=approve, paper_swap=paper_swap, paper_handler=paper_handler)
 
 def run_camera_capture_and_sketch(controller, optimize: bool = None, merge_threshold: float = 0.002, approve: bool = False):
     """
@@ -483,29 +504,38 @@ def main():
         logger.error("Connection failed. Aborting.")
         sys.exit(1)
         
+    paper_handler = None
+    if not controller.dryrun:
+        paper_handler = PaperHandler(controller.rtde_c, controller.rtde_r)
+        
     try:
         if args.text is not None:
             run_one_shot_text(controller, args.text)
+            if paper_handler: paper_handler.disconnect()
             controller.disconnect()
             sys.exit(0)
             
         elif args.POC is not None:
             run_one_shot_poc(controller, args.POC, args.radius, args.angle)
+            if paper_handler: paper_handler.disconnect()
             controller.disconnect()
             sys.exit(0)
 
         elif args.svg is not None:
-            run_one_shot_svg(controller, args.svg, args.optimize, args.merge_threshold, args.mask, args.mask_keep_ratio, args.approve)
+            run_one_shot_svg(controller, args.svg, args.optimize, args.merge_threshold, args.mask, args.mask_keep_ratio, args.approve, args.paper_swap, paper_handler=paper_handler)
+            if paper_handler: paper_handler.disconnect()
             controller.disconnect()
             sys.exit(0)
             
         elif args.sketch is not None:
-            run_one_shot_sketch(controller, args.sketch, args.optimize, args.merge_threshold, args.approve)
+            run_one_shot_sketch(controller, args.sketch, args.optimize, args.merge_threshold, args.approve, args.paper_swap, paper_handler=paper_handler)
+            if paper_handler: paper_handler.disconnect()
             controller.disconnect()
             sys.exit(0)
             
         elif args.capture:
             run_camera_capture_and_sketch(controller, args.optimize, args.merge_threshold, args.approve)
+            if paper_handler: paper_handler.disconnect()
             controller.disconnect()
             sys.exit(0)
             
@@ -520,10 +550,11 @@ def main():
             print("3. Draw SVG file")
             print("4. Sketch & Draw Portrait (SwiftSketch)")
             print("5. Capture Photo from Webcam & Sketch")
+            print("6. Batch Draw with Paper Swap (SVG)")
             print("Press Control+C to exit")
             print("=" * 50)
             
-            choice = input("Enter choice (1-5): ").strip()
+            choice = input("Enter choice (1-6): ").strip()
             
             # Dispatch choice
             if choice == "1":
@@ -538,27 +569,35 @@ def main():
                 if not svg_path:
                     logger.warning("SVG file path cannot be empty.")
                     continue
-                run_one_shot_svg(controller, svg_path, args.optimize, args.merge_threshold, args.mask, args.mask_keep_ratio, args.approve)
+                run_one_shot_svg(controller, svg_path, args.optimize, args.merge_threshold, args.mask, args.mask_keep_ratio, args.approve, paper_handler=paper_handler)
             elif choice == "4":
                 image_path = input("Enter portrait image file path: ").strip()
                 if not image_path:
                     logger.warning("Image file path cannot be empty.")
                     continue
-                run_one_shot_sketch(controller, image_path, args.optimize, args.merge_threshold, args.approve)
+                run_one_shot_sketch(controller, image_path, args.optimize, args.merge_threshold, args.approve, paper_handler=paper_handler)
             elif choice == "5":
                 run_camera_capture_and_sketch(controller, args.optimize, args.merge_threshold, args.approve)
+            elif choice == "6":
+                svg_path = input("Enter SVG file path for batch mode: ").strip()
+                if not svg_path:
+                    logger.warning("SVG file path cannot be empty.")
+                    continue
+                run_one_shot_svg(controller, svg_path, args.optimize, args.merge_threshold, args.mask, args.mask_keep_ratio, args.approve, paper_swap=True, paper_handler=paper_handler)
             elif choice == "":
                 # Ignore empty presses
                 continue
             else:
-                logger.warning(f"Option '{choice}' is not recognized. Please choose option 1, 2, 3, 4, or 5.")
+                logger.warning(f"Option '{choice}' is not recognized. Please choose option 1, 2, 3, 4, 5, or 6.")
                 
     except KeyboardInterrupt:
         print("\n\nExiting main system menu safely. Goodbye!")
+        if paper_handler: paper_handler.disconnect()
         controller.disconnect()
         sys.exit(0)
     except Exception as e:
         logger.error(f"Encountered a system menu exception: {e}")
+        if paper_handler: paper_handler.disconnect()
         controller.disconnect()
         sys.exit(1)
 
