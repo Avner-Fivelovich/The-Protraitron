@@ -137,11 +137,25 @@ class CalibrationGUI:
         
     def jog(self, axis, direction):
         if not self.rtde_c or not self.rtde_r:
+            logger.warning("Jog attempted, but robot is not connected.")
             return
-        pose = self.rtde_r.getActualTCPPose()
-        pose[axis] += direction * self.step_var.get()
-        speed = self.speed_var.get()
-        self.rtde_c.moveL(pose, speed, 0.5)
+            
+        try:
+            pose = self.rtde_r.getActualTCPPose()
+            step = self.step_var.get()
+            speed = self.speed_var.get()
+            
+            move_dist = direction * step
+            axis_name = ["X", "Y", "Z"][axis]
+            logger.info(f"Jogging {axis_name}-axis by {move_dist}m at speed {speed}m/s")
+            
+            pose[axis] += move_dist
+            success = self.rtde_c.moveL(pose, speed, 0.5)
+            
+            if not success:
+                logger.error(f"moveL command returned False! Robot may be in a fault state or target is out of reach. Target: {pose}")
+        except Exception as e:
+            logger.error(f"Exception during jog: {e}", exc_info=True)
         
     def update_stage_display(self):
         if self.current_stage_idx < len(self.stages):
