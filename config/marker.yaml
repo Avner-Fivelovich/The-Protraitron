@@ -63,8 +63,6 @@ drawing:
 swiftsketch:
   conda_env: "swiftsketch_env"
   repo_path: "SwiftSketch-Protraitron"
-  model_path: "SwiftSketch/save/sketch-diffusion/model000450000.pt"
-  model_96_path: "models/model000040000.pt"
-  refine_model_path: "SwiftSketch/save/refinement-network/model000430000.pt"
+
   guidance_param: 2.5
   use_refine: 1

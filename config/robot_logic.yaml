@@ -1,0 +1,8 @@
+processing:
+  optimize_strokes: true
+  merge_threshold: 0.002
+  mask_keep_ratio: 0.7
+  approve: false
+
+hardware:
+  paper_swap: true

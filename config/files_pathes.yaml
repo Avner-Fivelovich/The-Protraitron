@@ -1,0 +1,11 @@
+paths:
+  calibration_config: "config/calibration.yaml"
+  marker_config: "config/marker.yaml"
+  server_config: "config/server.yaml"
+  paper_manipulation_config: "config/paper_manipulation.yaml"
+  robot_logic_config: "config/robot_logic.yaml"
+
+models:
+  model_32_path: "SwiftSketch/save/sketch-diffusion/model000450000.pt"
+  model_96_path: "models/model000040000.pt"
+  refine_model_path: "SwiftSketch/save/refinement-network/model000430000.pt"

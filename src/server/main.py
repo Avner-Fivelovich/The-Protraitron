@@ -19,7 +19,9 @@ from src.common.logger import get_logger
 from src.robot.controller import UR5eController
 from src.robot.swiftsketch_integration import run_swiftsketch_inference, preprocess_image_to_square
 from src.robot.svg_drawing import load_svg_file, normalize_svg_strokes
-from src.robot.path_optimization import optimize_strokes_tsp
+from src.robot.path_optimization import optimize_strokes_tsp, merge_close_strokes
+from src.robot.mask_filtering import load_binary_mask, filter_strokes_with_mask
+from src.robot.paper_handler import PaperHandler
 
 logger = get_logger("FastAPIServer")
 
@@ -30,9 +32,16 @@ import yaml
 # Constants
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
-CALIBRATION_PATH = os.path.join(PROJECT_ROOT, "config", "calibration.yaml")
-MARKER_CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "marker.yaml")
-SERVER_CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "server.yaml")
+# Load File Paths Config
+FILES_PATHES_CONFIG = os.path.join(PROJECT_ROOT, "config", "files_pathes.yaml")
+paths_cfg = {}
+if os.path.exists(FILES_PATHES_CONFIG):
+    with open(FILES_PATHES_CONFIG, "r") as f:
+        paths_cfg = yaml.safe_load(f)
+
+CALIBRATION_PATH = os.path.join(PROJECT_ROOT, paths_cfg.get("paths", {}).get("calibration_config", "config/calibration.yaml"))
+MARKER_CONFIG_PATH = os.path.join(PROJECT_ROOT, paths_cfg.get("paths", {}).get("marker_config", "config/marker.yaml"))
+SERVER_CONFIG_PATH = os.path.join(PROJECT_ROOT, paths_cfg.get("paths", {}).get("server_config", "config/server.yaml"))
 
 server_cfg = {}
 if os.path.exists(SERVER_CONFIG_PATH):
@@ -44,6 +53,14 @@ UPLOAD_DIR = os.path.join(PROJECT_ROOT, server_cfg.get("directories", {}).get("u
 SKETCH_DIR = os.path.join(PROJECT_ROOT, server_cfg.get("directories", {}).get("sketch_dir", "plots/generated_sketches"))
 ROBOT_IP = server_cfg.get("hardware", {}).get("robot_ip", "192.168.57.101")
 SECRET_HANDSHAKE = server_cfg.get("server", {}).get("secret_handshake", "portraitron")
+
+robot_logic_path = paths_cfg.get("paths", {}).get("robot_logic_config", "config/robot_logic.yaml")
+robot_logic_cfg = {}
+if os.path.exists(os.path.join(PROJECT_ROOT, robot_logic_path)):
+    with open(os.path.join(PROJECT_ROOT, robot_logic_path), "r") as f:
+        robot_logic_cfg = yaml.safe_load(f)
+proc_cfg = robot_logic_cfg.get("processing", {})
+hw_cfg = robot_logic_cfg.get("hardware", {})
 
 # Ensure directories exist
 os.makedirs(STATIC_DIR, exist_ok=True)
@@ -61,6 +78,7 @@ class DrawingJob(BaseModel):
     original_name: str
     image_path: str
     svg_path: str
+    mask_path: Optional[str] = None
     created_at: float
     started_at: Optional[float] = None
     completed_at: Optional[float] = None
@@ -121,8 +139,24 @@ def queue_worker():
             if not normalized_strokes:
                 raise Exception("Generated SVG contains no valid stroke lines.")
                 
-            # 3. Optimize order
-            optimize = controller.cfg.get('optimize_strokes', True)
+            # Optional: Mask filtering
+            if job_to_run.mask_path and os.path.exists(job_to_run.mask_path):
+                mask_img = load_binary_mask(job_to_run.mask_path)
+                if mask_img is not None:
+                    keep_ratio = proc_cfg.get('mask_keep_ratio', 0.7)
+                    normalized_strokes = filter_strokes_with_mask(
+                        normalized_strokes, mask_img,
+                        canvas_width=controller.width, canvas_height=controller.height,
+                        keep_ratio=keep_ratio
+                    )
+            
+            # Optional: Merging close strokes
+            merge_threshold = proc_cfg.get('merge_threshold', 0.002)
+            if merge_threshold > 0.0:
+                normalized_strokes = merge_close_strokes(normalized_strokes, merge_threshold)
+                
+            # Optional: Optimize order
+            optimize = proc_cfg.get('optimize_strokes', True)
             if optimize:
                 logger.info("Optimizing stroke path order via TSP...")
                 opt_strokes = optimize_strokes_tsp(normalized_strokes)
@@ -162,12 +196,24 @@ def queue_worker():
             with queue_lock:
                 if job_to_run.status == "cancelled":
                     logger.warning(f"Job {job_to_run.id} was cancelled during drawing.")
-                    controller.home()
                 else:
                     job_to_run.status = "completed"
-                    job_to_run.progress = 100
                     job_to_run.completed_at = time.time()
-                    logger.success(f"Successfully completed job {job_to_run.id}")
+                    job_to_run.progress = 100
+                    logger.success(f"Job {job_to_run.id} completed successfully.")
+                    
+                    # 6. Optional: Paper swap
+                    if hw_cfg.get('paper_swap', False) and not controller.dryrun:
+                        logger.info("Executing automatic paper swap sequence...")
+                        paper_handler = PaperHandler(controller.rtde_c, controller.rtde_r)
+                        success = paper_handler.execute_paper_swap()
+                        if not success:
+                            logger.error("Paper swap failed.")
+                        paper_handler.disconnect()
+            
+            # Park robot when done
+            controller.home()
+            controller.disconnect()
                     
         except Exception as e:
             logger.error(f"Error executing drawing job {job_to_run.id}: {e}")
@@ -306,7 +352,8 @@ async def trigger_drawing(
     job_id: str = Form(...),
     svg_filename: str = Form(...),
     original_name: str = Form(...),
-    passcode: str = Form(...)
+    passcode: str = Form(...),
+    mask_filename: Optional[str] = Form(None)
 ):
     """
     Adds a drawing task to the active robot execution queue.
@@ -323,6 +370,12 @@ async def trigger_drawing(
     if not os.path.exists(svg_path):
         raise HTTPException(status_code=404, detail="SVG file not found.")
         
+    mask_path = None
+    if mask_filename:
+        mask_path = os.path.join(UPLOAD_DIR, mask_filename)
+        if not os.path.exists(mask_path):
+            raise HTTPException(status_code=404, detail="Mask file not found.")
+        
     # Check if job is already in queue
     with queue_lock:
         for job in drawing_queue:
@@ -336,6 +389,7 @@ async def trigger_drawing(
             original_name=original_name,
             image_path="",  # Optional
             svg_path=svg_path,
+            mask_path=mask_path,
             created_at=time.time()
         )
         drawing_queue.append(new_job)

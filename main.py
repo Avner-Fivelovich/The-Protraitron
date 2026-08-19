@@ -38,16 +38,29 @@ import yaml
 
 
 
-# Load Server Config for IP
-SERVER_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config", "server.yaml")
-server_cfg = {}
-if os.path.exists(SERVER_CONFIG_PATH):
-    with open(SERVER_CONFIG_PATH, "r") as f:
-        server_cfg = yaml.safe_load(f)
+# Load File Paths Config
+FILES_PATHES_CONFIG = os.path.join(os.path.dirname(__file__), "config", "files_pathes.yaml")
+paths_cfg = {}
+if os.path.exists(FILES_PATHES_CONFIG):
+    with open(FILES_PATHES_CONFIG, "r") as f:
+        paths_cfg = yaml.safe_load(f)
 
+# Extract config paths
+server_config_path = paths_cfg.get("paths", {}).get("server_config", "config/server.yaml")
+robot_logic_path = paths_cfg.get("paths", {}).get("robot_logic_config", "config/robot_logic.yaml")
+CALIBRATION_PATH = paths_cfg.get("paths", {}).get("calibration_config", "config/calibration.yaml")
+MARKER_CONFIG_PATH = paths_cfg.get("paths", {}).get("marker_config", "config/marker.yaml")
+
+server_cfg = {}
+if os.path.exists(server_config_path):
+    with open(server_config_path, "r") as f:
+        server_cfg = yaml.safe_load(f)
 ROBOT_IP = server_cfg.get("hardware", {}).get("robot_ip", "192.168.57.101")
-CALIBRATION_PATH = "config/calibration.yaml"
-MARKER_CONFIG_PATH = "config/marker.yaml"
+
+robot_logic_cfg = {}
+if os.path.exists(robot_logic_path):
+    with open(robot_logic_path, "r") as f:
+        robot_logic_cfg = yaml.safe_load(f)
 
 def configure_and_run_poc(controller):
     """
@@ -166,6 +179,9 @@ def parse_args():
     """
     Parses command-line arguments for the Portraitron 3000 control interface.
     """
+    proc_cfg = robot_logic_cfg.get("processing", {})
+    hw_cfg = robot_logic_cfg.get("hardware", {})
+    
     parser = argparse.ArgumentParser(description="Portraitron 3000 - Main Control Interface")
     parser.add_argument("--text", "-t", type=str, help="Text to write (one-shot mode)")
     parser.add_argument("--POC", "-p", type=str, nargs='?', const='left', choices=["left", "right", "above", "below"], help="Start position of the semicircle for POC (one-shot mode)")
@@ -175,14 +191,22 @@ def parse_args():
     parser.add_argument("--sketch", "-k", type=str, help="Path to portrait image to sketch using SwiftSketch and draw (one-shot mode)")
     parser.add_argument("--capture", "-c", action="store_true", help="Capture photo from webcam, crop face, remove background, and sketch (one-shot mode)")
     parser.add_argument("--dryrun", "-d", action="store_true", help="Perform a dry run (plot expected drawing via matplotlib without connecting to the robot)")
-    parser.add_argument("--optimize", dest="optimize", action="store_true", default=None, help="Optimize SVG stroke drawing order using TSP (default: True)")
+    
+    parser.add_argument("--optimize", dest="optimize", action="store_true", default=proc_cfg.get("optimize_strokes", True), help="Optimize SVG stroke drawing order using TSP")
     parser.add_argument("--no-optimize", dest="optimize", action="store_false", help="Disable SVG stroke optimization")
-    parser.add_argument("--merge-threshold", type=float, default=0.002, help="Distance threshold in meters for stroke merging (default: 0.002, set to 0.0 to disable)")
+    parser.add_argument("--merge-threshold", type=float, default=proc_cfg.get("merge_threshold", 0.002), help="Distance threshold in meters for stroke merging")
     parser.add_argument("--mask", type=str, default=None, help="Path to binary mask image to filter noisy strokes (default: None)")
-    parser.add_argument("--mask-keep-ratio", type=float, default=0.7, help="Minimum ratio of points inside mask to keep a stroke (default: 0.7)")
-    parser.add_argument("--approve", action="store_true", help="Display drawing preview and require approval before starting physical robot drawing")
-    parser.add_argument("--paper-swap", action="store_true", help="Execute the hardware paper swap sequence after drawing completes")
-    return parser.parse_args()
+    parser.add_argument("--mask-keep-ratio", type=float, default=proc_cfg.get("mask_keep_ratio", 0.7), help="Minimum ratio of points inside mask to keep a stroke")
+    parser.add_argument("--approve", action="store_true", default=proc_cfg.get("approve", False), help="Display drawing preview and require approval before starting physical robot drawing")
+    parser.add_argument("--paper-swap", action="store_true", default=hw_cfg.get("paper_swap", False), help="Execute the hardware paper swap sequence after drawing completes")
+    
+    args = parser.parse_args()
+    
+    # If dryrun is enabled and no explicit approve flag is given, fallback to true
+    if args.dryrun and not any(arg == "--approve" for arg in sys.argv):
+        args.approve = True
+        
+    return args
 
 def run_one_shot_text(controller, text: str):
     """
