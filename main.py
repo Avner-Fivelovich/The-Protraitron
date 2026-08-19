@@ -525,8 +525,10 @@ def main():
     controller.dryrun = args.dryrun
     
     if not controller.connect():
-        logger.error("Connection failed. Aborting.")
-        sys.exit(1)
+        logger.warning("Robot connection failed! Automatically falling back to --dryrun and forcing approve=True.")
+        args.dryrun = True
+        controller.dryrun = True
+        args.approve = True
         
     paper_handler = None
     if not controller.dryrun:
