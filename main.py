@@ -190,6 +190,7 @@ def parse_args():
     parser.add_argument("--svg", "-s", type=str, help="Path to SVG file to draw (one-shot mode)")
     parser.add_argument("--sketch", "-k", type=str, help="Path to portrait image to sketch using SwiftSketch and draw (one-shot mode)")
     parser.add_argument("--capture", "-c", action="store_true", help="Capture photo from webcam, crop face, remove background, and sketch (one-shot mode)")
+    parser.add_argument("--serve", action="store_true", help="Start the FastAPI web dashboard server")
     parser.add_argument("--dryrun", "-d", action="store_true", help="Perform a dry run (plot expected drawing via matplotlib without connecting to the robot)")
     
     parser.add_argument("--optimize", dest="optimize", action="store_true", default=proc_cfg.get("optimize_strokes", True), help="Optimize SVG stroke drawing order using TSP")
@@ -512,6 +513,12 @@ def main():
     or runs in one-shot mode if arguments are provided.
     """
     args = parse_args()
+    
+    if getattr(args, 'serve', False):
+        logger.info("Starting FastAPI Web Dashboard Server...")
+        from src.server.main import start_server
+        start_server()
+        sys.exit(0)
 
     if not os.path.exists(CALIBRATION_PATH):
         if not args.dryrun:
@@ -577,10 +584,11 @@ def main():
             print("4. Sketch & Draw Portrait (SwiftSketch)")
             print("5. Capture Photo from Webcam & Sketch")
             print("6. Batch Draw with Paper Swap (SVG)")
+            print("7. Start Web Dashboard Server")
             print("Press Control+C to exit")
             print("=" * 50)
             
-            choice = input("Enter choice (1-6): ").strip()
+            choice = input("Enter choice (1-7): ").strip()
             
             # Dispatch choice
             if choice == "1":
@@ -610,11 +618,20 @@ def main():
                     logger.warning("SVG file path cannot be empty.")
                     continue
                 run_one_shot_svg(controller, svg_path, args.optimize, args.merge_threshold, args.mask, args.mask_keep_ratio, args.approve, paper_swap=True, paper_handler=paper_handler)
+            elif choice == "7":
+                logger.info("Starting FastAPI Web Dashboard Server...")
+                # We can gracefully disconnect the current robot session so the server can acquire it
+                if paper_handler: paper_handler.disconnect()
+                controller.disconnect()
+                
+                from src.server.main import start_server
+                start_server()
+                sys.exit(0)
             elif choice == "":
                 # Ignore empty presses
                 continue
             else:
-                logger.warning(f"Option '{choice}' is not recognized. Please choose option 1, 2, 3, 4, 5, or 6.")
+                logger.warning(f"Option '{choice}' is not recognized. Please choose option 1, 2, 3, 4, 5, 6, or 7.")
                 
     except KeyboardInterrupt:
         print("\n\nExiting main system menu safely. Goodbye!")

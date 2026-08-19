@@ -503,8 +503,14 @@ async def serve_index():
 # Serve static files
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-if __name__ == "__main__":
-    port = 8000
+def start_server(port=8000):
+    """
+    Boots the FastAPI web server using uvicorn.
+    Generates QR code for LAN access.
+    """
     local_ip = get_local_ip()
     generate_startup_qr(local_ip, port=port)
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("src.server.main:app", host="0.0.0.0", port=port, reload=True)
+
+if __name__ == "__main__":
+    start_server()
