@@ -7,7 +7,7 @@ import threading
 from typing import Optional
 import uvicorn
 import qrcode
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
@@ -332,7 +332,8 @@ async def get_raw_file(filename: str):
     """
     Returns the uploaded raw image file.
     """
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(UPLOAD_DIR, safe_filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Raw image file not found.")
     return FileResponse(file_path)
@@ -342,7 +343,8 @@ async def get_svg_file(filename: str):
     """
     Returns the generated SVG file.
     """
-    file_path = os.path.join(SKETCH_DIR, filename)
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(SKETCH_DIR, safe_filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="SVG file not found.")
     return FileResponse(file_path, media_type="image/svg+xml")
@@ -366,13 +368,15 @@ async def trigger_drawing(
     if passcode != required_passcode:
         raise HTTPException(status_code=403, detail="Invalid security handshake passcode.")
         
-    svg_path = os.path.join(SKETCH_DIR, svg_filename)
+    safe_svg = os.path.basename(svg_filename)
+    svg_path = os.path.join(SKETCH_DIR, safe_svg)
     if not os.path.exists(svg_path):
         raise HTTPException(status_code=404, detail="SVG file not found.")
         
     mask_path = None
     if mask_filename:
-        mask_path = os.path.join(UPLOAD_DIR, mask_filename)
+        safe_mask = os.path.basename(mask_filename)
+        mask_path = os.path.join(UPLOAD_DIR, safe_mask)
         if not os.path.exists(mask_path):
             raise HTTPException(status_code=404, detail="Mask file not found.")
         
@@ -499,6 +503,81 @@ async def get_qr_data(request: Request):
 @app.get("/")
 async def serve_index():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+def verify_localhost(request: Request):
+    """
+    Dependency that blocks any request not originating from localhost.
+    This secures the admin dashboard from being accessed over Wi-Fi.
+    """
+    client_host = request.client.host
+    if client_host not in ("127.0.0.1", "::1", "localhost"):
+        logger.warning(f"Blocked unauthorized admin access attempt from {client_host}")
+        raise HTTPException(status_code=403, detail="Admin dashboard is restricted to localhost only.")
+
+@app.get("/admin", dependencies=[Depends(verify_localhost)])
+async def serve_admin():
+    return FileResponse(os.path.join(STATIC_DIR, "admin.html"))
+
+@app.get("/api/admin/queue", dependencies=[Depends(verify_localhost)])
+async def admin_get_queue():
+    with queue_lock:
+        active_list = [j.dict() for j in drawing_queue if j.status in ("queued", "processing")]
+        history_list = [j.dict() for j in drawing_queue if j.status in ("completed", "failed", "cancelled")][-20:]
+    return JSONResponse(content={
+        "queue": active_list,
+        "history": history_list,
+        "activeJob": active_job.dict() if active_job else None
+    })
+
+@app.post("/api/admin/cancel", dependencies=[Depends(verify_localhost)])
+async def admin_cancel_job(job_id: str = Form(...)):
+    with queue_lock:
+        for job in drawing_queue:
+            if job.id == job_id:
+                if job.status == "queued":
+                    job.status = "cancelled"
+                    logger.info(f"Admin cancelled queued job {job_id}.")
+                    return JSONResponse(content={"status": "cancelled"})
+        
+        if active_job and active_job.id == job_id:
+            active_job.status = "cancelled"
+            logger.info(f"Admin cancelled active job {job_id}. Robot will stop.")
+            return JSONResponse(content={"status": "cancelling_active"})
+            
+    raise HTTPException(status_code=404, detail="Job not found or already completed.")
+
+@app.post("/api/admin/clear_queue", dependencies=[Depends(verify_localhost)])
+async def admin_clear_queue():
+    with queue_lock:
+        for job in drawing_queue:
+            if job.status == "queued":
+                job.status = "cancelled"
+        logger.info("Admin cleared all queued jobs.")
+    return JSONResponse(content={"status": "cleared"})
+
+@app.post("/api/admin/park", dependencies=[Depends(verify_localhost)])
+async def admin_park_robot():
+    logger.info("Admin triggered EMERGENCY PARK.")
+    controller = UR5eController(ROBOT_IP, calibration_path=CALIBRATION_PATH, marker_config_path=MARKER_CONFIG_PATH)
+    if controller.connect():
+        controller.home()
+        controller.disconnect()
+        return JSONResponse(content={"status": "parked"})
+    return JSONResponse(content={"status": "error", "detail": "Could not connect to robot."})
+
+@app.post("/api/admin/swap_paper", dependencies=[Depends(verify_localhost)])
+async def admin_swap_paper():
+    logger.info("Admin triggered manual paper swap.")
+    controller = UR5eController(ROBOT_IP, calibration_path=CALIBRATION_PATH, marker_config_path=MARKER_CONFIG_PATH)
+    if controller.connect():
+        paper_handler = PaperHandler(controller.rtde_c, controller.rtde_r)
+        success = paper_handler.execute_paper_swap()
+        paper_handler.disconnect()
+        controller.disconnect()
+        if success:
+            return JSONResponse(content={"status": "swapped"})
+        return JSONResponse(content={"status": "error", "detail": "Paper swap sequence failed."})
+    return JSONResponse(content={"status": "error", "detail": "Could not connect to robot."})
 
 # Serve static files
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-width=1.0">
+    <title>Portraitron 3000 - Admin Control Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+    <header class="admin-header">
+        <h1>PORTRAITRON 3000 <span>// ADMIN DASHBOARD</span></h1>
+        <div class="status-indicator">
+            <span class="dot" id="connection-dot"></span>
+            <span id="connection-status">Connecting...</span>
+        </div>
+    </header>
+
+    <main class="admin-container">
+        <!-- Hardware Controls -->
+        <section class="admin-panel hardware-controls">
+            <h2>HARDWARE CONTROLS</h2>
+            <div class="control-grid">
+                <button id="btn-park" class="btn danger-btn" onclick="parkRobot()">
+                    <span class="icon">🛑</span> EMERGENCY PARK
+                </button>
+                <button id="btn-swap" class="btn action-btn" onclick="triggerPaperSwap()">
+                    <span class="icon">📄</span> MANUAL PAPER SWAP
+                </button>
+                <button id="btn-clear" class="btn secondary-btn" onclick="clearQueue()">
+                    <span class="icon">🗑️</span> CLEAR QUEUE
+                </button>
+            </div>
+        </section>
+
+        <!-- Active Job -->
+        <section class="admin-panel active-job">
+            <h2>ACTIVE JOB</h2>
+            <div id="active-job-container" class="empty-state">
+                No active drawing job.
+            </div>
+        </section>
+
+        <!-- Queue -->
+        <section class="admin-panel job-queue">
+            <h2>WAITING QUEUE</h2>
+            <div id="queue-container">
+                <div class="empty-state">Queue is empty.</div>
+            </div>
+        </section>
+
+        <!-- History -->
+        <section class="admin-panel job-history">
+            <h2>RECENT HISTORY</h2>
+            <div id="history-container">
+                <div class="empty-state">No history.</div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/admin.js"></script>
+</body>
+</html>
