@@ -73,9 +73,10 @@ def load_config_from_yaml(config_path: str) -> dict:
                             if k in defaults:
                                 defaults[k] = v
                 
-                # Directly attach the swiftsketch nested dictionary
-                if 'swiftsketch' in config:
-                    defaults['swiftsketch'] = config['swiftsketch']
+                # Directly attach other specific nested dictionaries and keys
+                for k in ['swiftsketch', 'locations', 'speeds', 'force_thresholds', 'straightening_offset_y']:
+                    if k in config:
+                        defaults[k] = config[k]
             logger.info("Successfully loaded configuration parameters.")
         except Exception as e:
             logger.error(f"Failed to parse config, using default values: {e}")

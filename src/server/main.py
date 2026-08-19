@@ -25,13 +25,25 @@ logger = get_logger("FastAPIServer")
 
 app = FastAPI(title="Portraitron 3000 Server")
 
+import yaml
+
 # Constants
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
-UPLOAD_DIR = os.path.join(PROJECT_ROOT, "plots", "uploads")
-SKETCH_DIR = os.path.join(PROJECT_ROOT, "plots", "generated_sketches")
 CALIBRATION_PATH = os.path.join(PROJECT_ROOT, "config", "calibration.yaml")
 MARKER_CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "marker.yaml")
+SERVER_CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "server.yaml")
+
+server_cfg = {}
+if os.path.exists(SERVER_CONFIG_PATH):
+    with open(SERVER_CONFIG_PATH, "r") as f:
+        server_cfg = yaml.safe_load(f)
+
+# Configurable Paths & Settings
+UPLOAD_DIR = os.path.join(PROJECT_ROOT, server_cfg.get("directories", {}).get("upload_dir", "plots/uploads"))
+SKETCH_DIR = os.path.join(PROJECT_ROOT, server_cfg.get("directories", {}).get("sketch_dir", "plots/generated_sketches"))
+ROBOT_IP = server_cfg.get("hardware", {}).get("robot_ip", "192.168.57.101")
+SECRET_HANDSHAKE = server_cfg.get("server", {}).get("secret_handshake", "portraitron")
 
 # Ensure directories exist
 os.makedirs(STATIC_DIR, exist_ok=True)
@@ -64,7 +76,7 @@ def queue_worker():
     # Initialize UR5e Controller
     logger.info("Initializing UR5e Controller for background worker...")
     controller = UR5eController(
-        "192.168.57.101", 
+        ROBOT_IP, 
         calibration_path=CALIBRATION_PATH, 
         marker_config_path=MARKER_CONFIG_PATH
     )
@@ -223,7 +235,7 @@ def generate_sketch(strokes: int, job_id: str = Form(...)):
             raise HTTPException(status_code=404, detail="Uploaded image not found. Please re-upload.")
             
         # Load calibration/parameters
-        controller = UR5eController("192.168.57.101", calibration_path=CALIBRATION_PATH, marker_config_path=MARKER_CONFIG_PATH)
+        controller = UR5eController(ROBOT_IP, calibration_path=CALIBRATION_PATH, marker_config_path=MARKER_CONFIG_PATH)
         
         if strokes == 32:
             model_override = None
@@ -258,6 +270,17 @@ def generate_sketch(strokes: int, job_id: str = Form(...)):
         logger.error(f"Error generating {strokes} strokes: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/config")
+def get_config():
+    """
+    Returns public frontend configuration values from server.yaml.
+    """
+    return {
+        "camera_width": server_cfg.get("frontend", {}).get("camera_width", 1024),
+        "camera_height": server_cfg.get("frontend", {}).get("camera_height", 768),
+        "default_facing_mode": server_cfg.get("frontend", {}).get("default_facing_mode", "environment")
+    }
+
 @app.get("/api/raw/{filename}")
 async def get_raw_file(filename: str):
     """
@@ -290,7 +313,7 @@ async def trigger_drawing(
     Requires a valid security passcode.
     """
     # Load configuration to verify handshake passcode
-    controller = UR5eController("192.168.57.101", calibration_path=CALIBRATION_PATH, marker_config_path=MARKER_CONFIG_PATH)
+    controller = UR5eController(ROBOT_IP, calibration_path=CALIBRATION_PATH, marker_config_path=MARKER_CONFIG_PATH)
     required_passcode = controller.cfg.get("secret_handshake", "portraitron")
     
     if passcode != required_passcode:

@@ -1,0 +1,24 @@
+# Robotic Paper Manipulation Sequence Configuration
+# Coordinates format: [x, y, z, rx, ry, rz]
+
+locations:
+  pen_dock: [-0.3, -0.4, 0.2, 0.0, 3.14, 0.0]
+  magnet_1_start: [-0.4, -0.5, 0.2, 0.0, 3.14, 0.0]
+  magnet_1_temp: [-0.5, -0.5, 0.2, 0.0, 3.14, 0.0]
+  magnet_2_start: [-0.6, -0.5, 0.2, 0.0, 3.14, 0.0]
+  magnet_2_temp: [-0.7, -0.5, 0.2, 0.0, 3.14, 0.0]
+  paper_grab: [-0.5, -0.6, 0.2, 0.0, 3.14, 0.0]
+  cut_trajectory: [-0.5, -0.7, 0.2, 0.0, 3.14, 0.0]
+  handover_target: [-0.2, -0.7, 0.3, 0.0, 3.14, 0.0]
+  new_paper_roll: [-0.5, -0.8, 0.2, 0.0, 3.14, 0.0]
+  paper_pull_end: [-0.5, -0.6, 0.2, 0.0, 3.14, 0.0]
+
+speeds:
+  default_move: 0.1     # General robotic movement speed
+  cut_pull: 0.3         # Faster speed for tearing the paper cleanly against the edge
+  fetch_pull: 0.05      # Slower, careful speed for pulling the fresh paper roll
+
+force_thresholds:
+  handover_pull: 5.0    # Newtons required to trigger the human pull handover
+
+straightening_offset_y: 0.02 # Distance to offset before sliding the magnet to straighten the paper

@@ -36,7 +36,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDraw = document.getElementById('btn-draw');
     
     let stream = null;
-    let currentFacingMode = "environment"; // default to back camera
+    let cameraConfig = {
+        width: 1024,
+        height: 768,
+        facingMode: "environment"
+    };
+    
+    // Fetch frontend configuration from server
+    fetch('/api/config')
+        .then(res => res.json())
+        .then(data => {
+            cameraConfig.width = data.camera_width;
+            cameraConfig.height = data.camera_height;
+            cameraConfig.facingMode = data.default_facing_mode;
+            currentFacingMode = cameraConfig.facingMode;
+        })
+        .catch(err => console.error("Could not load config:", err));
+
+    let currentFacingMode = cameraConfig.facingMode; // default to back camera
     
     let currentJobId = null;
     let currentSvgFilename = null;
@@ -55,8 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
             stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: { ideal: currentFacingMode },
-                    width: { ideal: 1024 },
-                    height: { ideal: 768 }
+                    width: { ideal: cameraConfig.width },
+                    height: { ideal: cameraConfig.height }
                 },
                 audio: false
             });

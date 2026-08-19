@@ -1,0 +1,19 @@
+# Server & App Configuration
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  secret_handshake: "portraitron"
+
+directories:
+  upload_dir: "plots/uploads"
+  sketch_dir: "plots/generated_sketches"
+  temp_swiftsketch_dir: "plots"
+
+hardware:
+  robot_ip: "192.168.57.101"
+
+frontend:
+  camera_width: 1024
+  camera_height: 768
+  default_facing_mode: "environment"
