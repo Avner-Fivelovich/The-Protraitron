@@ -230,7 +230,7 @@ def generate_sketch(strokes: int, job_id: str = Form(...)):
             svg_filename = f"{job_id}_sketch.svg"
             logger.info(f"Generating 32-stroke sketch for {job_id} using SwiftSketch...")
         elif strokes == 96:
-            model_override = "models/model000040000.pt"
+            model_override = controller.cfg.get("swiftsketch", {}).get("model_96_path", "models/model000040000.pt")
             svg_filename = f"{job_id}_sketch_96.svg"
             logger.info(f"Generating 96-stroke sketch for {job_id} using SwiftSketch...")
         else:
