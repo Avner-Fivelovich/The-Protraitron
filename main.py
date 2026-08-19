@@ -190,7 +190,7 @@ def parse_args():
     parser.add_argument("--svg", "-s", type=str, help="Path to SVG file to draw (one-shot mode)")
     parser.add_argument("--sketch", "-k", type=str, help="Path to portrait image to sketch using SwiftSketch and draw (one-shot mode)")
     parser.add_argument("--capture", "-c", action="store_true", help="Capture photo from webcam, crop face, remove background, and sketch (one-shot mode)")
-    parser.add_argument("--serve", action="store_true", help="Start the FastAPI web dashboard server")
+    parser.add_argument("--server", "-S", action="store_true", help="Start the FastAPI web dashboard server")
     parser.add_argument("--dryrun", "-d", action="store_true", help="Perform a dry run (plot expected drawing via matplotlib without connecting to the robot)")
     
     parser.add_argument("--optimize", dest="optimize", action="store_true", default=proc_cfg.get("optimize_strokes", True), help="Optimize SVG stroke drawing order using TSP")
@@ -514,7 +514,7 @@ def main():
     """
     args = parse_args()
     
-    if getattr(args, 'serve', False):
+    if getattr(args, 'server', False):
         logger.info("Starting FastAPI Web Dashboard Server...")
         from src.server.main import start_server
         start_server()
