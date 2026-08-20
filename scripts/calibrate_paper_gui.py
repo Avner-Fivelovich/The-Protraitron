@@ -141,10 +141,32 @@ class CalibrationGUI:
             tk.Button(jog_frame, text=f"+{axis_name}", command=lambda idx=axis_idx: self.jog(idx, 1)).grid(row=0, column=col_offset, padx=5, pady=5)
             tk.Button(jog_frame, text=f"-{axis_name}", command=lambda idx=axis_idx: self.jog(idx, -1)).grid(row=1, column=col_offset, padx=5, pady=5)
         
-        grip_frame = tk.LabelFrame(self.master, text="Gripper")
+        grip_frame = tk.LabelFrame(self.master, text="Gripper Controls")
         grip_frame.pack(pady=10, padx=10, fill="x")
-        tk.Button(grip_frame, text="Open", command=lambda: self.gripper.move_and_wait_for_pos(0, 255, 255)).pack(side="left", padx=10, pady=5)
-        tk.Button(grip_frame, text="Close", command=lambda: self.gripper.move_and_wait_for_pos(255, 255, 255)).pack(side="left", padx=10, pady=5)
+        
+        self.grip_speed_var = tk.IntVar(value=255)
+        self.grip_force_var = tk.IntVar(value=255)
+        self.grip_step_var = tk.IntVar(value=10)
+        
+        # Gripper Settings
+        grip_settings = tk.Frame(grip_frame)
+        grip_settings.pack(fill="x", padx=5, pady=5)
+        tk.Label(grip_settings, text="Speed:").grid(row=0, column=0, sticky="e")
+        tk.Scale(grip_settings, variable=self.grip_speed_var, from_=0, to=255, orient="horizontal").grid(row=0, column=1, sticky="ew")
+        tk.Label(grip_settings, text="Force:").grid(row=1, column=0, sticky="e")
+        tk.Scale(grip_settings, variable=self.grip_force_var, from_=0, to=255, orient="horizontal").grid(row=1, column=1, sticky="ew")
+        tk.Label(grip_settings, text="Step:").grid(row=2, column=0, sticky="e")
+        tk.Scale(grip_settings, variable=self.grip_step_var, from_=1, to=50, orient="horizontal").grid(row=2, column=1, sticky="ew")
+        grip_settings.grid_columnconfigure(1, weight=1)
+
+        # Gripper Actions
+        grip_actions = tk.Frame(grip_frame)
+        grip_actions.pack(pady=5)
+        
+        tk.Button(grip_actions, text="Full Open", command=lambda: self.async_grip(0)).pack(side="left", padx=5)
+        tk.Button(grip_actions, text="Jog Open (-)", command=lambda: self.jog_gripper(-1)).pack(side="left", padx=5)
+        tk.Button(grip_actions, text="Jog Close (+)", command=lambda: self.jog_gripper(1)).pack(side="left", padx=5)
+        tk.Button(grip_actions, text="Full Close", command=lambda: self.async_grip(255)).pack(side="left", padx=5)
         
         # Keyboard bindings (multiplier 1 for positive, -1 for negative)
         self.master.bind('<w>', lambda e: self.jog(0, 1))
@@ -155,6 +177,21 @@ class CalibrationGUI:
         self.master.bind('<e>', lambda e: self.jog(2, -1))
         self.master.bind('<space>', lambda e: self.save_point())
         
+    def async_grip(self, target_pos):
+        import threading
+        speed = self.grip_speed_var.get()
+        force = self.grip_force_var.get()
+        threading.Thread(target=self.gripper.move_and_wait_for_pos, args=(target_pos, speed, force), daemon=True).start()
+        
+    def jog_gripper(self, direction):
+        try:
+            current_pos = self.gripper.get_current_position()
+            step = self.grip_step_var.get()
+            target_pos = max(0, min(255, current_pos + (direction * step)))
+            self.async_grip(target_pos)
+        except Exception as e:
+            logger.error(f"Failed to read/jog gripper: {e}")
+
     def jog(self, axis, direction):
         if not self.rtde_c or not self.rtde_r:
             logger.warning("Jog attempted, but robot is not connected.")
