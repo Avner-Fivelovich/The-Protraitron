@@ -53,7 +53,10 @@ class CalibrationGUI:
         self.current_stage_idx = 0
         
         self.create_widgets()
-        self.connect_robot()
+        
+        # Run connection in a separate thread so it doesn't freeze the GUI window from rendering
+        import threading
+        threading.Thread(target=self.connect_robot, daemon=True).start()
         
     def load_config(self):
         os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
