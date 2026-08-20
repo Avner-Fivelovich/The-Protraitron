@@ -54,10 +54,10 @@ class CalibrationGUI:
         
         self.create_widgets()
         
-        # Delay the connection thread by 500ms so the Tkinter mainloop has time to draw the window first
-        # (The C++ ur_rtde library sometimes holds the Python GIL while connecting, which blocks rendering)
-        import threading
-        self.master.after(500, lambda: threading.Thread(target=self.connect_robot, daemon=True).start())
+        # We no longer auto-connect on startup to guarantee the window renders instantly
+        # without being blocked by the C++ ur_rtde GIL lock on network timeouts.
+        self.status_var.set("Not Connected (Click Reconnect)")
+        self.reconnect_btn.config(state="normal")
         
     def load_config(self):
         os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
