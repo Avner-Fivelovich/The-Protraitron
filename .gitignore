@@ -8,3 +8,4 @@ __pycache__/
 sandbox_emails.log
 /plots/generated_sketches/
 /plots
+/outputs
