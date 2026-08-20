@@ -133,6 +133,7 @@ class CalibrationGUI:
         move_settings = GUI_CONFIG.get("movement_settings", {})
         self.speed_var = tk.DoubleVar(value=move_settings.get("default_speed", 0.25))
         self.step_var = tk.DoubleVar(value=move_settings.get("default_step", 0.005))
+        self.accel_var = tk.DoubleVar(value=move_settings.get("default_accel", 0.5))
 
         settings_frame = tk.LabelFrame(self.master, text="Movement Settings")
         settings_frame.pack(pady=5, padx=10, fill="x")
@@ -140,8 +141,11 @@ class CalibrationGUI:
         tk.Label(settings_frame, text="Speed (m/s):").grid(row=0, column=0, padx=5)
         tk.Scale(settings_frame, variable=self.speed_var, from_=0.01, to=0.5, resolution=0.01, orient="horizontal").grid(row=0, column=1, padx=5, sticky="ew")
         
-        tk.Label(settings_frame, text="Step Size (m):").grid(row=1, column=0, padx=5)
-        tk.Scale(settings_frame, variable=self.step_var, from_=0.001, to=0.05, resolution=0.001, orient="horizontal").grid(row=1, column=1, padx=5, sticky="ew")
+        tk.Label(settings_frame, text="Accel (m/s²):").grid(row=1, column=0, padx=5)
+        tk.Scale(settings_frame, variable=self.accel_var, from_=0.01, to=2.0, resolution=0.01, orient="horizontal").grid(row=1, column=1, padx=5, sticky="ew")
+        
+        tk.Label(settings_frame, text="Step Size (m):").grid(row=2, column=0, padx=5)
+        tk.Scale(settings_frame, variable=self.step_var, from_=0.001, to=0.05, resolution=0.001, orient="horizontal").grid(row=2, column=1, padx=5, sticky="ew")
         settings_frame.grid_columnconfigure(1, weight=1)
 
         jog_frame = tk.LabelFrame(self.master, text="Jogging Keyboard (W/S=X, A/D=Y, Q/E=Z)")
@@ -216,13 +220,14 @@ class CalibrationGUI:
             pose = self.rtde_r.getActualTCPPose()
             step = self.step_var.get()
             speed = self.speed_var.get()
+            accel = self.accel_var.get()
             
             move_dist = direction * step
             axis_name = ["X", "Y", "Z"][axis]
-            logger.info(f"Jogging {axis_name}-axis by {move_dist}m at speed {speed}m/s")
+            logger.info(f"Jogging {axis_name}-axis by {move_dist}m at speed {speed}m/s, accel {accel}m/s²")
             
             pose[axis] += move_dist
-            success = self.rtde_c.moveL(pose, speed, 0.5)
+            success = self.rtde_c.moveL(pose, speed, accel)
             
             if not success:
                 logger.error(f"moveL command returned False! Robot may be in a fault state or target is out of reach. Target: {pose}")
