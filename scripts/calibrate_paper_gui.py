@@ -54,9 +54,10 @@ class CalibrationGUI:
         
         self.create_widgets()
         
-        # Run connection in a separate thread so it doesn't freeze the GUI window from rendering
+        # Delay the connection thread by 500ms so the Tkinter mainloop has time to draw the window first
+        # (The C++ ur_rtde library sometimes holds the Python GIL while connecting, which blocks rendering)
         import threading
-        threading.Thread(target=self.connect_robot, daemon=True).start()
+        self.master.after(500, lambda: threading.Thread(target=self.connect_robot, daemon=True).start())
         
     def load_config(self):
         os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
