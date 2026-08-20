@@ -45,6 +45,7 @@ class RobotiqGripper:
         """Constructor."""
         self.socket = None
         self.command_lock = threading.Lock()
+        self.mock_mode = False
         
         self.config = {}
         if os.path.exists(config_path):
@@ -90,12 +91,19 @@ class RobotiqGripper:
         if socket_timeout is None:
             socket_timeout = self._default_socket_timeout
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((hostname, port))
-        self.socket.settimeout(socket_timeout)
+        try:
+            self.socket.settimeout(socket_timeout)
+            self.socket.connect((hostname, port))
+            self.mock_mode = False
+        except (socket.timeout, ConnectionRefusedError, OSError) as e:
+            print(f"Warning: Failed to connect to gripper on {hostname}:{port} ({e}).")
+            print("Falling back to MOCK MODE. Gripper commands will be simulated.")
+            self.mock_mode = True
 
     def disconnect(self) -> None:
         """Closes the connection with the gripper."""
-        self.socket.close()
+        if not self.mock_mode and self.socket:
+            self.socket.close()
 
     def _set_vars(self, var_dict: OrderedDict[str, Union[int, float]]):
         """Sends the appropriate command via socket to set the value of n variables, and waits for its 'ack' response.
@@ -103,6 +111,10 @@ class RobotiqGripper:
         :return: True on successful reception of ack, false if no ack was received, indicating the set may not
         have been effective.
         """
+        if self.mock_mode:
+            time.sleep(0.01)
+            return True
+            
         # construct unique command
         cmd = "SET"
         for variable, value in var_dict.items():
@@ -129,6 +141,19 @@ class RobotiqGripper:
         :param variable: Name of the variable to retrieve.
         :return: Value of the variable as integer.
         """
+        if self.mock_mode:
+            time.sleep(0.01)
+            # Return appropriate mock values for the state machine
+            if variable == self.STA:
+                return self.GripperStatus.ACTIVE.value
+            elif variable == self.OBJ:
+                return self.ObjectStatus.AT_DEST.value
+            elif variable == self.PRE:
+                return 0
+            elif variable == self.FLT:
+                return 0
+            return 0
+            
         # atomic commands send/rcv
         with self.command_lock:
             cmd = f"GET {variable}\n"
@@ -150,20 +175,10 @@ class RobotiqGripper:
     def _reset(self):
         """
         Reset the gripper.
-        The following code is executed in the corresponding script function
-        def rq_reset(gripper_socket="1"):
-            rq_set_var("ACT", 0, gripper_socket)
-            rq_set_var("ATR", 0, gripper_socket)
-
-            while(not rq_get_var("ACT", 1, gripper_socket) == 0 or not rq_get_var("STA", 1, gripper_socket) == 0):
-                rq_set_var("ACT", 0, gripper_socket)
-                rq_set_var("ATR", 0, gripper_socket)
-                sync()
-            end
-
-            sleep(0.5)
-        end
         """
+        if self.mock_mode:
+            return
+            
         self._set_var(self.ACT, 0)
         self._set_var(self.ATR, 0)
         while (not self._get_var(self.ACT) == 0 or not self._get_var(self.STA) == 0):
@@ -171,36 +186,13 @@ class RobotiqGripper:
             self._set_var(self.ATR, 0)
         time.sleep(self._reset_sleep)
 
-
     def activate(self, auto_calibrate: bool = True):
         """Resets the activation flag in the gripper, and sets it back to one, clearing previous fault flags.
         :param auto_calibrate: Whether to calibrate the minimum and maximum positions based on actual motion.
-        The following code is executed in the corresponding script function
-        def rq_activate(gripper_socket="1"):
-            if (not rq_is_gripper_activated(gripper_socket)):
-                rq_reset(gripper_socket)
-
-                while(not rq_get_var("ACT", 1, gripper_socket) == 0 or not rq_get_var("STA", 1, gripper_socket) == 0):
-                    rq_reset(gripper_socket)
-                    sync()
-                end
-
-                rq_set_var("ACT",1, gripper_socket)
-            end
-        end
-        def rq_activate_and_wait(gripper_socket="1"):
-            if (not rq_is_gripper_activated(gripper_socket)):
-                rq_activate(gripper_socket)
-                sleep(1.0)
-
-                while(not rq_get_var("ACT", 1, gripper_socket) == 1 or not rq_get_var("STA", 1, gripper_socket) == 3):
-                    sleep(0.1)
-                end
-
-                sleep(0.5)
-            end
-        end
         """
+        if self.mock_mode:
+            return
+            
         if not self.is_active():
             self._reset()
             while (not self._get_var(self.ACT) == 0 or not self._get_var(self.STA) == 0):
@@ -307,6 +299,9 @@ class RobotiqGripper:
         set_ok, cmd_pos = self.move(position, speed, force)
         if not set_ok:
             raise RuntimeError("Failed to set variables for move.")
+
+        if self.mock_mode:
+            return cmd_pos, RobotiqGripper.ObjectStatus.AT_DEST
 
         # wait until the gripper acknowledges that it will try to go to the requested position
         while self._get_var(self.PRE) != cmd_pos:

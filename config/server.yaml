@@ -51,6 +51,9 @@ swiftsketch:
 
 hardware:
   robot_ip: "192.168.57.100"
+  # Note: On PolyScope X, port 63352 requires the Universal_Robots_ToolComm_Forwarder_URCapX
+  # installed on the robot to forward the RS-485 Tool IO port to the network.
+  # If it is not installed or unreachable, the Gripper will gracefully fallback to MOCK MODE.
   gripper_port: 63352
   default_speed: 0.2
   default_accel: 0.1
