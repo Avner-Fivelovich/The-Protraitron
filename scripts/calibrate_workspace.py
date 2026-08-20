@@ -28,11 +28,6 @@ except ImportError:
     logger.critical("The 'ur_rtde' library is not installed in the active environment.")
     sys.exit(1)
 
-# Default Robot IP - match physical UR5e controller IP
-ROBOT_IP = "192.168.57.101"
-OUTPUT_PATH = "config/calibration.yaml"
-
-
 def main():
     # -------------------------------------------------------------
     # Print welcome banner
@@ -40,9 +35,6 @@ def main():
     logger.info("=" * 60)
     logger.info("PORTRAITRON 3000 - SINGLE-POINT WORKSPACE CALIBRATION")
     logger.info("=" * 60)
-    
-    # Ensure config directory exists
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     
     # Resolve config YAML file path
     config_name = "marker"
@@ -56,16 +48,28 @@ def main():
         
     cfg = load_config_from_yaml(config_file_path)
     
+    # Load parameters from config
+    robot_ip = cfg.get("robot_ip", "192.168.57.100")
+    output_path = cfg.get("output_path", "config/calibration.yaml")
+    paper_width = cfg.get("paper_width", 0.19)
+    paper_height = cfg.get("paper_height", 0.27)
+    hover_distance = cfg.get("hover_distance", 0.003)
+    move_speed = cfg.get("move_speed", 0.05)
+    move_accel = cfg.get("move_accel", 0.1)
+
+    # Ensure config directory exists
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
     rtde_c = None
     rtde_r = None
 
     # -------------------------------------------------------------
     # Establish connection with the robot
     # -------------------------------------------------------------
-    logger.info(f"Connecting to UR5e at IP: {ROBOT_IP}...")
+    logger.info(f"Connecting to UR5e at IP: {robot_ip}...")
     try:
-        rtde_c = rtde_control.RTDEControlInterface(ROBOT_IP)
-        rtde_r = rtde_receive.RTDEReceiveInterface(ROBOT_IP)
+        rtde_c = rtde_control.RTDEControlInterface(robot_ip)
+        rtde_r = rtde_receive.RTDEReceiveInterface(robot_ip)
         logger.success("Sockets connected successfully.")
     except Exception as e:
         logger.error(f"Connection failed: {e}")
@@ -90,16 +94,16 @@ def main():
         logger.info(f"Recorded P0 Joints: {[round(c, 4) for c in p0_joints]}")
         
         # -------------------------------------------------------------
-        # Save initial P0 results to config/calibration.yaml
+        # Save initial P0 results to calibration file
         # -------------------------------------------------------------
-        logger.info("Saving initial P0 to calibration.yaml...")
+        logger.info(f"Saving initial P0 to {output_path}...")
         cal_data = {
             "p0_joints": [float(q) for q in p0_joints],
             "p0_pose": [float(p) for p in p0_pose],
-            "width": 0.19,
-            "height": 0.27
+            "width": paper_width,
+            "height": paper_height
         }
-        with open(OUTPUT_PATH, "w") as f:
+        with open(output_path, "w") as f:
             yaml.safe_dump(cal_data, f, default_flow_style=False)
         
         # -------------------------------------------------------------
@@ -112,35 +116,35 @@ def main():
             return
             
         # -------------------------------------------------------------
-        # Retract to 3 mm above P1 in the X-axis (P0 hover) using moveL
+        # Retract to hover_distance above P1 in the X-axis (P0 hover) using moveL
         # -------------------------------------------------------------
         p0_pose_new = list(p1_surface)
-        p0_pose_new[0] += 0.003  # 3 mm above/away from P1 along X-axis
-        logger.info(f"Moving to final P0 hover (3mm above P1 in X): {[round(c, 4) for c in p0_pose_new[:3]]}...")
-        rtde_c.moveL(p0_pose_new, 0.05, 0.1)
+        p0_pose_new[0] += hover_distance  # hover_distance above/away from P1 along X-axis
+        logger.info(f"Moving to final P0 hover ({hover_distance}m above P1 in X): {[round(c, 4) for c in p0_pose_new[:3]]}...")
+        rtde_c.moveL(p0_pose_new, move_speed, move_accel)
         time.sleep(0.5)
         
         # Capture final P0 joints and pose at this position
         p0_joints_final = rtde_r.getActualQ()
         p0_pose_final = rtde_r.getActualTCPPose()
-        logger.info(f"Final P0 Pose (3mm above P1): {[round(c, 4) for c in p0_pose_final[:3]]}")
+        logger.info(f"Final P0 Pose ({hover_distance}m above P1): {[round(c, 4) for c in p0_pose_final[:3]]}")
         logger.info(f"Final P0 Joints: {[round(c, 4) for c in p0_joints_final]}")
         
         # -------------------------------------------------------------
-        # Save results (rewriting P0 and adding P1) to config/calibration.yaml
+        # Save results (rewriting P0 and adding P1) to calibration file
         # -------------------------------------------------------------
         cal_data_final = {
             "p0_joints": [float(q) for q in p0_joints_final],
             "p0_pose": [float(p) for p in p0_pose_final],
             "p1": [float(p) for p in p1_surface],
-            "width": 0.19,
-            "height": 0.27
+            "width": paper_width,
+            "height": paper_height
         }
         
-        with open(OUTPUT_PATH, "w") as f:
+        with open(output_path, "w") as f:
             yaml.safe_dump(cal_data_final, f, default_flow_style=False)
             
-        logger.success(f"Workspace calibration updated and saved to {OUTPUT_PATH}!")
+        logger.success(f"Workspace calibration updated and saved to {output_path}!")
         
     finally:
         # Safe disconnect

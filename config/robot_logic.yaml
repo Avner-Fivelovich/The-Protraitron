@@ -6,3 +6,49 @@ processing:
 
 hardware:
   paper_swap: true
+
+# Added by refactoring agents
+hover_distance: 0.005
+dt: 0.002
+servo_lookahead: 0.03
+servo_gain: 2000
+stop_sleep: 0.1
+
+speeds:
+  home_speed: 0.1
+  home_accel: 0.2
+  hover_speed: 0.05
+  hover_accel: 0.1
+  retract_speed: 0.05
+  retract_accel: 0.1
+
+text_drawing:
+  text_target_width: 0.8
+  text_target_height: 0.2
+  text_center_x: 0.5
+  text_center_y: 0.5
+  text_font_family: "sans-serif"
+  text_font_weight: "normal"
+  text_font_size: 0.1
+  home_delay: 1.0
+
+poc_drawing:
+  poc_default_radius: 0.05
+  poc_default_theta: 180.0
+  poc_start_position: 'left'
+  poc_line_start_at: 'end'
+  poc_steps_per_meter: 1000
+  poc_min_steps: 10
+  poc_angle_tolerance: 0.001
+  poc_post_home_delay: 1.0
+
+swiftsketch:
+  conda_env: "swiftsketch_env"
+  repo_path: "../swiftsketch"
+  model_path: "SwiftSketch/save/sketch-diffusion/model000450000.pt"
+  refine_model_path: "SwiftSketch/save/refinement-network/model000430000.pt"
+  guidance_param: 2.5
+  use_refine: 1
+  use_residual: false
+  preprocess_size: 1024
+  temp_dir_base: "plots"

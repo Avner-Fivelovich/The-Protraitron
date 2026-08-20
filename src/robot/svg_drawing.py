@@ -3,9 +3,17 @@ import re
 import xml.etree.ElementTree as ET
 import numpy as np
 from src.common.logger import get_logger
+from src.common.config_utils import load_config_from_yaml
 
 # Initialize logger for SVG drawing
 logger = get_logger("SVGDrawing")
+
+# Load SVG drawing configurations
+DRAWING_CFG = load_config_from_yaml("config/marker.yaml")
+BEZIER_STEPS_DEFAULT = DRAWING_CFG.get("bezier_steps", 15)
+CANVAS_WIDTH_DEFAULT = DRAWING_CFG.get("canvas_width", 0.19)
+CANVAS_HEIGHT_DEFAULT = DRAWING_CFG.get("canvas_height", 0.27)
+PADDING_DEFAULT = DRAWING_CFG.get("padding", 0.01)
 
 def safe_float(val: str) -> float:
     """
@@ -47,7 +55,7 @@ class SVGPathParser:
     """
     A stateful parser for parsing tokenized SVG path strings.
     """
-    def __init__(self, bezier_steps: int = 15):
+    def __init__(self, bezier_steps: int = BEZIER_STEPS_DEFAULT):
         self.bezier_steps = bezier_steps
         self.strokes = []
         self.current_stroke = []
@@ -241,7 +249,7 @@ class SVGPathParser:
                 i += 1
         self.close_subpath()
 
-def parse_svg_path(d_string: str, bezier_steps: int = 15) -> list:
+def parse_svg_path(d_string: str, bezier_steps: int = BEZIER_STEPS_DEFAULT) -> list:
     """
     Parses SVG path data (d attribute) and returns a list of strokes.
     Each stroke is a list of [x, y] coordinates.
@@ -255,7 +263,7 @@ def parse_svg_path(d_string: str, bezier_steps: int = 15) -> list:
     parser.parse_tokens(tokens)
     return parser.strokes
 
-def normalize_svg_strokes(strokes: list, canvas_width: float = 0.19, canvas_height: float = 0.27, padding: float = 0.01, fixed_bbox: tuple = None) -> list:
+def normalize_svg_strokes(strokes: list, canvas_width: float = CANVAS_WIDTH_DEFAULT, canvas_height: float = CANVAS_HEIGHT_DEFAULT, padding: float = PADDING_DEFAULT, fixed_bbox: tuple = None) -> list:
     """
     Normalizes SVG strokes to fit within [0, 1] x [0, 1] canvas coordinates,
     ensuring that the physical drawing preserves the SVG's aspect ratio
@@ -316,7 +324,7 @@ def normalize_svg_strokes(strokes: list, canvas_width: float = 0.19, canvas_heig
 
     return normalized_strokes
 
-def load_svg_file(svg_path: str, bezier_steps: int = 15) -> list:
+def load_svg_file(svg_path: str, bezier_steps: int = BEZIER_STEPS_DEFAULT) -> list:
     """
     Parses an SVG file and extracts all path elements.
     Returns a list of raw strokes.

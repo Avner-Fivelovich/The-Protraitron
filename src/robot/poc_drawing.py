@@ -8,27 +8,27 @@ from src.common.logger import get_logger
 # Initialize logger for POC drawing
 logger = get_logger("POCDrawing")
 
-def get_drawing_inputs(radius: float = 0.0, theta: float = 0.0) -> tuple[float, float]:
+def get_drawing_inputs(radius: float = 0.0, theta: float = 0.0, default_radius: float = 0.03, default_theta: float = 180.0) -> tuple[float, float]:
     """
     Queries the operator for the circle radius (meters) and sweep angle (degrees).
     Only prompts for values that are not already specified (i.e. equal to 0.0).
-    Defaults to 0.03m and 180 degrees on invalid inputs.
+    Defaults to default_radius and default_theta on invalid inputs.
     """
     if radius <= 0.0:
         try:
-            radius_input = input("Enter circle radius in meters (e.g. 0.03): ").strip()
-            radius = float(radius_input) if radius_input else 0.03
+            radius_input = input(f"Enter circle radius in meters (e.g. {default_radius}): ").strip()
+            radius = float(radius_input) if radius_input else default_radius
         except ValueError:
-            logger.warning("Invalid input. Defaulting to 0.03m radius.")
-            radius = 0.03
+            logger.warning(f"Invalid input. Defaulting to {default_radius}m radius.")
+            radius = default_radius
             
     if theta == 0.0:
         try:
-            theta_input = input("Enter sweep angle in degrees (e.g. 180): ").strip()
-            theta = float(theta_input) if theta_input else 180.0
+            theta_input = input(f"Enter sweep angle in degrees (e.g. {default_theta}): ").strip()
+            theta = float(theta_input) if theta_input else default_theta
         except ValueError:
-            logger.warning("Invalid input. Defaulting to 180 degrees.")
-            theta = 180.0
+            logger.warning(f"Invalid input. Defaulting to {default_theta} degrees.")
+            theta = default_theta
             
     return radius, theta
 
@@ -42,12 +42,15 @@ def generate_semicircle_path(controller, radius: float, theta: float, start_posi
     rx = radius / controller.width
     ry = radius / controller.height
     
+    steps_per_meter = controller.cfg.get('poc_steps_per_meter', 1000)
+    min_steps = controller.cfg.get('poc_min_steps', 10)
+    
     # Calculate sweep arc length in meters to set step resolution
     theta_rad = math.radians(theta)
     arc_length = radius * abs(theta_rad)
     
-    # 1000 steps per meter = 1 step per millimeter (minimum 10 steps)
-    num_steps = max(10, int(arc_length * 1000))
+    # steps_per_meter steps per meter = 1 step per millimeter (minimum min_steps steps)
+    num_steps = max(min_steps, int(arc_length * steps_per_meter))
     logger.info(f"Generating semicircle sweep path with {num_steps} interpolation steps.")
     
     # Determine starting angle based on start position
@@ -88,8 +91,9 @@ def generate_diameter_path(controller, radius: float, theta: float, semicircle_p
         line_start = [x_end, y_end]
         line_end = [x_start, y_start]
         
+    angle_tolerance = controller.cfg.get('poc_angle_tolerance', 1e-3)
     # Edge case: If 360 degrees, start and end points overlap at P_start
-    if abs(abs(theta) - 360.0) < 1e-3:
+    if abs(abs(theta) - 360.0) < angle_tolerance:
         logger.info("360 degree detected. Drawing full diameter chord.")
         P_start = [x_start, y_start]
         P_opp = [1.0 - x_start, 1.0 - y_start]
@@ -122,12 +126,19 @@ def execute_drawing(controller, paths: list):
         draw_depth_offset=draw_depth_offset
     )
 
-def run_poc_drawing(controller, radius: float = 0.0, theta: float = 0.0, start_position: str = 'left', line_start_at: str = 'end'):
+def run_poc_drawing(controller, radius: float = 0.0, theta: float = 0.0, start_position: str = None, line_start_at: str = None):
     """
     Coordinates parameters collection, path generation, and controller drawing.
     """
+    if start_position is None:
+        start_position = controller.cfg.get('poc_start_position', 'left')
+    if line_start_at is None:
+        line_start_at = controller.cfg.get('poc_line_start_at', 'end')
+        
     if radius == 0.0 and theta == 0.0:
-        radius, theta = get_drawing_inputs()
+        default_radius = controller.cfg.get('poc_default_radius', 0.03)
+        default_theta = controller.cfg.get('poc_default_theta', 180.0)
+        radius, theta = get_drawing_inputs(radius, theta, default_radius, default_theta)
         
     logger.info(f"Generating POC paths: Radius = {radius * 100:.1f} cm, Theta = {theta:.1f} deg, Start = {start_position}, Line = {line_start_at}...")
     
@@ -138,14 +149,25 @@ def run_poc_drawing(controller, radius: float = 0.0, theta: float = 0.0, start_p
     # Run drawing
     execute_drawing(controller, [semicircle_path, line_path])
 
-def run_poc(controller, radius: float = 0.05, theta: float = 180.0, start_position: str = 'left', line_start_at: str = 'end'):
+def run_poc(controller, radius: float = None, theta: float = None, start_position: str = None, line_start_at: str = None):
     """
     Homes to P0 hover and executes the POC drawing paths.
     """
+    if radius is None:
+        radius = controller.cfg.get('poc_default_radius', 0.05)
+    if theta is None:
+        theta = controller.cfg.get('poc_default_theta', 180.0)
+    if start_position is None:
+        start_position = controller.cfg.get('poc_start_position', 'left')
+    if line_start_at is None:
+        line_start_at = controller.cfg.get('poc_line_start_at', 'end')
+        
+    post_home_delay = controller.cfg.get('poc_post_home_delay', 1.0)
+    
     try:
         # Home the robot linearly to safe P0 hover configuration
         controller.home()
-        time.sleep(1.0)
+        time.sleep(post_home_delay)
         
         # Execute the POC drawing paths
         run_poc_drawing(controller, radius, theta, start_position, line_start_at)

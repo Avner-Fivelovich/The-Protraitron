@@ -52,7 +52,11 @@ def load_config_from_yaml(config_path: str) -> dict:
         'disconnect_stop_deceleration': 2.0,
         'blend_radius': 0.002,
         'draw_depth_offset': 0.0,
-        'optimize_strokes': True
+        'optimize_strokes': True,
+        'bezier_steps': 15,
+        'canvas_width': 0.19,
+        'canvas_height': 0.27,
+        'padding': 0.01
     }
 
     # -------------------------------------------------------------

@@ -64,13 +64,13 @@ def parse_curve4(i: int, codes: np.ndarray, vertices: np.ndarray, current_stroke
         current_stroke.append(p3.tolist())
     return i + 3, current_stroke
 
-def text_to_strokes(text: str, size: float = 0.1, bezier_steps: int = 15) -> list:
+def text_to_strokes(text: str, size: float = 0.1, bezier_steps: int = 15, font_family: str = 'sans-serif', font_weight: str = 'normal') -> list:
     """
     Converts a text string into a list of strokes using matplotlib's font engine.
     Interpolates quadratic (CURVE3) and cubic (CURVE4) Bezier curves into smooth
     linear segments using helper parsing functions.
     """
-    fp = font_manager.FontProperties(family='sans-serif', weight='normal')
+    fp = font_manager.FontProperties(family=font_family, weight=font_weight)
     tp = textpath.TextPath((0, 0), text, size=size, prop=fp)
     
     vertices = tp.vertices
@@ -157,7 +157,7 @@ def normalize_strokes(strokes: list, target_width: float = 0.8, target_height: f
         
     return normalized_strokes
 
-def run_text_drawing(controller, text: str, target_width: float = 0.8, target_height: float = 0.2):
+def run_text_drawing(controller, text: str, target_width: float = None, target_height: float = None):
     """
     Homes the robot, generates text paths, and executes compliant strokes.
     """
@@ -168,10 +168,19 @@ def run_text_drawing(controller, text: str, target_width: float = 0.8, target_he
         accel = controller.cfg.get('slide_acceleration', 0.08)
         blend_radius = controller.cfg.get('blend_radius', 0.002)
         draw_depth_offset = controller.cfg.get('draw_depth_offset', 0.0)
+        
+        tw = target_width if target_width is not None else controller.cfg.get('text_target_width', 0.8)
+        th = target_height if target_height is not None else controller.cfg.get('text_target_height', 0.2)
+        cx = controller.cfg.get('text_center_x', 0.5)
+        cy = controller.cfg.get('text_center_y', 0.5)
+        font_family = controller.cfg.get('text_font_family', 'sans-serif')
+        font_weight = controller.cfg.get('text_font_weight', 'normal')
+        font_size = controller.cfg.get('text_font_size', 0.1)
+        home_delay = controller.cfg.get('home_delay', 1.0)
 
         logger.info(f"Generating compliant text paths for: '{text}' (using bezier_steps={bezier_steps})")
-        raw_strokes = text_to_strokes(text, bezier_steps=bezier_steps)
-        strokes_2d = normalize_strokes(raw_strokes, target_width=target_width, target_height=target_height)
+        raw_strokes = text_to_strokes(text, size=font_size, bezier_steps=bezier_steps, font_family=font_family, font_weight=font_weight)
+        strokes_2d = normalize_strokes(raw_strokes, target_width=tw, target_height=th, center_x=cx, center_y=cy)
         
         if not strokes_2d:
             logger.warning("No strokes generated. Text might be empty.")
@@ -179,7 +188,7 @@ def run_text_drawing(controller, text: str, target_width: float = 0.8, target_he
             
         # Home the robot linearly to safe P0 hover configuration
         controller.home()
-        time.sleep(1.0)
+        time.sleep(home_delay)
         
         logger.info(f"Executing text drawing of '{text}' with {len(strokes_2d)} strokes...")
         controller.execute_drawing_path(

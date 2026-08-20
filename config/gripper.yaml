@@ -1,0 +1,25 @@
+limits:
+  min_position: 0
+  max_position: 255
+  min_speed: 0
+  max_speed: 255
+  min_force: 0
+  max_force: 255
+
+timeouts:
+  socket_timeout: 2.0
+  reset_sleep: 0.5
+  reset_wait_sleep: 0.01
+  activate_sleep: 1.0
+  activate_wait_sleep: 0.01
+  move_wait_sleep: 0.001
+
+calibration:
+  speed: 64
+  force: 1
+
+defaults:
+  open_speed: 100
+  open_force: 100
+  close_speed: 100
+  close_force: 100

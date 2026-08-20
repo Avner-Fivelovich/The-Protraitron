@@ -1,0 +1,10 @@
+mask_binarization_threshold: 128
+swiftsketch_config_name: "config.npy"
+default_keep_ratio: 0.7
+plot_svg_width: 512.0
+plot_svg_height: 512.0
+plot_figsize: [6.5, 6.5]
+plot_mask_alpha: 0.18
+plot_pad_ratio: 0.04
+plot_pad_pixels: 10
+plot_dpi: 300

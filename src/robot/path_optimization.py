@@ -1,4 +1,13 @@
 import numpy as np
+from src.common.config_utils import load_config_from_yaml
+
+# Load configuration for default parameters
+calib_cfg = load_config_from_yaml("config/calibration.yaml")
+logic_cfg = load_config_from_yaml("config/robot_logic.yaml")
+
+DEFAULT_CANVAS_WIDTH = calib_cfg.get("width", 0.19)
+DEFAULT_CANVAS_HEIGHT = calib_cfg.get("height", 0.27)
+DEFAULT_MERGE_THRESHOLD = logic_cfg.get("merge_threshold", 0.002)
 
 def calculate_drawing_distance(strokes: list) -> float:
     """
@@ -92,7 +101,7 @@ def _find_nearest_stroke(current_point: np.ndarray, strokes: list, unused_indice
             
     return best_idx, best_reverse
 
-def merge_close_strokes(strokes: list, threshold_m: float = 0.002, canvas_width: float = 0.19, canvas_height: float = 0.27) -> tuple:
+def merge_close_strokes(strokes: list, threshold_m: float = None, canvas_width: float = None, canvas_height: float = None) -> tuple:
     """
     Connects sequential strokes that are close to each other in coordinate space.
     If the end of stroke i and start of stroke i+1 are within threshold_m (in meters),
@@ -100,6 +109,13 @@ def merge_close_strokes(strokes: list, threshold_m: float = 0.002, canvas_width:
     
     Returns a tuple of (merged_strokes, connection_lines).
     """
+    if threshold_m is None:
+        threshold_m = DEFAULT_MERGE_THRESHOLD
+    if canvas_width is None:
+        canvas_width = DEFAULT_CANVAS_WIDTH
+    if canvas_height is None:
+        canvas_height = DEFAULT_CANVAS_HEIGHT
+
     if not strokes:
         return [], []
     if threshold_m <= 0.0:

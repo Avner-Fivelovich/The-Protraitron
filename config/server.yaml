@@ -17,3 +17,74 @@ frontend:
   camera_width: 1024
   camera_height: 768
   default_facing_mode: "environment"
+
+command_generator:
+  host: "0.0.0.0"
+  port: 8080
+  html_file: "command_generator.html"
+  models_dir: "SwiftSketch-Protraitron/models"
+
+command_generator:
+  host: "0.0.0.0"
+  port: 8080
+  html_file: "command_generator.html"
+  models_dir: "SwiftSketch-Protraitron/models"
+
+server:
+  port: 8000
+  allowed_admin_hosts:
+    - "127.0.0.1"
+    - "::1"
+    - "localhost"
+  public_history_limit: 5
+  admin_history_limit: 20
+
+worker:
+  queue_poll_interval: 1.0
+  post_home_delay: 1.0
+
+swiftsketch:
+  supported_strokes:
+    - 32
+    - 96
+  model_32_path: null
+
+hardware:
+  robot_ip: "192.168.57.100"
+  gripper_port: 63352
+  default_speed: 0.2
+  default_accel: 0.1
+
+directories:
+  locations_dir: "config/locations"
+  default_location: "base_test"
+
+calibration_gui:
+  output_path: "config/paper_manipulation.yaml"
+  window_geometry: "500x600"
+  movement_settings:
+    default_speed: 0.25
+    default_step: 0.005
+  gripper_settings:
+    default_speed: 100
+    default_force: 100
+    default_step: 5
+
+paper_manipulation_defaults:
+  speeds:
+    default_move: 0.1
+    cut_pull: 0.3
+    fetch_pull: 0.05
+  force_thresholds:
+    handover_pull: 5.0
+
+record_location:
+  default_name: "base_test"
+
+notifications:
+  sandbox_mode: false
+  sandbox_log_file: "sandbox_emails.log"
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  sender_email: "agent@portraitron.local"
+  recipient_email: "sandbox@portraitron.local"

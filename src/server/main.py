@@ -118,7 +118,8 @@ def queue_worker():
                     break
         
         if not job_to_run:
-            time.sleep(1.0)
+            poll_interval = server_cfg.get("worker", {}).get("queue_poll_interval", 1.0)
+            time.sleep(poll_interval)
             continue
             
         logger.info(f"Processing job {job_to_run.id} ({job_to_run.original_name})...")
@@ -167,7 +168,8 @@ def queue_worker():
             
             # 4. Home robot
             controller.home()
-            time.sleep(1.0)
+            post_home_delay = server_cfg.get("worker", {}).get("post_home_delay", 1.0)
+            time.sleep(post_home_delay)
             
             # 5. Execute drawing paths with custom progression hooks
             speed = controller.cfg.get('slide_speed', 0.04)
@@ -283,16 +285,18 @@ def generate_sketch(strokes: int, job_id: str = Form(...)):
         # Load calibration/parameters
         controller = UR5eController(ROBOT_IP, calibration_path=CALIBRATION_PATH, marker_config_path=MARKER_CONFIG_PATH)
         
+        supported_strokes = server_cfg.get("swiftsketch", {}).get("supported_strokes", [32, 96])
+        if strokes not in supported_strokes:
+            raise HTTPException(status_code=400, detail="Unsupported stroke count")
+            
         if strokes == 32:
-            model_override = None
+            model_override = server_cfg.get("swiftsketch", {}).get("model_32_path", None)
             svg_filename = f"{job_id}_sketch.svg"
             logger.info(f"Generating 32-stroke sketch for {job_id} using SwiftSketch...")
         elif strokes == 96:
             model_override = controller.cfg.get("swiftsketch", {}).get("model_96_path", "models/model000040000.pt")
             svg_filename = f"{job_id}_sketch_96.svg"
             logger.info(f"Generating 96-stroke sketch for {job_id} using SwiftSketch...")
-        else:
-            raise HTTPException(status_code=400, detail="Unsupported stroke count")
             
         svg_path = os.path.join(SKETCH_DIR, svg_filename)
         
@@ -415,7 +419,8 @@ async def get_queue_status():
     """
     with queue_lock:
         active_list = [j.dict() for j in drawing_queue if j.status in ("queued", "processing")]
-        history_list = [j.dict() for j in drawing_queue if j.status in ("completed", "failed", "cancelled")][-5:]
+        public_limit = server_cfg.get("server", {}).get("public_history_limit", 5)
+        history_list = [j.dict() for j in drawing_queue if j.status in ("completed", "failed", "cancelled")][-public_limit:]
         
     return JSONResponse(content={
         "queue": active_list,
@@ -490,7 +495,7 @@ def generate_startup_qr(ip_address, port=8000):
 @app.get("/api/qr-data")
 async def get_qr_data(request: Request):
     local_ip = get_local_ip()
-    current_port = 8000
+    current_port = server_cfg.get("server", {}).get("port", 8000)
     if ":" in request.url.netloc:
         try:
             current_port = int(request.url.netloc.split(":")[-1])
@@ -510,7 +515,8 @@ def verify_localhost(request: Request):
     This secures the admin dashboard from being accessed over Wi-Fi.
     """
     client_host = request.client.host
-    if client_host not in ("127.0.0.1", "::1", "localhost"):
+    allowed_hosts = server_cfg.get("server", {}).get("allowed_admin_hosts", ["127.0.0.1", "::1", "localhost"])
+    if client_host not in allowed_hosts:
         logger.warning(f"Blocked unauthorized admin access attempt from {client_host}")
         raise HTTPException(status_code=403, detail="Admin dashboard is restricted to localhost only.")
 
@@ -522,7 +528,8 @@ async def serve_admin():
 async def admin_get_queue():
     with queue_lock:
         active_list = [j.dict() for j in drawing_queue if j.status in ("queued", "processing")]
-        history_list = [j.dict() for j in drawing_queue if j.status in ("completed", "failed", "cancelled")][-20:]
+        admin_limit = server_cfg.get("server", {}).get("admin_history_limit", 20)
+        history_list = [j.dict() for j in drawing_queue if j.status in ("completed", "failed", "cancelled")][-admin_limit:]
     return JSONResponse(content={
         "queue": active_list,
         "history": history_list,
@@ -582,11 +589,13 @@ async def admin_swap_paper():
 # Serve static files
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-def start_server(port=8000):
+def start_server(port=None):
     """
     Boots the FastAPI web server using uvicorn.
     Generates QR code for LAN access.
     """
+    if port is None:
+        port = server_cfg.get("server", {}).get("port", 8000)
     local_ip = get_local_ip()
     generate_startup_qr(local_ip, port=port)
     uvicorn.run("src.server.main:app", host="0.0.0.0", port=port, reload=True)

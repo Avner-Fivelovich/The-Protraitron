@@ -27,23 +27,40 @@ except ImportError:
 
 def main():
     parser = argparse.ArgumentParser(description="Record robot's current pose/joints to a locations YAML file")
-    parser.add_argument("--name", type=str, nargs="?", default="base_test", 
-                        help="Name of the location (saves as config/locations/{name}.yaml)")
-    parser.add_argument("--robot-ip", type=str, default="192.168.57.101", help="Robot IP (default: 192.168.57.101)")
+    parser.add_argument("--config", type=str, default="config/server.yaml", 
+                        help="Path to YAML configuration file (default: config/server.yaml)")
+    parser.add_argument("--name", type=str, nargs="?", default=None, 
+                        help="Name of the location (saves as locations_dir/{name}.yaml)")
+    parser.add_argument("--robot-ip", type=str, default=None, help="Robot IP (overrides config)")
     parser.add_argument("--output", type=str, default=None, 
-                        help="Direct path to output YAML file (overrides standard config/locations/ path)")
+                        help="Direct path to output YAML file (overrides standard path)")
     args = parser.parse_args()
+
+    # Load config file
+    config = {}
+    if os.path.exists(args.config):
+        with open(args.config, "r") as f:
+            config = yaml.safe_load(f) or {}
+            
+    record_cfg = config.get("record_location", {})
+    hardware_cfg = config.get("hardware", {})
+    dirs_cfg = config.get("directories", {})
+
+    # Apply configuration with fallbacks
+    name = args.name or record_cfg.get("default_name", "base_test")
+    robot_ip = args.robot_ip or hardware_cfg.get("robot_ip", "192.168.57.101")
+    locations_dir = dirs_cfg.get("locations_dir", "config/locations")
 
     # Determine destination file path
     if args.output:
         dest_path = args.output
     else:
-        dest_path = os.path.join("config", "locations", f"{args.name}.yaml")
+        dest_path = os.path.join(locations_dir, f"{name}.yaml")
 
-    logger.info(f"Connecting to robot telemetry interface at IP: {args.robot_ip}...")
+    logger.info(f"Connecting to robot telemetry interface at IP: {robot_ip}...")
     rtde_r = None
     try:
-        rtde_r = rtde_receive.RTDEReceiveInterface(args.robot_ip)
+        rtde_r = rtde_receive.RTDEReceiveInterface(robot_ip)
         logger.success("Telemetry interface connected successfully!")
 
         logger.info("Reading current joints and TCP pose...")
@@ -57,7 +74,7 @@ def main():
 
         # Prepare YAML structure
         output_data = {
-            "robot_ip": args.robot_ip,
+            "robot_ip": robot_ip,
             "joints": [float(q) for q in joints],
             "pose": [float(p) for p in pose],
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
@@ -69,7 +86,7 @@ def main():
         with open(dest_path, "w") as f:
             yaml.safe_dump(output_data, f, default_flow_style=False)
         
-        logger.success(f"Location '{args.name}' successfully written to {dest_path}!")
+        logger.success(f"Location '{name}' successfully written to {dest_path}!")
 
     except Exception as e:
         logger.error(f"Failed to communicate with robot: {e}")

@@ -26,14 +26,33 @@ except ImportError:
     sys.exit(1)
 
 def main():
-    parser = argparse.ArgumentParser(description="Send robot to a recorded location from config/locations/")
-    parser.add_argument("--name", type=str, nargs="?", default="base_test", 
-                        help="Name of the location to load from config/locations/{name}.yaml")
+    # Load central configuration to avoid hard-coded parameters
+    server_config_path = os.path.join(os.path.dirname(__file__), "..", "config", "server.yaml")
+    try:
+        with open(server_config_path, "r") as f:
+            server_config = yaml.safe_load(f)
+    except Exception as e:
+        logger.warning(f"Failed to load {server_config_path}, using fallbacks: {e}")
+        server_config = {}
+
+    hardware_cfg = server_config.get("hardware", {})
+    dirs_cfg = server_config.get("directories", {})
+
+    default_ip = hardware_cfg.get("robot_ip", "192.168.57.101")
+    default_speed = hardware_cfg.get("default_speed", 0.2)
+    default_accel = hardware_cfg.get("default_accel", 0.1)
+    
+    locations_dir = dirs_cfg.get("locations_dir", os.path.join("config", "locations"))
+    default_location = dirs_cfg.get("default_location", "base_test")
+
+    parser = argparse.ArgumentParser(description=f"Send robot to a recorded location from {locations_dir}/")
+    parser.add_argument("--name", type=str, nargs="?", default=default_location, 
+                        help=f"Name of the location to load from {locations_dir}/{{name}}.yaml")
     parser.add_argument("--config", type=str, default=None, 
                         help="Direct path to config YAML file (overrides name)")
     parser.add_argument("--robot-ip", type=str, default=None, help="Robot IP (overrides IP in config)")
-    parser.add_argument("--speed", type=float, default=0.2, help="Movement speed (rad/s for moveJ, m/s for moveL) (default: 0.2)")
-    parser.add_argument("--accel", type=float, default=0.1, help="Movement acceleration (rad/s^2 for moveJ, m/s^2 for moveL) (default: 0.1)")
+    parser.add_argument("--speed", type=float, default=default_speed, help=f"Movement speed (rad/s for moveJ, m/s for moveL) (default: {default_speed})")
+    parser.add_argument("--accel", type=float, default=default_accel, help=f"Movement acceleration (rad/s^2 for moveJ, m/s^2 for moveL) (default: {default_accel})")
     parser.add_argument("--movel", action="store_true", help="Use Cartesian linear moveL instead of joint space moveJ")
     parser.add_argument("--yes", action="store_true", help="Skip operator confirmation prompt")
     args = parser.parse_args()
@@ -42,7 +61,7 @@ def main():
     if args.config:
         src_path = args.config
     else:
-        src_path = os.path.join("config", "locations", f"{args.name}.yaml")
+        src_path = os.path.join(locations_dir, f"{args.name}.yaml")
 
     if not os.path.exists(src_path):
         logger.error(f"Location file not found: {src_path}")
@@ -58,7 +77,7 @@ def main():
 
     joints = data.get("joints")
     pose = data.get("pose")
-    ip = args.robot_ip if args.robot_ip is not None else data.get("robot_ip", "192.168.57.101")
+    ip = args.robot_ip if args.robot_ip is not None else data.get("robot_ip", default_ip)
 
     if args.movel:
         if not pose:

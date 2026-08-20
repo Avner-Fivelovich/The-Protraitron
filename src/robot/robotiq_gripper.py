@@ -3,6 +3,7 @@
 import socket
 import threading
 import time
+import os
 from enum import Enum
 from typing import Union, Tuple, OrderedDict
 
@@ -40,23 +41,54 @@ class RobotiqGripper:
         STOPPED_INNER_OBJECT = 2
         AT_DEST = 3
 
-    def __init__(self):
+    def __init__(self, config_path: str = "config/gripper.yaml"):
         """Constructor."""
         self.socket = None
         self.command_lock = threading.Lock()
-        self._min_position = 0
-        self._max_position = 255
-        self._min_speed = 0
-        self._max_speed = 255
-        self._min_force = 0
-        self._max_force = 255
+        
+        self.config = {}
+        if os.path.exists(config_path):
+            try:
+                import yaml
+                with open(config_path, 'r') as f:
+                    self.config = yaml.safe_load(f) or {}
+            except Exception as e:
+                print(f"Failed to load gripper config from {config_path}: {e}")
 
-    def connect(self, hostname: str, port: int, socket_timeout: float = 2.0) -> None:
+        limits = self.config.get("limits", {})
+        self._min_position = limits.get("min_position", 0)
+        self._max_position = limits.get("max_position", 255)
+        self._min_speed = limits.get("min_speed", 0)
+        self._max_speed = limits.get("max_speed", 255)
+        self._min_force = limits.get("min_force", 0)
+        self._max_force = limits.get("max_force", 255)
+        
+        timeouts = self.config.get("timeouts", {})
+        self._default_socket_timeout = timeouts.get("socket_timeout", 2.0)
+        self._reset_sleep = timeouts.get("reset_sleep", 0.5)
+        self._reset_wait_sleep = timeouts.get("reset_wait_sleep", 0.01)
+        self._activate_sleep = timeouts.get("activate_sleep", 1.0)
+        self._activate_wait_sleep = timeouts.get("activate_wait_sleep", 0.01)
+        self._move_wait_sleep = timeouts.get("move_wait_sleep", 0.001)
+        
+        calibration = self.config.get("calibration", {})
+        self._calib_speed = calibration.get("speed", 64)
+        self._calib_force = calibration.get("force", 1)
+        
+        defaults = self.config.get("defaults", {})
+        self._default_open_speed = defaults.get("open_speed", 100)
+        self._default_open_force = defaults.get("open_force", 100)
+        self._default_close_speed = defaults.get("close_speed", 100)
+        self._default_close_force = defaults.get("close_force", 100)
+
+    def connect(self, hostname: str, port: int, socket_timeout: float = None) -> None:
         """Connects to a gripper at the given address.
         :param hostname: Hostname or ip.
         :param port: Port.
         :param socket_timeout: Timeout for blocking socket operations.
         """
+        if socket_timeout is None:
+            socket_timeout = self._default_socket_timeout
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((hostname, port))
         self.socket.settimeout(socket_timeout)
@@ -137,7 +169,7 @@ class RobotiqGripper:
         while (not self._get_var(self.ACT) == 0 or not self._get_var(self.STA) == 0):
             self._set_var(self.ACT, 0)
             self._set_var(self.ATR, 0)
-        time.sleep(0.5)
+        time.sleep(self._reset_sleep)
 
 
     def activate(self, auto_calibrate: bool = True):
@@ -172,12 +204,12 @@ class RobotiqGripper:
         if not self.is_active():
             self._reset()
             while (not self._get_var(self.ACT) == 0 or not self._get_var(self.STA) == 0):
-                time.sleep(0.01)
+                time.sleep(self._reset_wait_sleep)
 
             self._set_var(self.ACT, 1)
-            time.sleep(1.0)
+            time.sleep(self._activate_sleep)
             while (not self._get_var(self.ACT) == 1 or not self._get_var(self.STA) == 3):
-                time.sleep(0.01)
+                time.sleep(self._activate_wait_sleep)
 
         # auto-calibrate position range if desired
         if auto_calibrate:
@@ -221,19 +253,19 @@ class RobotiqGripper:
         :param log: Whether to print the results to log.
         """
         # first try to open in case we are holding an object
-        (position, status) = self.move_and_wait_for_pos(self.get_open_position(), 64, 1)
+        (position, status) = self.move_and_wait_for_pos(self.get_open_position(), self._calib_speed, self._calib_force)
         if RobotiqGripper.ObjectStatus(status) != RobotiqGripper.ObjectStatus.AT_DEST:
             raise RuntimeError(f"Calibration failed opening to start: {str(status)}")
 
         # try to close as far as possible, and record the number
-        (position, status) = self.move_and_wait_for_pos(self.get_closed_position(), 64, 1)
+        (position, status) = self.move_and_wait_for_pos(self.get_closed_position(), self._calib_speed, self._calib_force)
         if RobotiqGripper.ObjectStatus(status) != RobotiqGripper.ObjectStatus.AT_DEST:
             raise RuntimeError(f"Calibration failed because of an object: {str(status)}")
         assert position <= self._max_position
         self._max_position = position
 
         # try to open as far as possible, and record the number
-        (position, status) = self.move_and_wait_for_pos(self.get_open_position(), 64, 1)
+        (position, status) = self.move_and_wait_for_pos(self.get_open_position(), self._calib_speed, self._calib_force)
         if RobotiqGripper.ObjectStatus(status) != RobotiqGripper.ObjectStatus.AT_DEST:
             raise RuntimeError(f"Calibration failed because of an object: {str(status)}")
         assert position >= self._min_position
@@ -278,7 +310,7 @@ class RobotiqGripper:
 
         # wait until the gripper acknowledges that it will try to go to the requested position
         while self._get_var(self.PRE) != cmd_pos:
-            time.sleep(0.001)
+            time.sleep(self._move_wait_sleep)
 
         # wait until not moving
         cur_obj = self._get_var(self.OBJ)
@@ -290,8 +322,12 @@ class RobotiqGripper:
         final_obj = cur_obj
         return final_pos, RobotiqGripper.ObjectStatus(final_obj)
 
-    def open(self, speed: int = 100, force: int = 100):
+    def open(self, speed: int = None, force: int = None):
+        if speed is None: speed = self._default_open_speed
+        if force is None: force = self._default_open_force
         return self.move_and_wait_for_pos(self.get_open_position(), speed, force)
     
-    def close(self, speed:int = 100, force: int = 100):
+    def close(self, speed: int = None, force: int = None):
+        if speed is None: speed = self._default_close_speed
+        if force is None: force = self._default_close_force
         return self.move_and_wait_for_pos(self.get_closed_position(), speed, force)

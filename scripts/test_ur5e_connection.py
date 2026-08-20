@@ -20,9 +20,21 @@ except ImportError:
     logger.info("Please install it by running: pip install ur_rtde")
     sys.exit(1)
 
-# Default Robot IP - Edit this to match your physical UR5e controller IP
-# (Standard default factory IP is often 192.168.1.100, but in lab setups it is customized)
-ROBOT_IP = "192.168.56.101"
+import os
+import yaml
+
+# Load parameters from central config
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "server.yaml")
+server_cfg = {}
+if os.path.exists(CONFIG_PATH):
+    try:
+        with open(CONFIG_PATH, "r") as f:
+            server_cfg = yaml.safe_load(f) or {}
+    except Exception as e:
+        logger.error(f"Failed to load config from {CONFIG_PATH}: {e}")
+
+# Extract Robot IP - Fallback to 192.168.56.101 if not present in config
+ROBOT_IP = server_cfg.get("hardware", {}).get("robot_ip", "192.168.56.101")
 
 def print_troubleshooting_guide(ip):
     """Prints troubleshooting advice in case of connection failure."""

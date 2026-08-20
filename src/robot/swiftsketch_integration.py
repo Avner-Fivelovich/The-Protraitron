@@ -63,6 +63,8 @@ def run_swiftsketch_inference(input_image_path: str, output_svg_path: str, confi
     guidance_param = swiftsketch_cfg.get("guidance_param", 2.5)
     use_refine = swiftsketch_cfg.get("use_refine", 1)
     use_residual = swiftsketch_cfg.get("use_residual", False)
+    preprocess_size = swiftsketch_cfg.get("preprocess_size", 1024)
+    temp_dir_base = swiftsketch_cfg.get("temp_dir_base", "plots")
 
     # 2. Get absolute paths
     # Resolve relative paths with respect to this project's root folder
@@ -91,15 +93,15 @@ def run_swiftsketch_inference(input_image_path: str, output_svg_path: str, confi
     # 3. Create a temporary output folder inside our workspace
     import uuid
     unique_id = uuid.uuid4().hex
-    temp_output_dir = os.path.abspath(os.path.join(project_root, "plots", f"swiftsketch_temp_{unique_id}"))
+    temp_output_dir = os.path.abspath(os.path.join(project_root, temp_dir_base, f"swiftsketch_temp_{unique_id}"))
     os.makedirs(temp_output_dir, exist_ok=True)
 
     try:
-        # Preprocess image to a square 1024x1024 with white padding to prevent shape mismatches
+        # Preprocess image to a square with white padding to prevent shape mismatches
         preprocessed_image_path = os.path.join(temp_output_dir, "preprocessed_input.png")
         try:
-            logger.info(f"Preprocessing input image to square (1024x1024) with white padding...")
-            preprocess_image_to_square(abs_input_image, preprocessed_image_path)
+            logger.info(f"Preprocessing input image to square ({preprocess_size}x{preprocess_size}) with white padding...")
+            preprocess_image_to_square(abs_input_image, preprocessed_image_path, size=preprocess_size)
             abs_input_image = preprocessed_image_path
         except Exception as e:
             logger.error(f"Failed to preprocess image: {e}. Proceeding with original image.")

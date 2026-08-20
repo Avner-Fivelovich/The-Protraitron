@@ -27,6 +27,18 @@ class PaperHandler:
         
         self.straightening_offset_y = self.config.get("straightening_offset_y", 0.02)
         
+        self.gripper_cfg = self.config.get("gripper", {})
+        self.gripper_port = self.gripper_cfg.get("port", 63352)
+        self.gripper_open_pos = self.gripper_cfg.get("open_pos", 0)
+        self.gripper_close_pos = self.gripper_cfg.get("close_pos", 255)
+        self.gripper_speed = self.gripper_cfg.get("speed", 255)
+        self.gripper_force = self.gripper_cfg.get("force", 255)
+        self.gripper_sleep = self.gripper_cfg.get("sleep_time", 0.5)
+        
+        self.timing_cfg = self.config.get("timing", {})
+        self.pull_timeout = self.timing_cfg.get("wait_pull_timeout", 30.0)
+        self.force_check_interval = self.timing_cfg.get("force_check_interval", 0.1)
+        
         self.locs = self.config.get("locations", {})
         
     def connect_gripper(self, ip=None):
@@ -43,8 +55,8 @@ class PaperHandler:
                 
         if not self.gripper_connected:
             try:
-                logger.info(f"Connecting to Robotiq gripper at {ip}...")
-                self.gripper.connect(ip, 63352)
+                logger.info(f"Connecting to Robotiq gripper at {ip}:{self.gripper_port}...")
+                self.gripper.connect(ip, self.gripper_port)
                 self.gripper.activate()
                 self.gripper_connected = True
                 logger.success("Gripper connected and activated.")
@@ -86,7 +98,7 @@ class PaperHandler:
             ("gripper", "close"),
             ("move_speed", ("cut_trajectory", self.cut_speed)),
             ("move", "handover_target"),
-            ("wait_pull", 30.0),
+            ("wait_pull", self.pull_timeout),
             ("gripper", "open"),
             ("move", "new_paper_roll"),
             ("gripper", "close"),
@@ -144,15 +156,17 @@ class PaperHandler:
         
     def _open_gripper(self):
         if self.gripper_connected:
-            self.gripper.move_and_wait_for_pos(0, 255, 255) # Fully open (adjust based on actual gripper max open)
-            time.sleep(0.5)
+            self.gripper.move_and_wait_for_pos(self.gripper_open_pos, self.gripper_speed, self.gripper_force) # Fully open (adjust based on actual gripper max open)
+            time.sleep(self.gripper_sleep)
             
     def _close_gripper(self):
         if self.gripper_connected:
-            self.gripper.move_and_wait_for_pos(255, 255, 255) # Fully closed
-            time.sleep(0.5)
+            self.gripper.move_and_wait_for_pos(self.gripper_close_pos, self.gripper_speed, self.gripper_force) # Fully closed
+            time.sleep(self.gripper_sleep)
             
-    def _wait_for_human_pull(self, timeout=30.0):
+    def _wait_for_human_pull(self, timeout=None):
+        if timeout is None:
+            timeout = self.pull_timeout
         logger.info(f"Waiting for human pull (timeout: {timeout}s)...")
         start_time = time.time()
         while True:
@@ -166,7 +180,7 @@ class PaperHandler:
             if force_mag > self.handover_pull:
                 logger.info(f"Pull detected: {force_mag:.2f}N")
                 return True
-            time.sleep(0.1)
+            time.sleep(self.force_check_interval)
 
     def _return_and_straighten_magnet_1(self):
         logger.info("Returning and straightening Magnet 1...")

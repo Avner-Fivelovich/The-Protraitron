@@ -1,0 +1,28 @@
+camera_index: 0
+window_name: "Portraitron Camera Preview"
+guide_text1: "Position Face Inside Oval"
+guide_text2: "Press SPACE to Capture | ESC to Quit"
+guide_color: [0, 255, 0]
+guide_thickness: 2
+guide_axes_x_ratio: 0.22
+guide_axes_y_ratio: 0.35
+cascade_file: "haarcascade_frontalface_default.xml"
+face_detect_scale_factor: 1.1
+face_detect_min_neighbors: 5
+face_detect_min_size: [100, 100]
+target_square_size: 1024
+crop_height_ratio: 2.8
+crop_center_y_ratio: 0.8
+square_bg_color: [255, 255, 255]
+face_rect_margin_ratio: 0.1
+face_rect_top_ratio: 0.1
+default_rect_margin_ratio: 0.15
+default_rect_top_ratio: 0.05
+grabcut_iter: 5
+mask_blur_kernel: [21, 21]
+vignette_center_x_ratio: 0.5
+vignette_center_y_ratio: 0.45
+vignette_axes_x_ratio: 0.42
+vignette_axes_y_ratio: 0.48
+vignette_blur_kernel: [101, 101]
+white_bg_value: 255

@@ -5,9 +5,24 @@ import urllib.parse
 import subprocess
 import socketserver
 import glob
+import yaml
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-PORT = 8080
+# Load config
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config', 'server.yaml')
+try:
+    with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+        config = yaml.safe_load(f)
+        cg_config = config.get('command_generator', {})
+except Exception as e:
+    print(f"Warning: Failed to load config from {CONFIG_PATH}: {e}")
+    cg_config = {}
+
+PORT = cg_config.get('port', 8080)
+HTML_FILE = cg_config.get('html_file', 'command_generator.html')
+MODELS_DIR_REL = cg_config.get('models_dir', 'SwiftSketch-Protraitron/models')
+HOST = cg_config.get('host', '0.0.0.0')
+
 active_process = None
 
 class ThreadingHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
@@ -54,7 +69,7 @@ class CommandGeneratorHandler(BaseHTTPRequestHandler):
 
     def serve_html(self):
         try:
-            with open('command_generator.html', 'r', encoding='utf-8') as f:
+            with open(HTML_FILE, 'r', encoding='utf-8') as f:
                 content = f.read()
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
@@ -66,8 +81,8 @@ class CommandGeneratorHandler(BaseHTTPRequestHandler):
 
     def handle_models(self):
         try:
-            # Look for .pt files in SwiftSketch-Protraitron/models/
-            models_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'SwiftSketch-Protraitron', 'models')
+            # Look for .pt files in MODELS_DIR_REL
+            models_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), MODELS_DIR_REL)
             pt_files = glob.glob(os.path.join(models_dir, '*.pt'))
             model_names = [os.path.basename(f) for f in pt_files]
             model_names.sort(reverse=True)
@@ -159,12 +174,12 @@ def main():
     print("=" * 60)
     print("      PORTRAITRON 3000 COMMAND CONTROL PANEL SERVER")
     print("=" * 60)
-    print(f"Starting server locally at http://localhost:{PORT}")
-    print("Open http://localhost:8080 in your web browser to configure parameters.")
+    print(f"Starting server locally at http://{HOST}:{PORT}")
+    print(f"Open http://{HOST}:{PORT} in your web browser to configure parameters.")
     print("Press Ctrl+C to terminate server.")
     print("=" * 60)
     
-    server = ThreadingHTTPServer(('0.0.0.0', PORT), CommandGeneratorHandler)
+    server = ThreadingHTTPServer((HOST, PORT), CommandGeneratorHandler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

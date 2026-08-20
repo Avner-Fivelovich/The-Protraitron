@@ -22,15 +22,24 @@ except ImportError:
 
 from src.robot.robotiq_gripper import RobotiqGripper
 
-OUTPUT_PATH = "config/paper_manipulation.yaml"
-STEP_SIZE = 0.005 # 5mm
+CENTRAL_CONFIG_PATH = "config/server.yaml"
+
+def load_central_config():
+    if os.path.exists(CENTRAL_CONFIG_PATH):
+        with open(CENTRAL_CONFIG_PATH, 'r') as f:
+            return yaml.safe_load(f) or {}
+    return {}
+
+CENTRAL_CONFIG = load_central_config()
+GUI_CONFIG = CENTRAL_CONFIG.get("calibration_gui", {})
+OUTPUT_PATH = GUI_CONFIG.get("output_path", "config/paper_manipulation.yaml")
 
 class CalibrationGUI:
     def __init__(self, master, robot_ip):
         self.master = master
         self.robot_ip = robot_ip
         self.master.title("Paper Manipulation Calibration")
-        self.master.geometry("500x600")
+        self.master.geometry(GUI_CONFIG.get("window_geometry", "500x600"))
         
         self.rtde_c = None
         self.rtde_r = None
@@ -65,9 +74,11 @@ class CalibrationGUI:
         if os.path.exists(OUTPUT_PATH):
             with open(OUTPUT_PATH, 'r') as f:
                 return yaml.safe_load(f) or {}
+        
+        manip_defaults = CENTRAL_CONFIG.get("paper_manipulation_defaults", {})
         return {
-            "speeds": {"default_move": 0.1, "cut_pull": 0.3, "fetch_pull": 0.05},
-            "force_thresholds": {"handover_pull": 5.0},
+            "speeds": manip_defaults.get("speeds", {"default_move": 0.1, "cut_pull": 0.3, "fetch_pull": 0.05}),
+            "force_thresholds": manip_defaults.get("force_thresholds", {"handover_pull": 5.0}),
             "locations": {}
         }
         
@@ -81,7 +92,8 @@ class CalibrationGUI:
         try:
             self.rtde_c = rtde_control.RTDEControlInterface(self.robot_ip)
             self.rtde_r = rtde_receive.RTDEReceiveInterface(self.robot_ip)
-            self.gripper.connect(self.robot_ip, 63352)
+            gripper_port = CENTRAL_CONFIG.get("hardware", {}).get("gripper_port", 63352)
+            self.gripper.connect(self.robot_ip, gripper_port)
             self.gripper.activate()
             self.status_var.set("Connected to UR5e & Gripper")
         except Exception as e:
@@ -118,8 +130,9 @@ class CalibrationGUI:
         tk.Button(btn_frame, text="Save Point & Next", command=self.save_point, bg="green").grid(row=0, column=1, padx=5)
         tk.Button(btn_frame, text="Skip", command=self.next_stage).grid(row=0, column=2, padx=5)
         
-        self.speed_var = tk.DoubleVar(value=0.25)
-        self.step_var = tk.DoubleVar(value=0.005)
+        move_settings = GUI_CONFIG.get("movement_settings", {})
+        self.speed_var = tk.DoubleVar(value=move_settings.get("default_speed", 0.25))
+        self.step_var = tk.DoubleVar(value=move_settings.get("default_step", 0.005))
 
         settings_frame = tk.LabelFrame(self.master, text="Movement Settings")
         settings_frame.pack(pady=5, padx=10, fill="x")
@@ -142,9 +155,10 @@ class CalibrationGUI:
         grip_frame = tk.LabelFrame(self.master, text="Gripper Controls")
         grip_frame.pack(pady=10, padx=10, fill="x")
         
-        self.grip_speed_var = tk.IntVar(value=100)
-        self.grip_force_var = tk.IntVar(value=100)
-        self.grip_step_var = tk.IntVar(value=5)
+        grip_settings_conf = GUI_CONFIG.get("gripper_settings", {})
+        self.grip_speed_var = tk.IntVar(value=grip_settings_conf.get("default_speed", 100))
+        self.grip_force_var = tk.IntVar(value=grip_settings_conf.get("default_force", 100))
+        self.grip_step_var = tk.IntVar(value=grip_settings_conf.get("default_step", 5))
         
         # Gripper Settings
         grip_settings = tk.Frame(grip_frame)
@@ -252,7 +266,8 @@ class CalibrationGUI:
 if __name__ == "__main__":
     logger.info("Parsing arguments...")
     parser = argparse.ArgumentParser(description="Paper Manipulation Calibration GUI")
-    parser.add_argument("--ip", type=str, default="192.168.57.101", help="Robot IP Address")
+    default_ip = CENTRAL_CONFIG.get("hardware", {}).get("robot_ip", "192.168.57.100")
+    parser.add_argument("--ip", type=str, default=default_ip, help="Robot IP Address")
     args = parser.parse_args()
 
     logger.info("Initializing Tkinter root window...")

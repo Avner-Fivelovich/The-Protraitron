@@ -149,7 +149,7 @@ class UR5eController:
             return
             
         logger.info("Homing to Bottom-Left starting hover pose (P0) using moveL...")
-        self.rtde_c.moveL(self.p0_pose, 0.1, 0.2)
+        self.rtde_c.moveL(self.p0_pose, self.cfg.get('home_speed', 0.1), self.cfg.get('home_accel', 0.2))
         logger.success("Robot arrived at P0.")
         
     def log_event(self, event_name: str):
@@ -195,8 +195,8 @@ class UR5eController:
         # Tool orientation is aligned normal to the paper (stored at P0 manual alignment)
         rx, ry, rz = self.p0_pose[3:]
         
-        # X hover plane is 5 mm above P1 X coordinate (positive direction points away from board)
-        X_hover = self.p1[0] + 0.005
+        # X hover plane above P1 X coordinate (positive direction points away from board)
+        X_hover = self.p1[0] + self.cfg.get('hover_distance', 0.005)
         
         total_strokes = len(strokes_2d)
         for idx, stroke in enumerate(strokes_2d):
@@ -272,7 +272,7 @@ class UR5eController:
         hover_pose = [x_hover, Y_start, Z_start, rx, ry, rz]
         
         logger.info(f"Moving to hover pose: {[round(c, 4) for c in hover_pose[:3]]}")
-        self.rtde_c.moveL(hover_pose, 0.05, 0.1)
+        self.rtde_c.moveL(hover_pose, self.cfg.get('hover_speed', 0.05), self.cfg.get('hover_accel', 0.1))
         return hover_pose
 
     def _enable_force_compliance(self):
@@ -327,7 +327,7 @@ class UR5eController:
             
         # Calculate execution duration based on configured slide speed
         total_time = total_dist / speed
-        DT = 0.002  # 500Hz loop rate
+        DT = self.cfg.get('dt', 0.002)  # 500Hz loop rate
         num_steps = int(total_time / DT)
         
         logger.info(f"Executing compliant slide: distance={total_dist*100:.2f} cm, speed={speed*100:.2f} cm/s, time={total_time:.2f}s...")
@@ -373,7 +373,7 @@ class UR5eController:
                 wp = [x_draw, Y_target, Z_target, rx, ry, rz]
                 
                 # Stream position using servoL
-                self.rtde_c.servoL(wp, 0.0, 0.0, DT, 0.03, 2000)
+                self.rtde_c.servoL(wp, 0.0, 0.0, DT, self.cfg.get('servo_lookahead', 0.03), self.cfg.get('servo_gain', 2000))
                 
                 # Log telemetry at 10Hz (every 50 steps at 500Hz)
                 if step % 50 == 0 or step == len(raw_wp_list) - 1:
@@ -400,13 +400,13 @@ class UR5eController:
         """
         logger.info("Stopping force compliance and retracting...")
         self.rtde_c.forceModeStop()
-        time.sleep(0.1)
+        time.sleep(self.cfg.get('stop_sleep', 0.1))
         
         Y_last = self.p1[1] + x_canvas * self.width
         Z_last = self.p1[2] + y_canvas * self.height
         retract_pose = [x_hover, Y_last, Z_last, rx, ry, rz]
         
-        self.rtde_c.moveL(retract_pose, 0.05, 0.1)
+        self.rtde_c.moveL(retract_pose, self.cfg.get('retract_speed', 0.05), self.cfg.get('retract_accel', 0.1))
 
     def plot_expected_drawing(self, strokes_2d: list, plot_path_prefix: str = None, connections: list = None, original_strokes: list = None):
         """

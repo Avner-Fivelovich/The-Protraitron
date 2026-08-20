@@ -2,6 +2,7 @@ import os
 import sys
 import types
 import logging
+import yaml
 import numpy as np
 from PIL import Image
 
@@ -14,18 +15,37 @@ except ImportError:
 
 logger = logging.getLogger("Portraitron")
 
+config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "config", "mask_filtering.yaml")
+mask_cfg = {}
+if os.path.exists(config_path):
+    try:
+        with open(config_path, 'r') as f:
+            mask_cfg = yaml.safe_load(f) or {}
+    except Exception as e:
+        logger.warning(f"Failed to load mask_filtering.yaml: {e}")
+
+MASK_BINARIZATION_THRESHOLD = mask_cfg.get("mask_binarization_threshold", 128)
+SWIFTSKETCH_CONFIG_NAME = mask_cfg.get("swiftsketch_config_name", "config.npy")
+DEFAULT_KEEP_RATIO = mask_cfg.get("default_keep_ratio", 0.7)
+PLOT_SVG_WIDTH = mask_cfg.get("plot_svg_width", 512.0)
+PLOT_SVG_HEIGHT = mask_cfg.get("plot_svg_height", 512.0)
+PLOT_FIGSIZE = tuple(mask_cfg.get("plot_figsize", [6.5, 6.5]))
+PLOT_MASK_ALPHA = mask_cfg.get("plot_mask_alpha", 0.18)
+PLOT_PAD_RATIO = mask_cfg.get("plot_pad_ratio", 0.04)
+PLOT_PAD_PIXELS = mask_cfg.get("plot_pad_pixels", 10)
+PLOT_DPI = mask_cfg.get("plot_dpi", 300)
 
 def load_binary_mask(mask_path: str) -> np.ndarray:
     """
     Loads the mask image from disk and converts it to a 2D binary numpy array.
-    White pixels (>= 128) are foreground (1), dark pixels (< 128) are background (0).
+    White pixels (>= threshold) are foreground (1), dark pixels (< threshold) are background (0).
     Returns a uint8 array of shape (H, W).
     """
     if not os.path.exists(mask_path):
         raise FileNotFoundError(f"Mask file not found: {mask_path}")
     img = Image.open(mask_path).convert('L')
     mask_np = np.array(img)
-    return (mask_np >= 128).astype(np.uint8)
+    return (mask_np >= MASK_BINARIZATION_THRESHOLD).astype(np.uint8)
 
 
 def get_mask_foreground_bbox(mask_np: np.ndarray) -> tuple:
@@ -53,18 +73,18 @@ def _stroke_bbox(strokes: list) -> tuple:
 
 def load_swiftsketch_config(svg_path: str) -> dict:
     """
-    Loads config.npy if it exists in the same folder as the SVG.
+    Loads the swiftsketch config file if it exists in the same folder as the SVG.
     Uses dynamic mock imports to avoid ModuleNotFoundError when torch is not installed
     in the active virtual environment.
     """
     if not svg_path:
         return {}
     parent = os.path.dirname(svg_path)
-    config_path = os.path.join(parent, "config.npy")
+    config_path = os.path.join(parent, SWIFTSKETCH_CONFIG_NAME)
     
     # Fallback to parent directory if SVG is inside a subdirectory (e.g., intermediate SVGs)
     if not os.path.exists(config_path):
-        config_path = os.path.join(os.path.dirname(parent), "config.npy")
+        config_path = os.path.join(os.path.dirname(parent), SWIFTSKETCH_CONFIG_NAME)
         
     if not os.path.exists(config_path):
         return {}
@@ -132,7 +152,7 @@ def filter_strokes_with_mask(
     mask_np: np.ndarray,
     svg_width: float,
     svg_height: float,
-    keep_ratio: float = 0.7,
+    keep_ratio: float = DEFAULT_KEEP_RATIO,
     svg_path: str = None,
 ) -> tuple:
     """
@@ -227,10 +247,10 @@ def plot_mask_filtering_results(
     deleted_strokes: list,
     mask_path: str,
     save_path_prefix: str,
-    svg_width: float = 512.0,
-    svg_height: float = 512.0,
+    svg_width: float = PLOT_SVG_WIDTH,
+    svg_height: float = PLOT_SVG_HEIGHT,
     svg_path: str = None,
-    keep_ratio: float = 0.7,
+    keep_ratio: float = DEFAULT_KEEP_RATIO,
 ):
     """
     Generates and saves a visualization of mask filtering results.
@@ -267,7 +287,7 @@ def plot_mask_filtering_results(
         mask_img = Image.open(mask_path).convert('L')
         mask_arr_raw = np.array(mask_img)
         mask_H, mask_W = mask_arr_raw.shape
-        binary = (mask_arr_raw >= 128).astype(np.uint8)
+        binary = (mask_arr_raw >= MASK_BINARIZATION_THRESHOLD).astype(np.uint8)
         mask_fg_bbox = get_mask_foreground_bbox(binary)
 
         if use_config_transform:
@@ -317,11 +337,11 @@ def plot_mask_filtering_results(
     except Exception as e:
         logger.error(f"Failed to compute mask extent: {e}")
 
-    fig, ax = plt.subplots(figsize=(6.5, 6.5))
+    fig, ax = plt.subplots(figsize=PLOT_FIGSIZE)
 
     if mask_arr_display is not None and mask_extent is not None:
         ax.imshow(mask_arr_display, extent=mask_extent,
-                  cmap='gray', alpha=0.18, origin='lower')
+                  cmap='gray', alpha=PLOT_MASK_ALPHA, origin='lower')
 
     def _flip_y(stroke):
         arr = np.array(stroke, dtype=float)
@@ -408,8 +428,8 @@ def plot_mask_filtering_results(
     # Set margins and limits with padding
     x_lo, x_hi = min(ax_x), max(ax_x)
     y_lo, y_hi = min(ax_y), max(ax_y)
-    px_pad = (x_hi - x_lo) * 0.04 or 10
-    py_pad = (y_hi - y_lo) * 0.04 or 10
+    px_pad = (x_hi - x_lo) * PLOT_PAD_RATIO or PLOT_PAD_PIXELS
+    py_pad = (y_hi - y_lo) * PLOT_PAD_RATIO or PLOT_PAD_PIXELS
     ax.set_xlim(x_lo - px_pad, x_hi + px_pad)
     ax.set_ylim(y_lo - py_pad, y_hi + py_pad)
     ax.set_aspect('equal')
@@ -445,7 +465,7 @@ def plot_mask_filtering_results(
 
     os.makedirs(os.path.dirname(save_path_prefix), exist_ok=True)
     try:
-        plt.savefig(f"{save_path_prefix}.png", dpi=300, bbox_inches='tight')
+        plt.savefig(f"{save_path_prefix}.png", dpi=PLOT_DPI, bbox_inches='tight')
         plt.savefig(f"{save_path_prefix}.pdf", bbox_inches='tight')
         logger.info(f"Saved mask filtering debug plots to '{save_path_prefix}.png' and '.pdf'")
     except Exception as e:

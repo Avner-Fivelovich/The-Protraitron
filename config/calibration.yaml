@@ -21,3 +21,9 @@ p1:
 - -1.5447502753820452
 - 0.032932324490636544
 width: 0.19
+
+paper_width: 0.19
+paper_height: 0.27
+hover_distance: 0.003
+move_speed: 0.05
+move_accel: 0.1

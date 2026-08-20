@@ -51,6 +51,12 @@ robot_logic_path = paths_cfg.get("paths", {}).get("robot_logic_config", "config/
 CALIBRATION_PATH = paths_cfg.get("paths", {}).get("calibration_config", "config/calibration.yaml")
 MARKER_CONFIG_PATH = paths_cfg.get("paths", {}).get("marker_config", "config/marker.yaml")
 
+PLOTS_DIR = paths_cfg.get("paths", {}).get("plots_dir", "plots")
+CAPTURED_RAW = paths_cfg.get("paths", {}).get("captured_raw", "captured_raw.png")
+CAPTURED_CROPPED = paths_cfg.get("paths", {}).get("captured_cropped", "captured_cropped.png")
+CAPTURED_FINAL = paths_cfg.get("paths", {}).get("captured_final", "captured_final.png")
+GENERATED_SKETCHES_DIR = paths_cfg.get("paths", {}).get("generated_sketches_dir", "generated_sketches")
+
 server_cfg = {}
 if os.path.exists(server_config_path):
     with open(server_config_path, "r") as f:
@@ -61,6 +67,13 @@ robot_logic_cfg = {}
 if os.path.exists(robot_logic_path):
     with open(robot_logic_path, "r") as f:
         robot_logic_cfg = yaml.safe_load(f)
+
+# Extract config variables from robot_logic_cfg
+DEFAULT_POC_RADIUS = robot_logic_cfg.get("poc", {}).get("default_radius", 0.05)
+DEFAULT_POC_THETA = robot_logic_cfg.get("poc", {}).get("default_theta", 180.0)
+DEFAULT_TEXT = robot_logic_cfg.get("drawing", {}).get("default_text", "doofenshmirtz evil inc.")
+DEFAULT_SVG_SIZE = robot_logic_cfg.get("processing", {}).get("default_svg_size", 512.0)
+MASK_COMP_RATIOS = robot_logic_cfg.get("processing", {}).get("mask_comp_ratios", [0.80, 0.85, 0.90, 0.95])
 
 def configure_and_run_poc(controller):
     """
@@ -79,7 +92,7 @@ def configure_and_run_poc(controller):
     choice = input("Enter choice (1-3): ").strip()
     
     if choice == "1":
-        run_poc(controller, radius=0.05, theta=180.0, start_position='left', line_start_at='end')
+        run_poc(controller, radius=DEFAULT_POC_RADIUS, theta=DEFAULT_POC_THETA, start_position='left', line_start_at='end')
     elif choice == "2":
         # ---------------------------------------------------------
         # PAGE 1/3: Select start location
@@ -110,35 +123,35 @@ def configure_and_run_poc(controller):
         print("=" * 50)
         print("Select circle radius:")
         print("  1. 3 cm (0.03 m)")
-        print("  2. 5 cm (0.05 m) (default)")
+        print(f"  2. {DEFAULT_POC_RADIUS * 100} cm ({DEFAULT_POC_RADIUS} m) (default)")
         print("  3. 7 cm (0.07 m)")
         print("  4. Enter custom radius in meters")
         print("=" * 50)
         radius_choice = input("Enter choice (1-4): ").strip()
         
-        radius = 0.05
+        radius = DEFAULT_POC_RADIUS
         if radius_choice == '1':
             radius = 0.03
         elif radius_choice == '3':
             radius = 0.07
         elif radius_choice == '4':
             try:
-                rad_input = input("Enter custom circle radius in meters (default 0.05): ").strip()
-                radius = float(rad_input) if rad_input else 0.05
+                rad_input = input(f"Enter custom circle radius in meters (default {DEFAULT_POC_RADIUS}): ").strip()
+                radius = float(rad_input) if rad_input else DEFAULT_POC_RADIUS
             except ValueError:
-                logger.warning("Invalid input. Defaulting to 0.05m radius.")
-                radius = 0.05
+                logger.warning(f"Invalid input. Defaulting to {DEFAULT_POC_RADIUS}m radius.")
+                radius = DEFAULT_POC_RADIUS
                 
         print("\nSelect sweep angle (negative values for counter-clockwise):")
         print("  1. 90 degrees")
-        print("  2. 180 degrees (default)")
+        print(f"  2. {DEFAULT_POC_THETA} degrees (default)")
         print("  3. 270 degrees")
         print("  4. 360 degrees")
         print("  5. Enter custom sweep angle in degrees")
         print("=" * 50)
         theta_choice = input("Enter choice (1-5): ").strip()
         
-        theta = 180.0
+        theta = DEFAULT_POC_THETA
         if theta_choice == '1':
             theta = 90.0
         elif theta_choice == '3':
@@ -148,10 +161,10 @@ def configure_and_run_poc(controller):
         elif theta_choice == '5':
             try:
                 theta_input = input("Enter custom sweep angle in degrees (negative for counter-clockwise): ").strip()
-                theta = float(theta_input) if theta_input else 180.0
+                theta = float(theta_input) if theta_input else DEFAULT_POC_THETA
             except ValueError:
-                logger.warning("Invalid input. Defaulting to 180 degrees.")
-                theta = 180.0
+                logger.warning(f"Invalid input. Defaulting to {DEFAULT_POC_THETA} degrees.")
+                theta = DEFAULT_POC_THETA
                 
         # ---------------------------------------------------------
         # PAGE 3/3: Select chord start and end
@@ -185,8 +198,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Portraitron 3000 - Main Control Interface")
     parser.add_argument("--text", "-t", type=str, help="Text to write (one-shot mode)")
     parser.add_argument("--POC", "-p", type=str, nargs='?', const='left', choices=["left", "right", "above", "below"], help="Start position of the semicircle for POC (one-shot mode)")
-    parser.add_argument("--radius", "-r", type=float, default=5.0, help="Semicircle radius in cm (default: 5.0)")
-    parser.add_argument("--angle", "-a", type=float, default=180.0, help="Sweep angle in degrees (default: 180.0)")
+    parser.add_argument("--radius", "-r", type=float, default=DEFAULT_POC_RADIUS * 100.0, help=f"Semicircle radius in cm (default: {DEFAULT_POC_RADIUS * 100.0})")
+    parser.add_argument("--angle", "-a", type=float, default=DEFAULT_POC_THETA, help=f"Sweep angle in degrees (default: {DEFAULT_POC_THETA})")
     parser.add_argument("--svg", "-s", type=str, help="Path to SVG file to draw (one-shot mode)")
     parser.add_argument("--sketch", "-k", type=str, help="Path to portrait image to sketch using SwiftSketch and draw (one-shot mode)")
     parser.add_argument("--capture", "-c", action="store_true", help="Capture photo from webcam, crop face, remove background, and sketch (one-shot mode)")
@@ -238,11 +251,11 @@ def run_one_shot_svg(controller, svg_path: str, optimize: bool = None, merge_thr
         # Read SVG viewBox dimensions for mask coordinate mapping
         try:
             _svg_root = ET.parse(svg_path).getroot()
-            svg_w = float(_svg_root.get('width', 512))
-            svg_h = float(_svg_root.get('height', 512))
+            svg_w = float(_svg_root.get('width', DEFAULT_SVG_SIZE))
+            svg_h = float(_svg_root.get('height', DEFAULT_SVG_SIZE))
         except Exception:
-            svg_w, svg_h = 512.0, 512.0
-            logger.warning("Could not parse SVG dimensions; defaulting to 512×512.")
+            svg_w, svg_h = DEFAULT_SVG_SIZE, DEFAULT_SVG_SIZE
+            logger.warning(f"Could not parse SVG dimensions; defaulting to {DEFAULT_SVG_SIZE}x{DEFAULT_SVG_SIZE}.")
 
         # ── Optional background mask filtering (in raw SVG pixel space) ──────
         # The mask PNG and the raw SVG strokes share the same pixel coordinate
@@ -270,7 +283,7 @@ def run_one_shot_svg(controller, svg_path: str, optimize: bool = None, merge_thr
                 time_str = datetime.datetime.now().strftime("%H-%M")
                 base_name = os.path.splitext(os.path.basename(svg_path))[0]
                 orig_lifts = len([s for s in raw_strokes if len(s) > 0])
-                plot_dir = os.path.join("plots", f"{orig_lifts}_{base_name}", date_str, time_str)
+                plot_dir = os.path.join(PLOTS_DIR, f"{orig_lifts}_{base_name}", date_str, time_str)
                 os.makedirs(plot_dir, exist_ok=True)
 
                 # Main filtering preview
@@ -283,9 +296,9 @@ def run_one_shot_svg(controller, svg_path: str, optimize: bool = None, merge_thr
                     keep_ratio=mask_keep_ratio,
                 )
 
-                # Threshold comparison: 80 / 85 / 90 / 95 %
-                logger.info("Generating mask threshold comparisons (80%, 85%, 90%, 95%)...")
-                for comp_ratio in [0.80, 0.85, 0.90, 0.95]:
+                # Threshold comparison
+                logger.info(f"Generating mask threshold comparisons {MASK_COMP_RATIOS}...")
+                for comp_ratio in MASK_COMP_RATIOS:
                     comp_kept, comp_del = filter_strokes_with_mask(
                         raw_strokes, binary_mask,
                         svg_width=svg_w, svg_height=svg_h,
@@ -402,7 +415,7 @@ def run_one_shot_svg(controller, svg_path: str, optimize: bool = None, merge_thr
         # Calculate orig_lifts consistently from raw_strokes
         orig_lifts = len([s for s in raw_strokes if len(s) > 0])
         
-        plot_dir = os.path.join("plots", f"{orig_lifts}_{base_name}", date_str, time_str)
+        plot_dir = os.path.join(PLOTS_DIR, f"{orig_lifts}_{base_name}", date_str, time_str)
         os.makedirs(plot_dir, exist_ok=True)
         plot_path_prefix = os.path.join(plot_dir, "expected_drawing_preview")
 
@@ -467,7 +480,7 @@ def run_one_shot_sketch(controller, image_path: str, optimize: bool = None, merg
     
     # Define output SVG path
     base_name = os.path.splitext(os.path.basename(image_path))[0]
-    output_svg_path = os.path.join("plots", "generated_sketches", f"{base_name}_sketch.svg")
+    output_svg_path = os.path.join(PLOTS_DIR, GENERATED_SKETCHES_DIR, f"{base_name}_sketch.svg")
     
     # Run inference
     success = run_swiftsketch_inference(image_path, output_svg_path, controller.cfg)
@@ -485,10 +498,10 @@ def run_camera_capture_and_sketch(controller, optimize: bool = None, merge_thres
     and then executes SwiftSketch drawing.
     """
     logger.info("Starting camera capture session...")
-    os.makedirs("plots", exist_ok=True)
-    raw_path = os.path.join("plots", "captured_raw.png")
-    cropped_path = os.path.join("plots", "captured_cropped.png")
-    final_path = os.path.join("plots", "captured_final.png")
+    os.makedirs(PLOTS_DIR, exist_ok=True)
+    raw_path = os.path.join(PLOTS_DIR, CAPTURED_RAW)
+    cropped_path = os.path.join(PLOTS_DIR, CAPTURED_CROPPED)
+    final_path = os.path.join(PLOTS_DIR, CAPTURED_FINAL)
     
     # 1. Capture image
     if not capture_image_from_camera(raw_path):
@@ -594,9 +607,9 @@ def main():
             if choice == "1":
                 configure_and_run_poc(controller)
             elif choice == "2":
-                text = input("Enter text to write (default: 'doofenshmirtz evil inc.'): ").strip()
+                text = input(f"Enter text to write (default: '{DEFAULT_TEXT}'): ").strip()
                 if not text:
-                    text = "doofenshmirtz evil inc."
+                    text = DEFAULT_TEXT
                 run_text_drawing(controller, text)
             elif choice == "3":
                 svg_path = input("Enter SVG file path: ").strip()
