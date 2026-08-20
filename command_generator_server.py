@@ -4,6 +4,7 @@ import json
 import urllib.parse
 import subprocess
 import socketserver
+import glob
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 PORT = 8080
@@ -30,6 +31,9 @@ class CommandGeneratorHandler(BaseHTTPRequestHandler):
         
         if path == '/' or path == '/index.html':
             self.serve_html()
+            
+        elif path == '/api/models':
+            self.handle_models()
             
         elif path == '/api/run':
             self.handle_run_stream(parsed_url.query)
@@ -59,6 +63,21 @@ class CommandGeneratorHandler(BaseHTTPRequestHandler):
             self.wfile.write(content.encode('utf-8'))
         except Exception as e:
             self.send_error(500, f"Error serving HTML: {e}")
+
+    def handle_models(self):
+        try:
+            # Look for .pt files in SwiftSketch-Protraitron/models/
+            models_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'SwiftSketch-Protraitron', 'models')
+            pt_files = glob.glob(os.path.join(models_dir, '*.pt'))
+            model_names = [os.path.basename(f) for f in pt_files]
+            model_names.sort(reverse=True)
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"models": model_names}).encode('utf-8'))
+        except Exception as e:
+            self.send_error(500, f"Error loading models: {e}")
 
     def handle_run_stream(self, query_string):
         global active_process

@@ -471,8 +471,39 @@
         <div class="glass-card sidebar">
             <h2>PARAMETERS</h2>
             
-            <!-- SVG Template Selector -->
+            <!-- AI Generation Pipeline -->
             <div class="form-group">
+                <div class="toggle-group">
+                    <div>
+                        <label style="color: var(--accent-primary);">AI Generative Pipeline</label>
+                        <div class="input-desc">End-to-End: Image &rarr; Model &rarr; SVG &rarr; Robot</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="aiPipelineMode" onchange="toggleAiPipeline()">
+                        <span class="slider-round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="aiPipelineGroup" style="display: none; padding-left: 1rem; border-left: 2px solid var(--accent-primary); margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label>Input Image Path (JPG/PNG)</label>
+                    <input type="text" id="aiImagePath" value="" placeholder="/absolute/path/to/face.jpg" oninput="generateCommand()">
+                </div>
+                <div class="form-group">
+                    <label>Model Checkpoint</label>
+                    <select id="aiModelSelector" onchange="generateCommand()">
+                        <option value="">Loading models...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Num Strokes</label>
+                    <input type="number" id="aiNumStrokes" value="96" style="width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); color: var(--text-color); padding: 0.75rem 1rem; border-radius: 8px;" oninput="generateCommand()">
+                </div>
+            </div>
+
+            <!-- SVG Template Selector -->
+            <div class="form-group" id="svgSelectorGroup">
                 <label>Drawing Template (SVG)</label>
                 <select id="svgSelector" onchange="updatePaths()">
                     <option value="98">Avner Portrait (98 Strokes)</option>
@@ -649,11 +680,53 @@
             generateCommand();
         }
 
+        // Fetch models on load
+        window.onload = function() {
+            fetch('/api/models')
+                .then(response => response.json())
+                .then(data => {
+                    const selector = document.getElementById('aiModelSelector');
+                    selector.innerHTML = '';
+                    if (data.models && data.models.length > 0) {
+                        data.models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = 'SwiftSketch-Protraitron/models/' + model;
+                            option.textContent = model;
+                            selector.appendChild(option);
+                        });
+                    } else {
+                        selector.innerHTML = '<option value="">No models found in ./models/</option>';
+                    }
+                    generateCommand();
+                })
+                .catch(err => {
+                    console.error('Failed to fetch models:', err);
+                    const selector = document.getElementById('aiModelSelector');
+                    selector.innerHTML = '<option value="">Error fetching models</option>';
+                });
+        };
+
+        function toggleAiPipeline() {
+            const useAi = document.getElementById("aiPipelineMode").checked;
+            document.getElementById("aiPipelineGroup").style.display = useAi ? "block" : "none";
+            document.getElementById("svgSelectorGroup").style.display = useAi ? "none" : "flex";
+            document.getElementById("customSvgGroup").style.display = "none";
+            if (!useAi) {
+                updatePaths();
+            } else {
+                generateCommand();
+            }
+        }
+
         function generateCommand() {
+            const useAi = document.getElementById("aiPipelineMode").checked;
             const svgSel = document.getElementById("svgSelector").value;
             const maskSel = document.getElementById("maskSelector").value;
             
-            let svgPath = svgSel === 'custom' ? document.getElementById("customSvgPath").value : PRESETS.svg[svgSel];
+            let svgPath = "";
+            if (!useAi) {
+                svgPath = svgSel === 'custom' ? document.getElementById("customSvgPath").value : PRESETS.svg[svgSel];
+            }
             let maskPath = maskSel === 'custom' ? document.getElementById("customMaskPath").value : PRESETS.mask[maskSel];
             
             if (maskSel === 'none') {
@@ -681,37 +754,56 @@
             
             const approve = approveMode.checked;
             
-            let cmd = "./venv/bin/python main.py";
+            let mainCmd = "./venv/bin/python main.py";
             
-            if (svgPath) {
-                cmd += ` --svg "${svgPath}"`;
+            if (useAi) {
+                const imgPath = document.getElementById("aiImagePath").value || "<select image path>";
+                const modelPath = document.getElementById("aiModelSelector").value || "<select model>";
+                const numStrokes = document.getElementById("aiNumStrokes").value;
+                const genOutputSvg = "./outputs/ai_generated.svg";
+                const genOutputMask = "./outputs/mask.png";
+                
+                mainCmd += ` --svg "${genOutputSvg}"`;
+                
+                // Extract filename without extension for the expected SVG output
+                const baseName = imgPath.split(/[\\/]/).pop().split('.')[0];
+                
+                let aiCmd = `PYTHONPATH="SwiftSketch-Protraitron:SwiftSketch-Protraitron/SwiftSketch" python -m SwiftSketch.generate --model_path "${modelPath}" --input_data "${imgPath}" --num_strokes ${numStrokes} --use_refine 0 --output_dir ./outputs/ && cp "./outputs/${baseName}.svg" "${genOutputSvg}" && `;
+                mainCmd = aiCmd + mainCmd;
+                
+                // Override mask path to point to the newly generated AI mask
+                maskPath = genOutputMask;
             } else {
-                cmd += ` --svg "<select SVG path>"`;
+                if (svgPath) {
+                    mainCmd += ` --svg "${svgPath}"`;
+                } else {
+                    mainCmd += ` --svg "<select SVG path>"`;
+                }
             }
             
             if (maskPath) {
-                cmd += ` --mask "${maskPath}" --mask-keep-ratio ${keepRatio}`;
+                mainCmd += ` --mask "${maskPath}" --mask-keep-ratio ${keepRatio}`;
             }
             
             if (parseFloat(mergeThresholdM) > 0) {
-                cmd += ` --merge-threshold ${mergeThresholdM}`;
+                mainCmd += ` --merge-threshold ${mergeThresholdM}`;
             } else {
-                cmd += ` --merge-threshold 0.0`;
+                mainCmd += ` --merge-threshold 0.0`;
             }
             
             if (optimize) {
-                cmd += " --optimize";
+                mainCmd += " --optimize";
             } else {
-                cmd += " --no-optimize";
+                mainCmd += " --no-optimize";
             }
             
             if (dryrun) {
-                cmd += " --dryrun";
+                mainCmd += " --dryrun";
             } else if (approve) {
-                cmd += " --approve";
+                mainCmd += " --approve";
             }
             
-            document.getElementById("generatedCmdText").innerText = cmd;
+            document.getElementById("generatedCmdText").innerText = mainCmd;
         }
 
         function copyCommand() {

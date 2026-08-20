@@ -144,18 +144,18 @@ class CalibrationGUI:
         grip_frame = tk.LabelFrame(self.master, text="Gripper Controls")
         grip_frame.pack(pady=10, padx=10, fill="x")
         
-        self.grip_speed_var = tk.IntVar(value=255)
-        self.grip_force_var = tk.IntVar(value=255)
-        self.grip_step_var = tk.IntVar(value=10)
+        self.grip_speed_var = tk.IntVar(value=100)
+        self.grip_force_var = tk.IntVar(value=100)
+        self.grip_step_var = tk.IntVar(value=5)
         
         # Gripper Settings
         grip_settings = tk.Frame(grip_frame)
         grip_settings.pack(fill="x", padx=5, pady=5)
-        tk.Label(grip_settings, text="Speed:").grid(row=0, column=0, sticky="e")
-        tk.Scale(grip_settings, variable=self.grip_speed_var, from_=0, to=255, orient="horizontal").grid(row=0, column=1, sticky="ew")
-        tk.Label(grip_settings, text="Force:").grid(row=1, column=0, sticky="e")
-        tk.Scale(grip_settings, variable=self.grip_force_var, from_=0, to=255, orient="horizontal").grid(row=1, column=1, sticky="ew")
-        tk.Label(grip_settings, text="Step:").grid(row=2, column=0, sticky="e")
+        tk.Label(grip_settings, text="Speed (%):").grid(row=0, column=0, sticky="e")
+        tk.Scale(grip_settings, variable=self.grip_speed_var, from_=1, to=100, orient="horizontal").grid(row=0, column=1, sticky="ew")
+        tk.Label(grip_settings, text="Force (%):").grid(row=1, column=0, sticky="e")
+        tk.Scale(grip_settings, variable=self.grip_force_var, from_=1, to=100, orient="horizontal").grid(row=1, column=1, sticky="ew")
+        tk.Label(grip_settings, text="Step (%):").grid(row=2, column=0, sticky="e")
         tk.Scale(grip_settings, variable=self.grip_step_var, from_=1, to=50, orient="horizontal").grid(row=2, column=1, sticky="ew")
         grip_settings.grid_columnconfigure(1, weight=1)
 
@@ -166,7 +166,7 @@ class CalibrationGUI:
         tk.Button(grip_actions, text="Full Open", command=lambda: self.async_grip(0)).pack(side="left", padx=5)
         tk.Button(grip_actions, text="Jog Open (-)", command=lambda: self.jog_gripper(-1)).pack(side="left", padx=5)
         tk.Button(grip_actions, text="Jog Close (+)", command=lambda: self.jog_gripper(1)).pack(side="left", padx=5)
-        tk.Button(grip_actions, text="Full Close", command=lambda: self.async_grip(255)).pack(side="left", padx=5)
+        tk.Button(grip_actions, text="Full Close", command=lambda: self.async_grip(100)).pack(side="left", padx=5)
         
         # Keyboard bindings (multiplier 1 for positive, -1 for negative)
         self.master.bind('<w>', lambda e: self.jog(0, 1))
@@ -177,18 +177,26 @@ class CalibrationGUI:
         self.master.bind('<e>', lambda e: self.jog(2, -1))
         self.master.bind('<space>', lambda e: self.save_point())
         
-    def async_grip(self, target_pos):
+    def async_grip(self, target_percent):
+        if not self.gripper or not self.gripper.socket:
+            logger.warning("Gripper attempted move, but is not connected.")
+            return
         import threading
-        speed = self.grip_speed_var.get()
-        force = self.grip_force_var.get()
-        threading.Thread(target=self.gripper.move_and_wait_for_pos, args=(target_pos, speed, force), daemon=True).start()
+        speed = int((self.grip_speed_var.get() / 100.0) * 255)
+        force = int((self.grip_force_var.get() / 100.0) * 255)
+        target = int((target_percent / 100.0) * 255)
+        threading.Thread(target=self.gripper.move_and_wait_for_pos, args=(target, speed, force), daemon=True).start()
         
     def jog_gripper(self, direction):
+        if not self.gripper or not self.gripper.socket:
+            logger.warning("Gripper attempted jog, but is not connected.")
+            return
         try:
             current_pos = self.gripper.get_current_position()
+            current_percent = (current_pos / 255.0) * 100.0
             step = self.grip_step_var.get()
-            target_pos = max(0, min(255, current_pos + (direction * step)))
-            self.async_grip(target_pos)
+            target_percent = max(0, min(100, current_percent + (direction * step)))
+            self.async_grip(target_percent)
         except Exception as e:
             logger.error(f"Failed to read/jog gripper: {e}")
 
@@ -246,7 +254,8 @@ class CalibrationGUI:
     def on_closing(self):
         if self.rtde_c: self.rtde_c.disconnect()
         if self.rtde_r: self.rtde_r.disconnect()
-        self.gripper.disconnect()
+        if self.gripper and self.gripper.socket:
+            self.gripper.disconnect()
         self.master.destroy()
 
 if __name__ == "__main__":
