@@ -66,7 +66,8 @@ calibration_gui:
   output_path: "config/paper_manipulation.yaml"
   window_geometry: "500x600"
   movement_settings:
-    default_speed: 0.25
+    default_speed: 0.03
+    default_accel: 0.1
     default_step: 0.005
   gripper_settings:
     default_speed: 100

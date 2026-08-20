@@ -46,6 +46,9 @@ class RobotiqGripper:
         self.socket = None
         self.command_lock = threading.Lock()
         self.mock_mode = False
+        self.urscript_mode = False
+        self.hostname = None
+        self._current_pos = 0
         
         self.config = {}
         if os.path.exists(config_path):
@@ -83,22 +86,53 @@ class RobotiqGripper:
         self._default_close_force = defaults.get("close_force", 100)
 
     def connect(self, hostname: str, port: int, socket_timeout: float = None) -> None:
-        """Connects to a gripper at the given address.
-        :param hostname: Hostname or ip.
-        :param port: Port.
-        :param socket_timeout: Timeout for blocking socket operations.
-        """
+        """Connects to a gripper at the given address. Falls back to URScript port 30002 if daemon port is unavailable."""
         if socket_timeout is None:
             socket_timeout = self._default_socket_timeout
+        self.hostname = hostname
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.socket.settimeout(socket_timeout)
             self.socket.connect((hostname, port))
             self.mock_mode = False
+            self.urscript_mode = False
+            print(f"Connected directly to Robotiq socket on port {port}.")
         except (socket.timeout, ConnectionRefusedError, OSError) as e:
+            # Try URScript secondary client interface on port 30002
+            try:
+                test_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                test_s.settimeout(1.5)
+                test_s.connect((hostname, 30002))
+                test_s.close()
+                self.urscript_mode = True
+                self.mock_mode = False
+                print(f"Robotiq socket port {port} unavailable. Connected to Gripper via URScript (Port 30002).")
+                return
+            except Exception:
+                pass
             print(f"Warning: Failed to connect to gripper on {hostname}:{port} ({e}).")
             print("Falling back to MOCK MODE. Gripper commands will be simulated.")
             self.mock_mode = True
+            self.urscript_mode = False
+
+    def _send_urscript(self, command: str) -> bool:
+        if not self.hostname:
+            return False
+        with self.command_lock:
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.settimeout(3.0)
+                    s.connect((self.hostname, 30002))
+                    script = f"def rq_script():\n  {command}\nend\nrq_script()\n\n"
+                    s.sendall(script.encode('utf-8'))
+                return True
+            except Exception as e:
+                print(f"Failed to send URScript gripper command: {e}")
+                return False
+
+    def is_connected(self) -> bool:
+        """Returns True if connected either directly or via URScript."""
+        return (not self.mock_mode) and (self.urscript_mode or self.socket is not None)
 
     def disconnect(self) -> None:
         """Closes the connection with the gripper."""
@@ -192,6 +226,10 @@ class RobotiqGripper:
         """
         if self.mock_mode:
             return
+
+        if self.urscript_mode:
+            self._send_urscript("rq_activate_and_wait()")
+            return
             
         if not self.is_active():
             self._reset()
@@ -209,6 +247,8 @@ class RobotiqGripper:
 
     def is_active(self):
         """Returns whether the gripper is active."""
+        if self.urscript_mode:
+            return True
         status = self._get_var(self.STA)
         return RobotiqGripper.GripperStatus(status) == RobotiqGripper.GripperStatus.ACTIVE
 
@@ -238,6 +278,8 @@ class RobotiqGripper:
 
     def get_current_position(self) -> int:
         """Returns the current position as returned by the physical hardware."""
+        if self.urscript_mode:
+            return self._current_pos
         return self._get_var(self.POS)
 
     def auto_calibrate(self, log: bool = True) -> None:
@@ -282,6 +324,11 @@ class RobotiqGripper:
         clip_spe = clip_val(self._min_speed, speed, self._max_speed)
         clip_for = clip_val(self._min_force, force, self._max_force)
 
+        if self.urscript_mode:
+            self._current_pos = clip_pos
+            ok = self._send_urscript(f"rq_set_force({clip_for})\nrq_set_speed({clip_spe})\nrq_set_pos({clip_pos})")
+            return ok, clip_pos
+
         # moves to the given position with the given speed and force
         var_dict = OrderedDict([(self.POS, clip_pos), (self.SPE, clip_spe), (self.FOR, clip_for), (self.GTO, 1)])
         return self._set_vars(var_dict), clip_pos
@@ -296,6 +343,14 @@ class RobotiqGripper:
         that the move had completed, a status indicating how the move ended (see ObjectStatus enum for details). Note
         that it is possible that the position was not reached, if an object was detected during motion.
         """
+        if self.urscript_mode:
+            clip_pos = min(self._max_position, max(self._min_position, position))
+            clip_spe = min(self._max_speed, max(self._min_speed, speed))
+            clip_for = min(self._max_force, max(self._min_force, force))
+            self._current_pos = clip_pos
+            self._send_urscript(f"rq_set_force({clip_for})\nrq_set_speed({clip_spe})\nrq_move_and_wait({clip_pos})")
+            return clip_pos, RobotiqGripper.ObjectStatus.AT_DEST
+
         set_ok, cmd_pos = self.move(position, speed, force)
         if not set_ok:
             raise RuntimeError("Failed to set variables for move.")
