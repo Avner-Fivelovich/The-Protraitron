@@ -83,12 +83,28 @@ class CalibrationGUI:
             self.gripper.connect(self.robot_ip, 63352)
             self.gripper.activate()
             self.status_var.set("Connected to UR5e & Gripper")
+            if hasattr(self, 'reconnect_btn'):
+                self.reconnect_btn.config(state="normal")
         except Exception as e:
-            self.status_var.set(f"Connection Failed: {e}")
+            self.status_var.set("Connection Failed (Check Terminal for Error)")
+            if hasattr(self, 'reconnect_btn'):
+                self.reconnect_btn.config(state="normal")
+                
+    def trigger_reconnect(self):
+        self.status_var.set("Connecting...")
+        self.reconnect_btn.config(state="disabled")
+        import threading
+        threading.Thread(target=self.connect_robot, daemon=True).start()
             
     def create_widgets(self):
+        status_frame = tk.Frame(self.master)
+        status_frame.pack(pady=5)
+        
         self.status_var = tk.StringVar(value="Connecting...")
-        tk.Label(self.master, textvariable=self.status_var, fg="blue").pack(pady=5)
+        tk.Label(status_frame, textvariable=self.status_var, fg="blue").pack(side="left", padx=5)
+        
+        self.reconnect_btn = tk.Button(status_frame, text="Reconnect", command=self.trigger_reconnect, state="disabled")
+        self.reconnect_btn.pack(side="left", padx=5)
         
         self.stage_var = tk.StringVar()
         self.desc_var = tk.StringVar()
