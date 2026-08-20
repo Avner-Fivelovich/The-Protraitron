@@ -196,11 +196,23 @@ class CalibrationGUI:
         self.master.destroy()
 
 if __name__ == "__main__":
+    logger.info("Parsing arguments...")
     parser = argparse.ArgumentParser(description="Paper Manipulation Calibration GUI")
     parser.add_argument("--ip", type=str, default="192.168.57.101", help="Robot IP Address")
     args = parser.parse_args()
 
-    root = tk.Tk()
+    logger.info("Initializing Tkinter root window...")
+    try:
+        root = tk.Tk()
+    except Exception as e:
+        logger.critical(f"Failed to initialize Tkinter: {e}")
+        sys.exit(1)
+        
+    logger.info("Building GUI components...")
     app = CalibrationGUI(root, args.ip)
+    
+    logger.info("Registering window protocols...")
     root.protocol("WM_DELETE_WINDOW", app.on_closing)
+    
+    logger.info("Starting Tkinter main loop (Window should appear now)...")
     root.mainloop()
