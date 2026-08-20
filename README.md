@@ -168,3 +168,14 @@ This boots a web server listening on `http://0.0.0.0:8000`.
 2. **File Upload Tab**: Standard drag-and-drop interface for local images.
 3. **Queue Telemetry**: A background worker thread queue that draws sequential jobs and posts real-time coordinate drawing progress values.
 4. **Passcode Handshake**: Protects the physical robot from unauthorized trigger requests (default passcode: `portraitron` configurable in `config/marker.yaml`).
+
+## 🛠️ Scripts & Tools Documentation
+
+All peripheral scripts for hardware calibration, diagnostics, and notifications have dedicated markdown documentation files. Explore them here:
+
+* [Paper Calibration GUI](docs/scripts/calibrate_paper_gui.md) - Adjust physical gripper boundaries, paper swaps, and jog the robot intuitively.
+* [Workspace Calibration](docs/scripts/calibrate_workspace.md) - Force-probing the drawing surface and locking in the canvas box coordinates.
+* [Go-to YAML Location](docs/scripts/go_to_ymal_location.md) - Diagnostic script to move the UR5e to any pre-saved YAML coordinate.
+* [Record Location to YAML](docs/scripts/record_location_to_ymal.md) - Save the current robot end-effector position to config files dynamically.
+* [Send Notification](docs/scripts/send_notification.md) - Integration tool to push job completion/status updates to smartphones.
+* [Test UR5e Connection](docs/scripts/test_ur5e_connection.md) - Simple diagnostic to verify RTDE network links and host reachability.
