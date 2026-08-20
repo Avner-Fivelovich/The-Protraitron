@@ -3,6 +3,7 @@ import os
 import sys
 import yaml
 import argparse
+import threading
 import tkinter as tk
 from tkinter import ttk
 
@@ -83,17 +84,14 @@ class CalibrationGUI:
             self.gripper.connect(self.robot_ip, 63352)
             self.gripper.activate()
             self.status_var.set("Connected to UR5e & Gripper")
-            if hasattr(self, 'reconnect_btn'):
-                self.reconnect_btn.config(state="normal")
         except Exception as e:
             self.status_var.set("Connection Failed (Check Terminal for Error)")
-            if hasattr(self, 'reconnect_btn'):
-                self.reconnect_btn.config(state="normal")
+        finally:
+            self.reconnect_btn.config(state="normal")
                 
     def trigger_reconnect(self):
         self.status_var.set("Connecting...")
         self.reconnect_btn.config(state="disabled")
-        import threading
         threading.Thread(target=self.connect_robot, daemon=True).start()
             
     def create_widgets(self):
@@ -169,19 +167,14 @@ class CalibrationGUI:
         tk.Button(grip_actions, text="Full Close", command=lambda: self.async_grip(100)).pack(side="left", padx=5)
         
         # Keyboard bindings (multiplier 1 for positive, -1 for negative)
-        self.master.bind('<w>', lambda e: self.jog(0, 1))
-        self.master.bind('<s>', lambda e: self.jog(0, -1))
-        self.master.bind('<a>', lambda e: self.jog(1, 1))
-        self.master.bind('<d>', lambda e: self.jog(1, -1))
-        self.master.bind('<q>', lambda e: self.jog(2, 1))
-        self.master.bind('<e>', lambda e: self.jog(2, -1))
+        for key, axis, direction in [('w', 0, 1), ('s', 0, -1), ('a', 1, 1), ('d', 1, -1), ('q', 2, 1), ('e', 2, -1)]:
+            self.master.bind(f'<{key}>', lambda e, a=axis, d=direction: self.jog(a, d))
         self.master.bind('<space>', lambda e: self.save_point())
         
     def async_grip(self, target_percent):
         if not self.gripper or not self.gripper.socket:
             logger.warning("Gripper attempted move, but is not connected.")
             return
-        import threading
         speed = int((self.grip_speed_var.get() / 100.0) * 255)
         force = int((self.grip_force_var.get() / 100.0) * 255)
         target = int((target_percent / 100.0) * 255)
@@ -252,10 +245,8 @@ class CalibrationGUI:
             self.update_stage_display()
         
     def on_closing(self):
-        if self.rtde_c: self.rtde_c.disconnect()
-        if self.rtde_r: self.rtde_r.disconnect()
-        if self.gripper and self.gripper.socket:
-            self.gripper.disconnect()
+        for obj in (self.rtde_c, self.rtde_r, self.gripper if self.gripper and self.gripper.socket else None):
+            if obj: obj.disconnect()
         self.master.destroy()
 
 if __name__ == "__main__":
