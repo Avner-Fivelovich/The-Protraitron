@@ -87,6 +87,8 @@ class CalibrationGUI:
         self.status_var.set("Not Connected (Click Reconnect)")
         self.reconnect_btn.config(state="normal")
         
+        self._update_live_coords()
+        
     def load_config(self):
         os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
         if os.path.exists(OUTPUT_PATH):
@@ -151,6 +153,18 @@ class CalibrationGUI:
                                 self.rtde_c.reuploadScript()
                 except Exception:
                     pass
+
+    def _update_live_coords(self):
+        if not self.closing:
+            try:
+                if self.rtde_r:
+                    pose = self.rtde_r.getActualTCPPose()
+                    self.coords_var.set(f"TCP: X:{pose[0]:.3f} Y:{pose[1]:.3f} Z:{pose[2]:.3f} | Rx:{pose[3]:.2f} Ry:{pose[4]:.2f} Rz:{pose[5]:.2f}")
+                else:
+                    self.coords_var.set("TCP: X: -- Y: -- Z: -- | Rx: -- Ry: -- Rz: --")
+            except Exception:
+                pass
+            self.master.after(200, self._update_live_coords)
 
     def connect_robot(self):
         try:
@@ -244,6 +258,11 @@ class CalibrationGUI:
 
         self.freedrive_btn = tk.Button(status_frame, text="🖐 Freedrive (Hand-Guide)", command=self.toggle_freedrive, bg="#e0e0e0", state="disabled")
         self.freedrive_btn.pack(side="left", padx=5)
+
+        coords_frame = tk.Frame(self.master)
+        coords_frame.pack(pady=2)
+        self.coords_var = tk.StringVar(value="TCP: X: -- Y: -- Z: -- | Rx: -- Ry: -- Rz: --")
+        tk.Label(coords_frame, textvariable=self.coords_var, font=("Courier", 11)).pack(side="left")
         
         self.stage_var = tk.StringVar()
         self.desc_var = tk.StringVar()
