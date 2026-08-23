@@ -22,7 +22,7 @@ logger = get_logger("RollPaperScript")
 def main():
     parser = argparse.ArgumentParser(description="Run UR5e Robotiq Gripper Paper Rolling Routine")
     parser.add_argument("--ip", type=str, default="192.168.57.101", help="UR5e Robot IP address (default: 192.168.57.101)")
-    parser.add_argument("--calibration", type=str, default="config/calibration.yaml", help="Path to calibration.yaml")
+    parser.add_argument("--calibration", type=str, default="config/paper_manipulation.yaml", help="Path to paper_manipulation.yaml")
     parser.add_argument("--marker-config", type=str, default="config/marker.yaml", help="Path to marker.yaml")
     parser.add_argument("--distance", type=float, default=0.10, help="Distance in meters to pull downward (default: 0.10 m = 10 cm)")
     parser.add_argument("--rotate-deg", type=float, default=90.0, help="Tool rotation angle in degrees (default: 90.0)")

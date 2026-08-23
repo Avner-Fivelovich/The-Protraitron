@@ -34,7 +34,7 @@ class UR5eController:
     Manages connections and command executions for the physical UR5e arm,
     using real-time force compliance along the approach axis.
     """
-    def __init__(self, ip_address: str, calibration_path: str = "config/calibration.yaml", marker_config_path: str = "config/marker.yaml"):
+    def __init__(self, ip_address: str, calibration_path: str = "config/paper_manipulation.yaml", marker_config_path: str = "config/marker.yaml"):
         # -------------------------------------------------------------
         # Initialization and configuration loading
         # -------------------------------------------------------------
@@ -58,7 +58,7 @@ class UR5eController:
         
     def load_calibration(self):
         """
-        Reads starting hover joint angles, tool poses, and reference corner P1 from calibration.yaml.
+        Reads starting hover joint angles, tool poses, and reference corner P1 from paper_manipulation.yaml.
         """
         if not os.path.exists(self.calibration_path):
             logger.warning(f"Calibration file {self.calibration_path} not found. Running in uncalibrated mode.")
@@ -68,7 +68,7 @@ class UR5eController:
                 data = yaml.safe_load(f) or {}
             
             self.p0_joints = data.get("p0_joints")
-            self.p0_pose = data.get("p0_pose")
+            self.p0_pose = data.get("locations", {}).get("draw_home")
             self.p1 = data.get("p1")
             self.width = data.get("width", 0.19)
             self.height = data.get("height", 0.27)

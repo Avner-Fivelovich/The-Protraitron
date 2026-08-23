@@ -50,7 +50,7 @@ def main():
     
     # Load parameters from config
     robot_ip = cfg.get("robot_ip", "192.168.57.100")
-    output_path = cfg.get("output_path", "config/calibration.yaml")
+    output_path = "config/paper_manipulation.yaml"
     paper_width = cfg.get("paper_width", 0.19)
     paper_height = cfg.get("paper_height", 0.27)
     hover_distance = cfg.get("hover_distance", 0.003)
@@ -96,13 +96,19 @@ def main():
         # -------------------------------------------------------------
         # Save initial P0 results to calibration file
         # -------------------------------------------------------------
-        logger.info(f"Saving initial P0 to {output_path}...")
-        cal_data = {
-            "p0_joints": [float(q) for q in p0_joints],
-            "p0_pose": [float(p) for p in p0_pose],
-            "width": paper_width,
-            "height": paper_height
-        }
+        logger.info(f"Saving initial draw_home to {output_path}...")
+        
+        with open(output_path, "r") as f:
+            cal_data = yaml.safe_load(f) or {}
+            
+        if "locations" not in cal_data:
+            cal_data["locations"] = {}
+            
+        cal_data["locations"]["draw_home"] = [float(p) for p in p0_pose]
+        cal_data["p0_joints"] = [float(q) for q in p0_joints]
+        cal_data["width"] = paper_width
+        cal_data["height"] = paper_height
+        
         with open(output_path, "w") as f:
             yaml.safe_dump(cal_data, f, default_flow_style=False)
         
@@ -133,13 +139,17 @@ def main():
         # -------------------------------------------------------------
         # Save results (rewriting P0 and adding P1) to calibration file
         # -------------------------------------------------------------
-        cal_data_final = {
-            "p0_joints": [float(q) for q in p0_joints_final],
-            "p0_pose": [float(p) for p in p0_pose_final],
-            "p1": [float(p) for p in p1_surface],
-            "width": paper_width,
-            "height": paper_height
-        }
+        with open(output_path, "r") as f:
+            cal_data_final = yaml.safe_load(f) or {}
+            
+        if "locations" not in cal_data_final:
+            cal_data_final["locations"] = {}
+            
+        cal_data_final["locations"]["draw_home"] = [float(p) for p in p0_pose_final]
+        cal_data_final["p0_joints"] = [float(q) for q in p0_joints_final]
+        cal_data_final["p1"] = [float(p) for p in p1_surface]
+        cal_data_final["width"] = paper_width
+        cal_data_final["height"] = paper_height
         
         with open(output_path, "w") as f:
             yaml.safe_dump(cal_data_final, f, default_flow_style=False)

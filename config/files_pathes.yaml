@@ -1,5 +1,5 @@
 paths:
-  calibration_config: "config/calibration.yaml"
+  calibration_config: "config/paper_manipulation.yaml"
   marker_config: "config/marker.yaml"
   server_config: "config/server.yaml"
   paper_manipulation_config: "config/paper_manipulation.yaml"

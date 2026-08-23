@@ -2,7 +2,7 @@ import numpy as np
 from src.common.config_utils import load_config_from_yaml
 
 # Load configuration for default parameters
-calib_cfg = load_config_from_yaml("config/calibration.yaml")
+calib_cfg = load_config_from_yaml("config/paper_manipulation.yaml")
 logic_cfg = load_config_from_yaml("config/robot_logic.yaml")
 
 DEFAULT_CANVAS_WIDTH = calib_cfg.get("width", 0.19)

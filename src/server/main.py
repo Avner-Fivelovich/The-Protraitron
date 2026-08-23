@@ -39,7 +39,7 @@ if os.path.exists(FILES_PATHES_CONFIG):
     with open(FILES_PATHES_CONFIG, "r") as f:
         paths_cfg = yaml.safe_load(f)
 
-CALIBRATION_PATH = os.path.join(PROJECT_ROOT, paths_cfg.get("paths", {}).get("calibration_config", "config/calibration.yaml"))
+CALIBRATION_PATH = os.path.join(PROJECT_ROOT, paths_cfg.get("paths", {}).get("calibration_config", "config/paper_manipulation.yaml"))
 MARKER_CONFIG_PATH = os.path.join(PROJECT_ROOT, paths_cfg.get("paths", {}).get("marker_config", "config/marker.yaml"))
 SERVER_CONFIG_PATH = os.path.join(PROJECT_ROOT, paths_cfg.get("paths", {}).get("server_config", "config/server.yaml"))
 
