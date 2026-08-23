@@ -154,7 +154,7 @@ class PaperHandler:
         self._move_to("upper_magnet_park", allow_joint=True)
         self._open_gripper()
         self._move_to("safe_paper", allow_joint=True)
-        self._move_to("fresh_paper_grab", allow_joint=True)
+        self._move_to("fresh_paper_grab", allow_joint=False)
         self._close_gripper()
         self._move_to("fresh_paper_pull_dest", speed=self.fetch_paper_speed, allow_joint=False)
         self._open_gripper()
