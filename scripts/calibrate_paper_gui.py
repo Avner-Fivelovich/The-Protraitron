@@ -56,16 +56,26 @@ class CalibrationGUI:
         self.locations = self.config.get("locations", {})
         
         self.stages = [
-            ("pen_dock", "Location of the pen dock (to store pen)"),
-            ("magnet_1_start", "Current/original location of Magnet 1"),
+            ("P0", "Starting draw location"),
+            ("safe_paper", "Safe location away from paper"),
+            ("safe_tools", "Safe location above the tool docks"),
+            ("above_dock", "Hover location above the marker dock"),
+            ("marker_dock", "Location to store the marker"),
+            ("magnet_1_start", "Current location of Magnet 1"),
             ("magnet_1_temp", "Temporary parking location for Magnet 1"),
-            ("magnet_2_start", "Current/original location of Magnet 2"),
+            ("above_knife", "Hover location above the knife dock"),
+            ("knife_dock", "Location to store the knife"),
+            ("start_cut_location", "Start location of the paper cut"),
+            ("end_cut_location", "End location of the paper cut"),
+            ("paper_location", "Location to grab the cut paper"),
+            ("pull_paper_location", "Location to pull the cut paper to"),
+            ("safe_midpoint_to_user", "Safe midpoint to user handover"),
+            ("user_handing_location", "Target location to handover the paper to the user"),
+            ("magnet_2_start", "Current location of Magnet 2"),
             ("magnet_2_temp", "Temporary parking location for Magnet 2"),
-            ("paper_grab", "Location to grab the completed drawing edge"),
-            ("cut_trajectory", "End location after pulling downward to cut paper"),
-            ("handover_target", "Target location to wait for human to pull the paper"),
-            ("new_paper_roll", "Location to grab the edge of the fresh paper roll"),
-            ("paper_pull_end", "End location after pulling the fresh paper across the board")
+            ("new_paper_location", "Location to grab the edge of the fresh paper roll"),
+            ("paper_pull_end", "End location after pulling the fresh paper down"),
+            ("below_magnet_2_start", "Location below magnet 2 to start straightening paper")
         ]
         self.current_stage_idx = 0
         
@@ -123,7 +133,8 @@ class CalibrationGUI:
                     f"External URCap port 50002 unavailable ({external_control_error}); "
                     "falling back to standard RTDE control."
                 )
-                self.rtde_c = rtde_control.RTDEControlInterface(self.robot_ip)
+                fallback_flags = rtde_control.RTDEControlInterface.FLAG_DISABLE_REMOTE_CONTROL_CHECK
+                self.rtde_c = rtde_control.RTDEControlInterface(self.robot_ip, flags=fallback_flags)
             self.status_var.set("Connected to UR5e")
             self.freedrive_btn.config(state="normal")
 
