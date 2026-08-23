@@ -149,7 +149,7 @@ class PaperHandler:
             p_end[0] = p_contact[0]
             
             # Activate force compliance to push the knife into the paper
-            cut_force = self.config.get("cut_force", 7.0)
+            cut_force = self.config.get("cut_force", 15.0)
             tool_task_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
             tool_selection_vector = [1, 0, 0, 0, 0, 0] # Compliance only on Base X
             tool_wrench = [-cut_force, 0.0, 0.0, 0.0, 0.0, 0.0]
