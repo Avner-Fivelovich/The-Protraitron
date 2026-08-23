@@ -398,7 +398,33 @@ class CalibrationGUI:
         self.master.bind('<space>', lambda e: self.save_point())
         self.master.bind('<f>', lambda e: self.toggle_freedrive())
 
-
+        # Action Sequences Frame
+        action_frame = tk.LabelFrame(self.main_frame, text="Action Sequences")
+        action_frame.pack(pady=5, padx=10, fill="x")
+        
+        actions = [
+            ("Full Paper Swap", "full_swap"),
+            ("Pick up Marker", "pick_up_marker"),
+            ("Drop Marker", "drop_marker"),
+            ("Pick up Knife", "pick_up_knife"),
+            ("Drop Knife", "drop_knife"),
+            ("Execute Cut", "execute_cut"),
+            ("Hand to User", "hand_to_user"),
+            ("Put New Paper", "put_new_paper"),
+            ("Execute Stamping", "execute_stamping")
+        ]
+        
+        cols = 3
+        for i, (text, seq_name) in enumerate(actions):
+            row = i // cols
+            col = i % cols
+            btn = tk.Button(action_frame, text=text, command=lambda name=seq_name: self.run_action_sequence(name))
+            btn.grid(row=row, column=col, padx=2, pady=2, sticky="ew")
+            action_frame.grid_columnconfigure(col, weight=1)
+            
+        # Give full_swap a distinct color
+        full_swap_btn = action_frame.grid_slaves(row=0, column=0)[0]
+        full_swap_btn.configure(bg="#ffcccc")
         # Go To Location Frame
         goto_frame = tk.LabelFrame(self.main_frame, text="Go To Saved Location")
         goto_frame.pack(pady=5, padx=10, fill="x")
@@ -549,6 +575,55 @@ class CalibrationGUI:
             except Exception as e:
                 logger.error(f"Exception during gripper rotation: {e}", exc_info=True)
                 self.status_var.set(f"Rotation Error: {e}")
+            finally:
+                self.is_moving = False
+
+    def run_action_sequence(self, seq_name):
+        if not self.rtde_c or not self.rtde_r:
+            logger.warning("Cannot run sequence: robot is not connected.")
+            return
+        if self.is_moving:
+            return
+            
+        threading.Thread(target=self._execute_action_sequence, args=(seq_name,), daemon=True).start()
+        
+    def _execute_action_sequence(self, seq_name):
+        with self.motion_lock:
+            self.is_moving = True
+            try:
+                if self.freedrive_active:
+                    self.toggle_freedrive()
+                    
+                self.status_var.set(f"Running {seq_name}...")
+                self.save_config()
+                
+                ph = PaperHandler(self.rtde_c, self.rtde_r, config_path=OUTPUT_PATH)
+                ph.gripper = self.gripper
+                ph.gripper_connected = self.gripper_connected
+                
+                if seq_name == "full_swap":
+                    ph.execute_paper_swap()
+                elif seq_name == "pick_up_marker":
+                    ph.pick_up("marker_dock")
+                elif seq_name == "drop_marker":
+                    ph.drop("marker_dock")
+                elif seq_name == "pick_up_knife":
+                    ph.pick_up("knife_dock")
+                elif seq_name == "drop_knife":
+                    ph.drop("knife_dock")
+                elif seq_name == "execute_cut":
+                    ph.execute_cut()
+                elif seq_name == "hand_to_user":
+                    ph.hand_to_user()
+                elif seq_name == "put_new_paper":
+                    ph.put_new_paper()
+                elif seq_name == "execute_stamping":
+                    ph.execute_stamping()
+                    
+                self.status_var.set(f"Finished {seq_name}")
+            except Exception as e:
+                logger.error(f"Error running sequence: {e}")
+                self.status_var.set("Sequence Error!")
             finally:
                 self.is_moving = False
 
