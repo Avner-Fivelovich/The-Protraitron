@@ -15,7 +15,7 @@ CUB 1.9.10-1 is the minor release accompanying the NVIDIA HPC SDK 20.7 release
 
 ## Summary
 
-Thrust 1.9.10 is the release accompanying the NVIDIA HPC SDK 20.5 release.
+CUB 1.9.10 is the release accompanying the NVIDIA HPC SDK 20.5 release.
 It adds CMake `find_package` support.
 C++03, C++11, GCC < 5, Clang < 6, and MSVC < 2017 are now deprecated.
 Starting with the upcoming 1.10.0 release, C++03 support will be dropped
@@ -40,7 +40,7 @@ Starting with the upcoming 1.10.0 release, C++03 support will be dropped
 - GCC < 5, Clang < 6, and MSVC < 2017 are deprecated.
   Using these compilers will generate a compile-time warning.
   These warnings can be suppressed by defining
-  `CUB_IGNORE_DEPRECATED_COMPILER`.
+    `CUB_IGNORE_DEPRECATED_COMPILER`.
   Suppression is only a short term solution.
   We will be dropping support for these compilers in the near future.
 
@@ -91,7 +91,7 @@ Starting with the upcoming 1.10.0 release, C++03 support will be dropped
 
 - CMake support.
   Thanks to Francis Lemaire for this contribution.
-- Refactorized and modernized scan dispatch layer.
+- Refactored and modernized scan dispatch layer.
   Thanks to Francis Lemaire for this contribution.
 - Policy hooks for device-wide reduce, scan, and radix sort facilities
     to simplify tuning and allow users to provide custom policies.
@@ -102,16 +102,16 @@ Starting with the upcoming 1.10.0 release, C++03 support will be dropped
   - `<cub/util_cpp_dialect.cuh>`: Detects the C++ standard dialect.
   - `<cub/util_compiler.cuh>`: host and device compiler detection.
   - `<cub/util_deprecated.cuh>`: `CUB_DEPRECATED`.
-  - <cub/config.cuh>`: Includes `<cub/util_arch.cuh>`,
+  - `<cub/config.cuh>`: Includes `<cub/util_arch.cuh>`,
       `<cub/util_compiler.cuh>`, `<cub/util_cpp_dialect.cuh>`,
       `<cub/util_deprecated.cuh>`, `<cub/util_macro.cuh>`,
-      `<cub/util_namespace.cuh>`
+      `<cub/util_namespace.cuh>`.
 - `cub::DeviceCount` and `cub::DeviceCountUncached`, caching abstractions for
     `cudaGetDeviceCount`.
 
 ## Other Enhancements
 
-- Lazily initialize the per-device CUDAattribute caches, because CUDA context
+- Lazily initialize the per-device CUDA attribute caches, because CUDA context
     creation is expensive and adds up with large CUDA binaries on machines with
     many GPUs.
   Thanks to the NVIDIA PyTorch team for bringing this to our attention.
@@ -120,7 +120,7 @@ Starting with the upcoming 1.10.0 release, C++03 support will be dropped
 
 ## Bug Fixes
 
-- Add explicit failure parameter to CAS in the CUB attribute cache to workaround
+- Add explicit failure parameter to CAS in the CUB attribute cache to work around
     a GCC 4.8 bug.
 - Revert a change in reductions that changed the signedness of the `lane_id`
     variable to suppress a warning, as this introduces a bug in optimized device
@@ -167,7 +167,7 @@ When compiling CUB in C++11 mode, CUB now caches calls to CUDA attribute query
   Thanks to Bilge Acun for bringing this issue to our attention.
 - `DispatchReduce` now takes an `OutputT` template parameter so that users can
     specify the intermediate type explicitly.
-- Radix sort tuning policies updates to fix performance issues for element
+- Radix sort tuning policy updates to fix performance issues for element
     types smaller than 4 bytes.
 
 ## Bug Fixes
@@ -312,11 +312,11 @@ CUB 1.6.4 improves radix sorting performance for SM5x (Maxwell) and SM6x
 
 ## Bug Fixes
 
-- Restore fence work-around for scan (reduce-by-key, etc.) hangs in CUDA 8.5.
+- Restore fence workaround for scan (reduce-by-key, etc.) hangs in CUDA 8.5.
 - #65: `cub::DeviceSegmentedRadixSort` should allow inputs to have
     pointer-to-const type.
 - Mollify Clang device-side warnings.
-- Remove out-dated MSVC project files.
+- Remove outdated MSVC project files.
 
 # CUB 1.6.3
 
@@ -342,9 +342,9 @@ CUB 1.6.3 improves support for Windows, changes
 ## Bug Fixes
 
 - #74: `cub::WarpReduce` executes reduction operator for out-of-bounds items.
-- #72: `cub:InequalityWrapper::operator` should be non-const.
+- #72: `cub::InequalityWrapper::operator()` should be non-const.
 - #71: `cub::KeyValuePair` won't work if `Key` has non-trivial constructor.
-- #69: cub::BlockStore::Store` doesn't compile if `OutputIteratorT::value_type`
+- #69: `cub::BlockStore::Store` doesn't compile if `OutputIteratorT::value_type`
     isn't `T`.
 - #68: `cub::TilePrefixCallbackOp::WarpReduce` doesn't permit PTX arch
     specialization.
@@ -372,7 +372,7 @@ CUB 1.6.1 (previously 1.5.4) is a minor release.
 
 ## Bug Fixes
 
-- Fix radix sorting bug introduced by scan refactorization.
+- Fix radix sorting bug introduced by scan refactoring.
 
 # CUB 1.6.0 (previously 1.5.3)
 
@@ -406,7 +406,7 @@ Additionally, many bugs have been fixed.
     state upon successful retry.
 - Issue #46: Very high amount of needed memory from the
     `cub::DeviceHistogram::HistogramEven`.
-- Issue #45: `cub::CachingDeviceAllocator` fails with debug output enabled
+- Issue #45: `cub::CachingDeviceAllocator` fails with debug output enabled.
 
 # CUB 1.5.2
 
@@ -422,11 +422,11 @@ CUB 1.5.2 enhances `cub::CachingDeviceAllocator` and improves scan performance
   - Now spends less time locked.
   - Uses C++11's `std::mutex` when available.
   - Failure to allocate a block from the runtime will retry once after
-  		freeing cached allocations.
+      freeing cached allocations.
   - Now respects max-bin, fixing an issue where blocks in excess of max-bin
       were still being retained in the free cache.
 
-## Bug fixes:
+## Bug Fixes
 
 - Fix for generic-type reduce-by-key `cub::WarpScan` for SM3x and newer GPUs.
 
@@ -439,18 +439,20 @@ CUB 1.5.1 is a minor release.
 ## Bug Fixes
 
 - Fix for incorrect `cub::DeviceRadixSort` output for some small problems on
-    SM52 (Mawell) GPUs.
+    SM52 (Maxwell) GPUs.
 - Fix for macro redefinition warnings when compiling `thrust::sort`.
 
 # CUB 1.5.0
 
+## Summary
+
 CUB 1.5.0 introduces segmented sort and reduction primitives.
 
-## New Features:
+## New Features
 
 - Segmented device-wide operations for device-wide sort and reduction primitives.
 
-## Bug Fixes:
+## Bug Fixes
 
 - #36: `cub::ThreadLoad` generates compiler errors when loading from
     pointer-to-const.
@@ -461,7 +463,7 @@ CUB 1.5.0 introduces segmented sort and reduction primitives.
 - Fix CUDA 7.5 issues on SM52 GPUs with SHFL-based warp-scan and
     warp-reduction on non-primitive data types (e.g. user-defined structs).
 - Fix small radix sorting problems where 0 temporary bytes were required and
-    users code was invoking `malloc(0)` on some systems where that returns
+    user code was invoking `malloc(0)` on some systems where that returns
     `NULL`.
   CUB assumed the user was asking for the size again and not running the sort.
 
@@ -480,7 +482,7 @@ CUB 1.4.1 is a minor release.
 - Fix minor CUDA 7.0 performance regressions in `cub::DeviceScan` and
     `cub::DeviceReduceByKey`.
 - Remove requirement for callers to define the `CUB_CDP` macro
-    when invoking CUB device-wide rountines using CUDA dynamic parallelism.
+    when invoking CUB device-wide routines using CUDA dynamic parallelism.
 - Fix headers not being included in the proper order (or missing includes)
     for some block-wide functions.
 
@@ -488,11 +490,11 @@ CUB 1.4.1 is a minor release.
 
 ## Summary
 
-CUB 1.4.0 adds `cub::DeviceSpmv`, `cub::DeviceRunLength::NonTrivialRuns`,
+CUB 1.4.0 adds `cub::DeviceSpmv`, `cub::DeviceRunLengthEncode::NonTrivialRuns`,
   improves `cub::DeviceHistogram`, and introduces support for SM5x (Maxwell)
   GPUs.
 
-## New Features:
+## New Features
 
 - `cub::DeviceSpmv` methods for multiplying sparse matrices by
     dense vectors, load-balanced using a merge-based parallel decomposition.
@@ -508,7 +510,7 @@ CUB 1.4.0 adds `cub::DeviceSpmv`, `cub::DeviceRunLength::NonTrivialRuns`,
 ## Other Enhancements
 
 - Support and performance tuning for SM5x (Maxwell) GPUs.
-- Updated cub::DeviceHistogram implementation that provides the same
+- Updated `cub::DeviceHistogram` implementation that provides the same
     "histogram-even" and "histogram-range" functionality as IPP/NPP.
   Provides extremely fast and, perhaps more importantly, very uniform
     performance response across diverse real-world datasets, including
@@ -553,7 +555,7 @@ CUB 1.3.0 improves how thread blocks are expressed in block- and warp-wide
 - CUB's collective (block-wide, warp-wide) primitives underwent a minor
     interface refactoring:
   - To provide the appropriate support for multidimensional thread blocks,
-      The interfaces for collective classes are now template-parameterized by
+      the interfaces for collective classes are now template-parameterized by
       X, Y, and Z block dimensions (with `BLOCK_DIM_Y` and `BLOCK_DIM_Z` being
       optional, and `BLOCK_DIM_X` replacing `BLOCK_THREADS`).
     Furthermore, the constructors that accept remapped linear
@@ -567,7 +569,7 @@ CUB 1.3.0 improves how thread blocks are expressed in block- and warp-wide
     This is useful when aliasing collective storage to shared memory that has
       been allocated dynamically by the host at the kernel call site.
   - Most CUB programs having typical 1D usage should not require any
-      changes to accomodate these updates.
+      changes to accommodate these updates.
 
 ## New Features
 
@@ -579,11 +581,11 @@ CUB 1.3.0 improves how thread blocks are expressed in block- and warp-wide
 - Fix for bug in `cub::WarpScan` (which affected `cub::BlockScan` and
     `cub::DeviceScan`) where incorrect results (e.g., NAN) would often be
     returned when parameterized for floating-point types (fp32, fp64).
-- Workaround for ptxas error when compiling with with -G flag on Linux (for
+- Workaround for ptxas error when compiling with -G flag on Linux (for
     debug instrumentation).
 - Fixes for certain scan scenarios using custom scan operators where code
     compiled for SM1x is run on newer GPUs of higher compute-capability: the
-    compiler could not tell which memory space was being used collective
+    compiler could not tell which memory space was being used for collective
     operations and was mistakenly using global ops instead of shared ops.
 
 # CUB 1.2.3
@@ -602,13 +604,13 @@ CUB 1.2.3 is a minor release.
 
 ## Summary
 
-CUB 1.2.2 adds a new variant of `cub::BlockReduce` and MSVC project solections
+CUB 1.2.2 adds a new variant of `cub::BlockReduce` and MSVC project solutions
   for examples.
 
 ## New Features
 
-- MSVC project solutions for device-wide and block-wide examples
-- New algorithmic variant of cub::BlockReduce for improved performance
+- MSVC project solutions for device-wide and block-wide examples.
+- New algorithmic variant of `cub::BlockReduce` for improved performance
     when using commutative operators (e.g., numeric addition).
 
 ## Bug Fixes
@@ -634,7 +636,7 @@ CUB 1.2.0 adds `cub::DeviceReduce::ReduceByKey` and
     performance.
 - Documentation and testing:
   - Added performance-portability plots for many device-wide primitives.
-  - Explain that iterator (in)compatibilities with CUDA 5.0 (and older) and
+  - Explain iterator (in)compatibilities with CUDA 5.0 (and older) and
       Thrust 1.6 (and older).
 - Revised the operation of temporary tile status bookkeeping for
     `cub::DeviceScan` (and similar) to be safe for current code run on future
@@ -655,7 +657,7 @@ CUB 1.2.0 adds `cub::DeviceReduce::ReduceByKey` and
 
 CUB 1.1.1 introduces texture and cache modifier iterators, descending sorting,
   `cub::DeviceSelect`, `cub::DevicePartition`, `cub::Shuffle*`, and
-  `cub::MaxSMOccupancy`.
+  `cub::MaxSmOccupancy`.
 Additionally, scan and sort performance for older GPUs has been improved and
   many bugs have been fixed.
 
@@ -691,12 +693,12 @@ Additionally, scan and sort performance for older GPUs has been improved and
 - Documentation improvements:
   - Added simple examples of device-wide methods.
   - Improved doxygen documentation and example snippets.
-- Improved test coverege to include up to 21,000 kernel variants and 851,000
+- Improved test coverage to include up to 21,000 kernel variants and 851,000
     unit tests (per architecture, per platform).
 
 ## Bug Fixes
 
-- Fix misc `cub::DeviceScan, BlockScan, DeviceReduce, and BlockReduce bugs when
+- Fix misc `cub::DeviceScan`, `cub::BlockScan`, `cub::DeviceReduce`, and `cub::BlockReduce` bugs when
     operating on non-primitive types for older architectures SM1x.
 - SHFL-based scans and reductions produced incorrect results for multi-word
     types (size > 4B) on Linux.
@@ -704,7 +706,7 @@ Additionally, scan and sort performance for older GPUs has been improved and
     entering the prefix callback functor.
 - `cub::DeviceRadixSort` had a race condition with key-value pairs for pre-SM35
     architectures.
-- `cub::DeviceRadixSor` bitfield-extract behavior with long keys on 64-bit
+- `cub::DeviceRadixSort` bitfield-extract behavior with long keys on 64-bit
     Linux was incorrect.
 - `cub::BlockDiscontinuity` failed to compile for types other than
     `int32_t`/`uint32_t`.
@@ -731,7 +733,7 @@ CUB 1.0.2 is a minor release.
 ## Summary
 
 CUB 1.0.1 adds `cub::DeviceRadixSort` and `cub::DeviceScan`.
-Numerous other performance and correctness fixes and included.
+Numerous other performance and correctness fixes are included.
 
 ## Breaking Changes
 
@@ -747,9 +749,9 @@ Numerous other performance and correctness fixes and included.
 ## Other Enhancements
 
 - Significantly improved documentation (with example code snippets).
-- More extensive regression test suit for aggressively testing collective
+- More extensive regression test suite for aggressively testing collective
     variants.
-- Allow non-trially-constructed types (previously unions had prevented aliasing
+- Allow non-trivially-constructed types (previously unions had prevented aliasing
     temporary storage of those types).
 - Improved support for SM3x SHFL (collective ops now use SHFL for types larger
     than 32 bits).
@@ -767,7 +769,7 @@ Numerous other performance and correctness fixes and included.
 
 ## Summary
 
-CUB 0.9.3 is a minor release.
+CUB 0.9.4 is a minor release.
 
 ## Enhancements
 
@@ -786,7 +788,7 @@ CUB 0.9.3 adds histogram algorithms and work management utility descriptors.
 
 ## New Features
 
-- `cub::DevicHistogram256`.
+- `cub::DeviceHistogram256`.
 - `cub::BlockHistogram256`.
 - `cub::BlockScan` algorithm variant `BLOCK_SCAN_RAKING_MEMOIZE`, which
     trades more register consumption for less shared memory I/O.
@@ -798,7 +800,7 @@ CUB 0.9.3 adds histogram algorithms and work management utility descriptors.
     performance on SM3x by using SHFL.
 - Allow types other than builtin types to be used in `cub::WarpScan::*Sum`
     methods if they only have `operator+` overloaded.
-  Previously they also required to support assignment from `int(0)`.
+  Previously they were also required to support assignment from `int(0)`.
 - Update `cub::BlockReduce`'s `BLOCK_REDUCE_WARP_REDUCTIONS` algorithm to work
     even when block size is not an even multiple of warp size.
 - Refactoring of `cub::DeviceAllocator` interface and
@@ -845,4 +847,3 @@ CUB 0.9.1 is a minor release.
 Initial preview release.
 CUB is the first durable, high-performance library of cooperative block-level,
   warp-level, and thread-level primitives for CUDA kernel programming.
-
