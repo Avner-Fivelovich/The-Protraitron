@@ -1,25 +1,16 @@
-Thrust: Code at the speed of light
-==================================
+# Thrust: Code at the Speed of Light
 
-Thrust is a C++ parallel programming library which resembles the C++ Standard
-Library. Thrust's **high-level** interface greatly enhances
-programmer **productivity** while enabling performance portability between
-GPUs and multicore CPUs. **Interoperability** with established technologies
-(such as CUDA, TBB, and OpenMP) facilitates integration with existing
-software. Develop **high-performance** applications rapidly with Thrust!
+Thrust is a C++ parallel programming library which resembles the C++ Standard Library. Thrust's **high-level** interface greatly enhances programmer **productivity** while enabling performance portability between GPUs and multicore CPUs. **Interoperability** with established technologies (such as CUDA, TBB, and OpenMP) facilitates integration with existing software. Develop **high-performance** applications rapidly with Thrust!
 
 Thrust is included in the NVIDIA HPC SDK and the CUDA Toolkit.
 
-Refer to the [Quick Start Guide](http://github.com/thrust/thrust/wiki/Quick-Start-Guide) page for further information and examples.
+Refer to the [Quick Start Guide](https://github.com/thrust/thrust/wiki/Quick-Start-Guide) page for further information and examples.
 
-Examples
---------
+## Examples
 
-Thrust is best explained through examples. The following source code
-generates random numbers serially and then transfers them to a parallel
-device where they are sorted.
+Thrust is best explained through examples. The following source code generates random numbers serially and then transfers them to a parallel device where they are sorted:
 
-```c++
+```cpp
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/generate.h>
@@ -49,7 +40,7 @@ int main(void)
 
 This code sample computes the sum of 100 random numbers in parallel:
 
-```c++
+```cpp
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/generate.h>
@@ -71,11 +62,9 @@ int main(void)
 }
 ```
 
-Releases
---------
+## Releases
 
-Thrust is distributed with the NVIDIA HPC SDK and the CUDA Toolkit in addition
-to GitHub.
+Thrust is distributed with the NVIDIA HPC SDK and the CUDA Toolkit in addition to GitHub.
 
 See the [changelog](CHANGELOG.md) for details about specific releases.
 
@@ -116,25 +105,17 @@ See the [changelog](CHANGELOG.md) for details about specific releases.
 | 1.1.0             |                                         |
 | 1.0.0             |                                         |
 
-Adding Thrust To A CMake Project
---------------------------------
+## Adding Thrust to a CMake Project
 
-Since Thrust is a header library, there is no need to build or install Thrust
-to use it. The `thrust` directory contains a complete, ready-to-use Thrust
-package upon checkout.
+Since Thrust is a header library, there is no need to build or install Thrust to use it. The `thrust` directory contains a complete, ready-to-use Thrust package upon checkout.
 
-We provide CMake configuration files that make it easy to include Thrust
-from other CMake projects. See the [CMake README](thrust/cmake/README.md)
-for details.
+We provide CMake configuration files that make it easy to include Thrust from other CMake projects. See the [CMake README](thrust/cmake/README.md) for details.
 
-Development Process
--------------------
+## Development Process
 
-Thrust uses the [CMake build system](https://cmake.org/) to build unit tests,
-examples, and header tests. To build Thrust as a developer, the following
-recipe should be followed:
+Thrust uses the [CMake build system](https://cmake.org/) to build unit tests, examples, and header tests. To build Thrust as a developer, the following recipe should be followed:
 
-```
+```bash
 # Clone Thrust and CUB repos recursively:
 git clone --recursive https://github.com/thrust/thrust.git
 cd thrust
@@ -155,7 +136,4 @@ cmake --build . -j <num jobs>   # invokes make (or ninja, etc)
 ctest
 ```
 
-By default, a serial `CPP` host system, `CUDA` accelerated device system, and
-C++14 standard are used. This can be changed in CMake. More information on
-configuring your Thrust build and creating a pull request can be found in
-[CONTRIBUTING.md](CONTRIBUTING.md).
+By default, a serial `CPP` host system, `CUDA` accelerated device system, and C++14 standard are used. This can be changed in CMake. More information on configuring your Thrust build and creating a pull request can be found in [CONTRIBUTING.md](CONTRIBUTING.md).

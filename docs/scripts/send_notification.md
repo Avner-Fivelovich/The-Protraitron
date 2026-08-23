@@ -1,51 +1,187 @@
 <!-- documentation_hub_data: {"title": "Send Notification Script", "type": "script-doc", "repository": "The-Portraitron-AI-agent"} -->
-<div style="font-family: 'Inter', sans-serif;">
+<style>
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    text-transform: uppercase;
+  }
+  h1, h2 {
+    border-bottom: 2px solid #4a148c;
+  }
+  h3 {
+    border-left: 4px solid #26a69a;
+    padding-left: 8px;
+  }
+  body, p, li, td {
+    font-family: 'Inter', sans-serif;
+  }
+  pre, code {
+    font-family: 'JetBrains Mono', monospace;
+    background-color: #0f0f10;
+    color: #f8f8f2;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  pre {
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+  }
+  pre code {
+    padding: 0;
+  }
+</style>
 
-<h1 style="font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; border-bottom: 2px solid #4a148c; padding-bottom: 8px;">Send Notification Script Documentation</h1>
+# SEND NOTIFICATION SCRIPT (`scripts/send_notification.py`)
 
-<p><strong>Script Path:</strong> <code style="font-family: 'JetBrains Mono', monospace; background-color: #0f0f10; color: #fff; padding: 2px 6px; border-radius: 4px;">scripts/send_notification.py</code></p>
+## PURPOSE
 
-<h2 style="font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; border-bottom: 1px solid #26a69a; padding-bottom: 6px;">1. Purpose</h2>
-<p>
-The <code>send_notification.py</code> script is a standalone Python utility designed to send simple plaintext email notifications. It is primarily used within the Portraitron ecosystem for alerting users or system administrators about job completions, errors, or automated tasks. To facilitate development and testing without spamming actual email accounts, the script includes a built-in sandbox mode that logs emails locally instead of transmitting them over SMTP.
-</p>
+The `send_notification.py` script is a standalone Python utility designed to dispatch plain-text email notifications. Within the **Portraitron 3000** robotic sketching ecosystem, it is used by background workers, pipeline managers, and automated tasks to alert operators and administrators regarding job completions, system faults, or hardware status updates.
 
-<h2 style="font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; border-bottom: 1px solid #26a69a; padding-bottom: 6px;">2. How to Use</h2>
-<p>
-The script is executed via the command line and requires two positional arguments: the <strong>subject</strong> and the <strong>body</strong> of the email.
-</p>
+To support offline testing and local development without sending real emails or requiring live SMTP credentials, the script features a built-in **Sandbox Mode** that intercepts emails and logs them locally to a file.
 
-<pre style="font-family: 'JetBrains Mono', monospace; background-color: #0f0f10; color: #fff; padding: 12px; border-radius: 6px;"><code>./send_notification.py "Job Complete" "The rendering job has finished successfully."</code></pre>
+---
 
-<p><strong>Return Codes:</strong></p>
-<ul>
-    <li><code>0</code>: Email sent successfully, or successfully logged in Sandbox mode.</li>
-    <li><code>1</code>: Missing arguments, missing configuration, or SMTP transmission failure.</li>
-</ul>
+## HOW TO USE IT
 
-<h2 style="font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; border-bottom: 1px solid #26a69a; padding-bottom: 6px;">3. Configuration Files & Environment Variables</h2>
-<p>
-The script automatically interacts with a <code style="font-family: 'JetBrains Mono', monospace; background-color: #0f0f10; color: #fff; padding: 2px 6px; border-radius: 4px;">.env</code> file located in the directory from which the script is executed. It relies on the following environment variables (which can be passed directly via the environment or defined in the <code>.env</code> file):
-</p>
+The script is executed via the command line and accepts two mandatory positional arguments: **Subject** and **Body**.
 
-<ul>
-    <li><strong><code>SANDBOX</code></strong>: Set to <code>true</code>, <code>1</code>, or <code>yes</code> to enable sandbox mode. Emails will be logged locally to <code>sandbox_emails.log</code> instead of being sent.</li>
-    <li><strong><code>SMTP_SERVER</code></strong>: The SMTP server address (defaults to <code>smtp.gmail.com</code>).</li>
-    <li><strong><code>SMTP_PORT</code></strong>: The SMTP port (defaults to <code>587</code>).</li>
-    <li><strong><code>SENDER_EMAIL</code></strong>: The email address sending the notification (Required unless in Sandbox).</li>
-    <li><strong><code>SENDER_PASSWORD</code></strong>: The application password or SMTP password for the sender account (Required unless in Sandbox).</li>
-    <li><strong><code>RECIPIENT_EMAIL</code></strong>: The destination email address (Required unless in Sandbox).</li>
-</ul>
+### Basic Usage
 
-<h2 style="font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; border-bottom: 1px solid #26a69a; padding-bottom: 6px;">4. Inner Workings</h2>
-<p>
-The internal flow of the script operates as follows:
-</p>
-<ol>
-    <li><strong>Argument Parsing:</strong> Validates that exactly two arguments (subject and body) have been provided using <code>sys.argv</code>. Exits with a usage prompt if they are missing.</li>
-    <li><strong>Environment Loading:</strong> Invokes a custom <code>load_dotenv()</code> function to parse the local <code>.env</code> file manually. It ignores comments and empty lines, injecting valid key-value pairs into <code>os.environ</code>.</li>
-    <li><strong>Sandbox Check:</strong> Checks the boolean state of the <code>SANDBOX</code> variable. If active, it bypasses SMTP completely, formats the email contents into a text block, appends it to <code>sandbox_emails.log</code>, and exits successfully.</li>
-    <li><strong>SMTP Transmission:</strong> If sandbox mode is disabled, it constructs a MIME text message using <code>email.mime.text.MIMEText</code> and <code>MIMEMultipart</code>. It connects to the configured SMTP server over TLS (<code>server.starttls()</code>), authenticates using the provided credentials, dispatches the message, and cleanly closes the connection.</li>
-</ol>
+```bash
+python scripts/send_notification.py "Job Complete" "The rendering job has finished successfully."
+```
 
-</div>
+Or make the script executable directly:
+
+```bash
+./scripts/send_notification.py "Plotting Error" "Robotic arm encountered a protective stop at P1."
+```
+
+### Return Codes
+
+| Return Code | Meaning |
+| :--- | :--- |
+| `0` | **Success**: Email was successfully transmitted over SMTP, or successfully written to the sandbox log. |
+| `1` | **Failure**: Missing positional arguments, unconfigured credentials in live mode, invalid SMTP host/port, authentication failure, or filesystem write error. |
+
+---
+
+## CONFIGURATION
+
+The script loads configuration from two sources with a clear precedence hierarchy:
+
+1. **YAML Configuration** (`config/server.yaml` under the `notifications` key)
+2. **Environment Variables** (Loaded from `.env` in the working directory, or inherited from the operating system shell)
+3. **Built-in Defaults**
+
+```
+Priority: config/server.yaml (notifications section) > Environment Variables / .env > Fallback Defaults
+```
+
+### 1. YAML Configuration (`config/server.yaml`)
+
+You can define notification parameters in `config/server.yaml`:
+
+```yaml
+notifications:
+  sandbox_mode: false
+  sandbox_log_file: "sandbox_emails.log"
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  sender_email: "your-bot@gmail.com"
+  sender_password: "your-app-password"
+  recipient_email: "operator@domain.com"
+```
+
+### 2. Environment Variables & `.env`
+
+Alternatively, create a `.env` file in your execution directory or export variables in your shell environment:
+
+| Variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `SANDBOX` | `bool` (`true`, `1`, `yes`) | `false` | Enables sandbox mode to log emails locally without connecting to an SMTP server. |
+| `SMTP_SERVER` | `str` | `smtp.gmail.com` | Hostname of the outgoing SMTP mail server. |
+| `SMTP_PORT` | `int` | `587` | Port for SMTP TLS connection (typically `587`). |
+| `SENDER_EMAIL` | `str` | `agent@portraitron.local` (Sandbox) | The sender email address. Required for live SMTP transmission. |
+| `SENDER_PASSWORD` | `str` | `None` | SMTP password or Gmail App Password. Required for live SMTP transmission. |
+| `RECIPIENT_EMAIL` | `str` | `sandbox@portraitron.local` (Sandbox) | The destination email address. Required for live SMTP transmission. |
+
+---
+
+## SANDBOX MODE
+
+When testing or running in an environment without internet access or valid SMTP credentials, activate Sandbox Mode by either:
+
+- Setting `sandbox_mode: true` in `config/server.yaml`, or
+- Setting `SANDBOX=true` in `.env` / shell environment.
+
+### Sandbox Behavior:
+1. Skips all network and SMTP connections.
+2. Formats the email with headers (`Subject`, `To`, `From`) and body content.
+3. Prints the structured notification block directly to standard output (`stdout`).
+4. Appends the notification block to the configured log file (default: `sandbox_emails.log`).
+5. Exits cleanly with status code `0`.
+
+**Sample Sandbox Output:**
+```text
+========================================
+[SANDBOX EMAIL]
+Subject: Job Complete
+To: sandbox@portraitron.local
+From: agent@portraitron.local
+----------------------------------------
+The rendering job has finished successfully.
+========================================
+
+Logged email locally to sandbox_emails.log (Sandbox Mode).
+```
+
+---
+
+## INNER WORKINGS
+
+The execution pipeline of `send_notification.py` proceeds as follows:
+
+```
+[CLI Invocation]
+       │
+       ▼
+1. Validate CLI Arguments (sys.argv: <subject> <body>)
+       │
+       ▼
+2. Load .env Variables via custom load_dotenv()
+       │
+       ▼
+3. Load config/server.yaml (notifications section)
+       │
+       ▼
+4. Check Sandbox Mode?
+      ├── YES ──► Write to sandbox_emails.log & Print to stdout ──► Exit (0)
+      │
+      └── NO
+           │
+           ▼
+5. Validate SMTP Credentials (sender_email, sender_password, recipient_email)
+       │ (Missing credentials: Error & Exit 1)
+       ▼
+6. Construct MIME Message (MIMEMultipart & MIMEText)
+       │
+       ▼
+7. Connect to SMTP Server (smtplib.SMTP + starttls())
+       │
+       ▼
+8. Authenticate & Dispatch (server.login() & server.sendmail())
+       │
+       ▼
+9. Close Connection & Exit (0)
+```
+
+1. **Argument Validation**: Ensures that exactly two command line arguments (`subject` and `body`) are supplied. If fewer are provided, prints usage instructions and exits with code `1`.
+2. **Environment Loading**: Reads key-value pairs from `.env` via `load_dotenv()`, ignoring comments and empty lines, and populates `os.environ`.
+3. **YAML Configuration Resolution**: Locates the project root relative to the script path (`os.path.dirname(os.path.abspath(__file__))`), opens `config/server.yaml`, and parses the `notifications` configuration block using `yaml.safe_load`.
+4. **Sandbox Evaluation**: Evaluates `sandbox_mode` against the YAML config and `SANDBOX` environment variable. If active, formats the email, writes it to `sandbox_log_file` (default `sandbox_emails.log`), prints it to the console, and exits with `0`.
+5. **Credential & Host Validation**: In live mode, verifies that `sender_email`, `sender_password`, and `recipient_email` are present. If any are missing, prints an informative error and exits with `1`.
+6. **MIME Message Construction**: Constructs a multipart message container (`MIMEMultipart`) containing standard MIME email headers (`From`, `To`, `Subject`) and attaches the plain-text body (`MIMEText(body, "plain")`).
+7. **SMTP Transmission & Security**: Connects to the configured `smtp_server` on `smtp_port`, initiates explicit TLS encryption via `server.starttls()`, logs in with `sender_email` and `sender_password`, dispatches the message via `server.sendmail()`, and terminates the session with `server.close()`.
+8. **Exception Handling**: Wraps the network transmission in a `try...except` block, logging any connection timeouts, DNS resolution failures, or SMTP authentication rejections before exiting with code `1`.
+

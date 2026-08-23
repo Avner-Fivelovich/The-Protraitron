@@ -1,18 +1,19 @@
-<hr>
-<h3>About CUB</h3>
+# CUB
 
-CUB provides state-of-the-art, reusable software components for every layer
-of the CUDA programming model:
-- [<b><em>Device-wide primitives</em></b>](https://nvlabs.github.com/cub/group___device_module.html)
+## About CUB
+
+CUB provides state-of-the-art, reusable software components for every layer of the CUDA programming model:
+
+- [**Device-wide primitives**](https://nvlabs.github.com/cub/group___device_module.html)
   - Sort, prefix scan, reduction, histogram, etc.
   - Compatible with CUDA dynamic parallelism
-- [<b><em>Block-wide "collective" primitives</em></b>](https://nvlabs.github.com/cub/group___block_module.html)
+- [**Block-wide "collective" primitives**](https://nvlabs.github.com/cub/group___block_module.html)
   - I/O, sort, prefix scan, reduction, histogram, etc.
   - Compatible with arbitrary thread block sizes and types
-- [<b><em>Warp-wide "collective" primitives</em></b>](https://nvlabs.github.com/cub/group___warp_module.html)
+- [**Warp-wide "collective" primitives**](https://nvlabs.github.com/cub/group___warp_module.html)
   - Warp-wide prefix scan, reduction, etc.
   - Safe and architecture-specific
-- [<b><em>Thread and resource utilities</em></b>](https://nvlabs.github.com/cub/group___thread_module.html)
+- [**Thread and resource utilities**](https://nvlabs.github.com/cub/group___thread_module.html)
   - PTX intrinsics, device reflection, texture-caching iterators, caching memory allocators, etc.
 
 ![Orientation of collective primitives within the CUDA software stack](http://nvlabs.github.com/cub/cub_overview.png)
@@ -21,117 +22,107 @@ CUB is included in the NVIDIA HPC SDK and the CUDA Toolkit.
 
 We recommend the [CUB Project Website](http://nvlabs.github.com/cub) for further information and examples.
 
-<br><hr>
-<h3>A Simple Example</h3>
+---
 
-```C++
+## A Simple Example
+
+```cpp
 #include <cub/cub.cuh>
 
 // Block-sorting CUDA kernel
 __global__ void BlockSortKernel(int *d_in, int *d_out)
 {
-     using namespace cub;
+    using namespace cub;
 
-     // Specialize BlockRadixSort, BlockLoad, and BlockStore for 128 threads
-     // owning 16 integer items each
-     typedef BlockRadixSort<int, 128, 16>                     BlockRadixSort;
-     typedef BlockLoad<int, 128, 16, BLOCK_LOAD_TRANSPOSE>   BlockLoad;
-     typedef BlockStore<int, 128, 16, BLOCK_STORE_TRANSPOSE> BlockStore;
+    // Specialize BlockRadixSort, BlockLoad, and BlockStore for 128 threads
+    // owning 16 integer items each
+    typedef BlockRadixSort<int, 128, 16>                     BlockRadixSort;
+    typedef BlockLoad<int, 128, 16, BLOCK_LOAD_TRANSPOSE>   BlockLoad;
+    typedef BlockStore<int, 128, 16, BLOCK_STORE_TRANSPOSE> BlockStore;
 
-     // Allocate shared memory
-     __shared__ union {
-         typename BlockRadixSort::TempStorage  sort;
-         typename BlockLoad::TempStorage       load;
-         typename BlockStore::TempStorage      store;
-     } temp_storage;
+    // Allocate shared memory
+    __shared__ union {
+        typename BlockRadixSort::TempStorage  sort;
+        typename BlockLoad::TempStorage       load;
+        typename BlockStore::TempStorage      store;
+    } temp_storage;
 
-     int block_offset = blockIdx.x * (128 * 16);	  // OffsetT for this block's ment
+    int block_offset = blockIdx.x * (128 * 16); // Offset for this block's segment
 
-     // Obtain a segment of 2048 consecutive keys that are blocked across threads
-     int thread_keys[16];
-     BlockLoad(temp_storage.load).Load(d_in + block_offset, thread_keys);
-     __syncthreads();
+    // Obtain a segment of 2048 consecutive keys that are blocked across threads
+    int thread_keys[16];
+    BlockLoad(temp_storage.load).Load(d_in + block_offset, thread_keys);
+    __syncthreads();
 
-     // Collectively sort the keys
-     BlockRadixSort(temp_storage.sort).Sort(thread_keys);
-     __syncthreads();
+    // Collectively sort the keys
+    BlockRadixSort(temp_storage.sort).Sort(thread_keys);
+    __syncthreads();
 
-     // Store the sorted segment
-     BlockStore(temp_storage.store).Store(d_out + block_offset, thread_keys);
+    // Store the sorted segment
+    BlockStore(temp_storage.store).Store(d_out + block_offset, thread_keys);
 }
 ```
 
-Each thread block uses `cub::BlockRadixSort` to collectively sort
-its own input segment.  The class is specialized by the
-data type being sorted, by the number of threads per block, by the number of
-keys per thread, and implicitly by the targeted compilation architecture.
+Each thread block uses `cub::BlockRadixSort` to collectively sort its own input segment. The class is specialized by the data type being sorted, by the number of threads per block, by the number of keys per thread, and implicitly by the targeted compilation architecture.
 
-The `cub::BlockLoad` and `cub::BlockStore` classes are similarly specialized.
-Furthermore, to provide coalesced accesses to device memory, these primitives are
-configured to access memory using a striped access pattern (where consecutive threads
-simultaneously access consecutive items) and then <em>transpose</em> the keys into
-a [<em>blocked arrangement</em>](index.html#sec4sec3) of elements across threads.
+The `cub::BlockLoad` and `cub::BlockStore` classes are similarly specialized. Furthermore, to provide coalesced accesses to device memory, these primitives are configured to access memory using a striped access pattern (where consecutive threads simultaneously access consecutive items) and then *transpose* the keys into a [*blocked arrangement*](index.html#sec4sec3) of elements across threads.
 
-Once specialized, these classes expose opaque `TempStorage` member types.
-The thread block uses these storage types to statically allocate the union of
-shared memory needed by the thread block.  (Alternatively these storage types
-could be aliased to global memory allocations).
+Once specialized, these classes expose opaque `TempStorage` member types. The thread block uses these storage types to statically allocate the union of shared memory needed by the thread block. (Alternatively these storage types could be aliased to global memory allocations).
 
-<br><hr>
-<h3>Releases</h3>
+---
 
-CUB is distributed with the NVIDIA HPC SDK and the CUDA Toolkit in addition
-to GitHub.
+## Releases
+
+CUB is distributed with the NVIDIA HPC SDK and the CUDA Toolkit in addition to GitHub.
 
 See the [changelog](CHANGELOG.md) for details about specific releases.
 
-| CUB Release               | Included In                             |
-| ------------------------- | --------------------------------------- |
-| 1.9.10-1                  | NVIDIA HPC SDK 20.7 & CUDA Toolkit 11.1 |
-| 1.9.10                    | NVIDIA HPC SDK 20.5                     |
-| 1.9.9                     | CUDA Toolkit 11.0                       |
-| 1.9.8-1                   | NVIDIA HPC SDK 20.3                     |
-| 1.9.8                     | CUDA Toolkit 11.0 Early Access          |
-| 1.9.8                     | CUDA 11.0 Early Access                  |
-| 1.8.0                     |                                         |
-| 1.7.5                     | Thrust 1.9.2                            |
-| 1.7.4                     | Thrust 1.9.1-2                          |
-| 1.7.3                     |                                         |
-| 1.7.2                     |                                         |
-| 1.7.1                     |                                         |
-| 1.7.0                     | Thrust 1.9.0-5                          |
-| 1.6.4                     |                                         |
-| 1.6.3                     |                                         |
-| 1.6.2 (previously 1.5.5)  |                                         |
-| 1.6.1 (previously 1.5.4)  |                                         |
-| 1.6.0 (previously 1.5.3)  |                                         |
-| 1.5.2                     |                                         |
-| 1.5.1                     |                                         |
-| 1.5.0                     |                                         |
-| 1.4.1                     |                                         |
-| 1.4.0                     |                                         |
-| 1.3.2                     |                                         |
-| 1.3.1                     |                                         |
-| 1.3.0                     |                                         |
-| 1.2.3                     |                                         |
-| 1.2.2                     |                                         |
-| 1.2.0                     |                                         |
-| 1.1.1                     |                                         |
-| 1.0.2                     |                                         |
-| 1.0.1                     |                                         |
-| 0.9.4                     |                                         |
-| 0.9.2                     |                                         |
-| 0.9.1                     |                                         |
-| 0.9.0                     |                                         |
+| CUB Release              | Included In                             |
+| ------------------------ | --------------------------------------- |
+| 1.9.10-1                 | NVIDIA HPC SDK 20.7 & CUDA Toolkit 11.1 |
+| 1.9.10                   | NVIDIA HPC SDK 20.5                     |
+| 1.9.9                    | CUDA Toolkit 11.0                       |
+| 1.9.8-1                  | NVIDIA HPC SDK 20.3                     |
+| 1.9.8                    | CUDA Toolkit 11.0 Early Access          |
+| 1.9.8                    | CUDA 11.0 Early Access                  |
+| 1.8.0                    |                                         |
+| 1.7.5                    | Thrust 1.9.2                            |
+| 1.7.4                    | Thrust 1.9.1-2                          |
+| 1.7.3                    |                                         |
+| 1.7.2                    |                                         |
+| 1.7.1                    |                                         |
+| 1.7.0                    | Thrust 1.9.0-5                          |
+| 1.6.4                    |                                         |
+| 1.6.3                    |                                         |
+| 1.6.2 (previously 1.5.5) |                                         |
+| 1.6.1 (previously 1.5.4) |                                         |
+| 1.6.0 (previously 1.5.3) |                                         |
+| 1.5.2                    |                                         |
+| 1.5.1                    |                                         |
+| 1.5.0                    |                                         |
+| 1.4.1                    |                                         |
+| 1.4.0                    |                                         |
+| 1.3.2                    |                                         |
+| 1.3.1                    |                                         |
+| 1.3.0                    |                                         |
+| 1.2.3                    |                                         |
+| 1.2.2                    |                                         |
+| 1.2.0                    |                                         |
+| 1.1.1                    |                                         |
+| 1.0.2                    |                                         |
+| 1.0.1                    |                                         |
+| 0.9.4                    |                                         |
+| 0.9.2                    |                                         |
+| 0.9.1                    |                                         |
+| 0.9.0                    |                                         |
 
-<br><hr>
-<h3>Development Process</h3>
+---
 
-CUB uses the [CMake build system](https://cmake.org/) to build unit tests,
-examples, and header tests. To build CUB as a developer, the following
-recipe should be followed:
+## Development Process
 
-```
+CUB uses the [CMake build system](https://cmake.org/) to build unit tests, examples, and header tests. To build CUB as a developer, the following recipe should be followed:
+
+```bash
 # Clone CUB repo from github:
 git clone https://github.com/thrust/cub.git
 cd cub
@@ -152,16 +143,15 @@ cmake --build . -j <num jobs>   # invokes make (or ninja, etc)
 ctest
 ```
 
-By default, the C++14 standard is targeted, but this can be changed in CMake.
-More information on configuring your CUB build and creating a pull request is
-found in [CONTRIBUTING.md](CONTRIBUTING.md).
+By default, the C++14 standard is targeted, but this can be changed in CMake. More information on configuring your CUB build and creating a pull request is found in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-<br><hr>
-<h3>Open Source License</h3>
+---
+
+## Open Source License
 
 CUB is available under the "New BSD" open-source license:
 
-```
+```text
 Copyright (c) 2010-2011, Duane Merrill.  All rights reserved.
 Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
 

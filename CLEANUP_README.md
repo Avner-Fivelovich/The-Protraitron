@@ -1,44 +1,73 @@
-# Codebase Cleanup & Refactoring Todo
+# Codebase Cleanup & Refactoring To-Do
 
-This document outlines the unused code, unused imports, and formatting issues identified in the repository during our architectural review.
+This document tracks unused code, dead imports, style violations, and architectural refactoring targets identified across the repository.
 
-**⚠️ Status: Pending Cleanup**  
-*Do not clean these up yet, as requested.*
+> [!WARNING]
+> **Status: Pending Cleanup**  
+> Hold off on applying automated refactoring passes until all active feature branches are merged.
 
-## 1. Unused Imports & Variables (Functional Cleanup)
-These items are definitively unused and can be safely removed or refactored:
+---
 
-*   **`src/common/logger.py`**
-    *   Line 2: Unused import `os`
-    *   Line 3: Unused import `time`
-*   **`src/common/robot_utils.py`**
-    *   Line 143: Local variable `speed_slowdown_factor` is assigned but never used.
-*   **`src/robot/controller.py`**
-    *   Line 4: Unused import `math`
-    *   Line 19: Unused import `wait_for_motion_complete`
-*   **`src/robot/mask_filtering.py`**
-    *   Line 298: Local variable `mfy_range` assigned but never used.
-    *   Line 300: Local variable `sy_range` assigned but never used.
-*   **`src/robot/path_optimization.py`**
-    *   Line 146: Local variable `merged_total_dist` assigned but never used.
-*   **`src/robot/poc_drawing.py`**
-    *   Line 1: Unused import `sys`
-    *   Line 2: Unused import `os`
-    *   Line 77: Local variable `rx` assigned but never used.
-    *   Line 78: Local variable `ry` assigned but never used.
-*   **`src/robot/swiftsketch_integration.py`**
-    *   Line 101: `f-string` used without any placeholders.
-    *   Line 128: Local variable `result` assigned but never used (capturing `subprocess.run` return).
-*   **`src/robot/text_drawing.py`**
-    *   Line 1: Unused import `os`
-    *   Line 2: Unused import `sys`
+## 1. Unused Imports & Dead Code
 
-## 2. Formatting & PEP-8 Issues (Style Cleanup)
-The `flake8` linter found **535 formatting violations** across the repository. The most common issues are:
-*   **`E501` (Line too long):** Many lines in `src/server/main.py`, `src/vision/camera_capture.py`, and other files exceed the 79-character limit (some exceeding 120 characters).
-*   **`W293` & `W291` (Whitespace):** Extensive use of trailing whitespace and lines containing only whitespace.
-*   **`E302` & `E305` (Blank lines):** Incorrect spacing around class and function definitions (PEP-8 expects 2 blank lines, but only 1 was found in many places).
+The following unused imports and variables have been identified for safe removal or refactoring:
 
-## 3. General Architecture Review
-*   **Missing Dependencies:** Confirmed that `swiftsketch` must be loaded externally from `../swiftsketch` or the local `SwiftSketch-Protraitron` tree using the `swiftsketch_env` Conda environment.
-*   **Security/Blocking:** FastAPI endpoints like `/api/upload` have been verified and patched to properly yield to the async event loop using threadpools instead of blocking the main server process during heavy SVGs generations.
+### Common Modules
+- [ ] **`src/common/logger.py`**
+  - Unused import: `os` (line 2)
+  - Unused import: `time` (line 3)
+- [ ] **`src/common/robot_utils.py`**
+  - Unused local variable: `speed_slowdown_factor` (line 143)
+
+### Robot Control & Drawing Modules
+- [ ] **`src/robot/controller.py`**
+  - Unused import: `math` (line 4)
+  - Unused import: `wait_for_motion_complete` (line 19)
+- [ ] **`src/robot/mask_filtering.py`**
+  - Unused local variable: `mfy_range` (line 298)
+  - Unused local variable: `sy_range` (line 300)
+- [ ] **`src/robot/path_optimization.py`**
+  - Unused local variable: `merged_total_dist` (line 146)
+- [ ] **`src/robot/poc_drawing.py`**
+  - Unused import: `sys` (line 1)
+  - Unused import: `os` (line 2)
+  - Unused local variable: `rx` (line 77)
+  - Unused local variable: `ry` (line 78)
+- [ ] **`src/robot/swiftsketch_integration.py`**
+  - Empty `f-string` without expressions/placeholders (line 101)
+  - Unused local variable: `result` (capturing `subprocess.run` return value at line 128)
+- [ ] **`src/robot/text_drawing.py`**
+  - Unused import: `os` (line 1)
+  - Unused import: `sys` (line 2)
+
+---
+
+## 2. Formatting & PEP-8 Compliance
+
+Linter analysis (`flake8`) reported **535 formatting violations** across the repository. The primary categories are:
+
+| Error Code | Description | Affected Areas | Recommendation |
+| :--- | :--- | :--- | :--- |
+| **`E501`** | Line too long (> 79/88 characters) | `src/server/main.py`, `src/vision/camera_capture.py` | Break long expressions; adopt `black` / `ruff` formatting with an 88 or 100 char limit. |
+| **`W291` / `W293`** | Trailing whitespace / blank lines with whitespace | Repository-wide | Configure pre-commit hook or editor to strip trailing whitespace on save. |
+| **`E302` / `E305`** | Expected 2 blank lines before/after top-level definitions | Repository-wide | Standardize spacing around functions and class definitions. |
+| **`F401` / `F841`** | Unused imports and unused variables | Identified modules above | Run `autoflake` or `ruff check --select F401,F841 --fix`. |
+
+---
+
+## 3. Architectural Notes & Observations
+
+> [!NOTE]
+> **Environment & Dependencies**
+> - **SwiftSketch Integration:** `swiftsketch` dependencies must be loaded externally from `../swiftsketch` or the submodule `SwiftSketch-Protraitron` utilizing the designated `swiftsketch_env` Conda environment.
+> - **Async Server Performance:** FastAPI endpoints (such as `/api/upload`) offload heavy SVG generation to threadpools (`starlette.concurrency.run_in_threadpool` or `asyncio.to_thread`) to avoid blocking the main event loop.
+
+---
+
+## 4. Recommended Execution Plan
+
+1. **Pre-cleanup Verification:** Ensure current automated unit tests (`pytest`) pass cleanly.
+2. **Automated Dead Code Removal:** Run `ruff` or `autoflake` targeting specific files in `src/`.
+3. **Automated Code Formatting:** Format the repository using `ruff format` or `black` + `isort`.
+4. **Manual Spot-check:** Verify robot communication modules and SwiftSketch invocation scripts.
+5. **CI/CD Lint Step:** Add a `flake8` or `ruff check` step to prevent future style drift.

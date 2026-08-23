@@ -1,193 +1,303 @@
-# CLIP
+# CLIP (Contrastive Language-Image Pre-Training)
 
-[[Blog]](https://openai.com/blog/clip/) [[Paper]](https://arxiv.org/abs/2103.00020) [[Model Card]](model-card.md) [[Colab]](https://colab.research.google.com/github/openai/clip/blob/master/notebooks/Interacting_with_CLIP.ipynb)
+[![Paper](https://img.shields.io/badge/arXiv-2103.00020-b31b1b.svg)](https://arxiv.org/abs/2103.00020)
+[![Blog](https://img.shields.io/badge/OpenAI-Blog-412991.svg)](https://openai.com/blog/clip/)
+[![Model Card](https://img.shields.io/badge/Model%20Card-model--card.md-blue.svg)](model-card.md)
+[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/openai/clip/blob/master/notebooks/Interacting_with_CLIP.ipynb)
 
-CLIP (Contrastive Language-Image Pre-Training) is a neural network trained on a variety of (image, text) pairs. It can be instructed in natural language to predict the most relevant text snippet, given an image, without directly optimizing for the task, similarly to the zero-shot capabilities of GPT-2 and 3. We found CLIP matches the performance of the original ResNet50 on ImageNet “zero-shot” without using any of the original 1.28M labeled examples, overcoming several major challenges in computer vision.
+**CLIP** (*Contrastive Language-Image Pre-Training*) is a neural network trained on a vast variety of `(image, text)` pairs. It can be instructed in natural language to predict the most relevant text snippet for a given image without directly optimizing for the downstream task—mirroring the zero-shot capabilities of GPT-2 and GPT-3. CLIP achieves competitive zero-shot performance across many computer vision benchmarks (such as matching ResNet-50 accuracy on ImageNet without using any labeled ImageNet training data).
 
+> **Note**: This repository branch includes modified Vision Transformer attention hooks (`attn_probs`, `attn_grad`) for attention explainability and cross-modal relevance visualization, used within ControlSketch.
 
+---
+
+## Table of Contents
+
+- [Approach](#approach)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Interpretability & Attention Visualization](#interpretability--attention-visualization)
+- [API Reference](#api-reference)
+- [More Examples](#more-examples)
+  - [Zero-Shot Prediction](#zero-shot-prediction)
+  - [Linear-Probe Evaluation](#linear-probe-evaluation)
+- [Citation](#citation)
+- [License](#license)
+
+---
 
 ## Approach
 
-![CLIP](CLIP.png)
+CLIP jointly trains an image encoder and a text encoder to predict the correct pairings of a batch of `(image, text)` training examples using a contrastive objective:
 
+![CLIP Architecture](https://raw.githubusercontent.com/openai/CLIP/main/CLIP.png)
 
+---
 
-## Usage
+## Installation
 
-First, [install PyTorch 1.7.1](https://pytorch.org/get-started/locally/) and torchvision, as well as small additional dependencies, and then install this repo as a Python package. On a CUDA GPU machine, the following will do the trick:
+### 1. Prerequisites
+
+Ensure you have Python 3.8+ and PyTorch installed. For GPU acceleration, install the appropriate CUDA build:
 
 ```bash
-$ conda install --yes -c pytorch pytorch=1.7.1 torchvision cudatoolkit=11.0
-$ pip install ftfy regex tqdm
-$ pip install git+https://github.com/openai/CLIP.git
+# Using Conda
+conda install --yes -c pytorch pytorch torchvision cudatoolkit=11.8
+
+# Or using Pip
+pip install torch torchvision
 ```
 
-Replace `cudatoolkit=11.0` above with the appropriate CUDA version on your machine or `cpuonly` when installing on a machine without a GPU.
+### 2. Install Dependencies & Package
+
+Install required dependencies:
+
+```bash
+pip install ftfy regex tqdm scikit-learn opencv-python matplotlib
+```
+
+To install this local version of CLIP with interpretability support:
+
+```bash
+# From this directory (ControlSketch/CLIP_)
+pip install -e .
+```
+
+Alternatively, to install the upstream OpenAI repository:
+
+```bash
+pip install git+https://github.com/openai/CLIP.git
+```
+
+---
+
+## Quick Start
 
 ```python
 import torch
 import clip
 from PIL import Image
 
+# Select device
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Load CLIP model and preprocessing pipeline
 model, preprocess = clip.load("ViT-B/32", device=device)
 
-image = preprocess(Image.open("CLIP.png")).unsqueeze(0).to(device)
-text = clip.tokenize(["a diagram", "a dog", "a cat"]).to(device)
+# Prepare input image and candidate text prompts
+image = preprocess(Image.open("astronaut.png")).unsqueeze(0).to(device)
+text = clip.tokenize(["an astronaut", "a dog", "a rocket"]).to(device)
 
 with torch.no_grad():
     image_features = model.encode_image(image)
     text_features = model.encode_text(text)
     
+    # Compute similarity logits
     logits_per_image, logits_per_text = model(image, text)
     probs = logits_per_image.softmax(dim=-1).cpu().numpy()
 
-print("Label probs:", probs)  # prints: [[0.9927937  0.00421068 0.00299572]]
+print("Label probabilities:", probs)
 ```
-
-
-## API
-
-The CLIP module `clip` provides the following methods:
-
-#### `clip.available_models()`
-
-Returns the names of the available CLIP models.
-
-#### `clip.load(name, device=..., jit=True)`
-
-Returns the model and the TorchVision transform needed by the model, specified by the model name returned by `clip.available_models()`. It will download the model as necessary. The `name` argument can also be a path to a local checkpoint.
-
-The device to run the model can be optionally specified, and the default is to use the first CUDA device if there is any, otherwise the CPU. When `jit` is `False`, a non-JIT version of the model will be loaded.
-
-#### `clip.tokenize(text: Union[str, List[str]], context_length=77)`
-
-Returns a LongTensor containing tokenized sequences of given text input(s). This can be used as the input to the model
 
 ---
 
-The model returned by `clip.load()` supports the following methods:
+## Interpretability & Attention Visualization
 
-#### `model.encode_image(image: Tensor)`
+This module incorporates attention gradient extraction hooks into the Vision Transformer blocks (`model.visual.transformer.resblocks`), enabling token-level and image-region relevance mapping.
 
-Given a batch of images, returns the image features encoded by the vision portion of the CLIP model.
+To run the sample interpretability script:
 
-#### `model.encode_text(text: Tensor)`
+```bash
+python example.py
+```
 
-Given a batch of text tokens, returns the text features encoded by the language portion of the CLIP model.
+### Basic Attention Extraction Example
 
-#### `model(image: Tensor, text: Tensor)`
+```python
+import torch
+import clip
+import numpy as np
+import cv2
+from PIL import Image
 
-Given a batch of images and a batch of text tokens, returns two Tensors, containing the logit scores corresponding to each image and text input. The values are cosine similarities between the corresponding image and text features, times 100.
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
 
+image = preprocess(Image.open("astronaut.png")).unsqueeze(0).to(device)
+text = clip.tokenize(["an astronaut", "a spacecraft"]).to(device)
 
+logits_per_image, _ = model(image, text)
+one_hot = torch.zeros_like(logits_per_image)
+one_hot[0, 0] = 1.0
+
+model.zero_grad()
+(logits_per_image * one_hot).sum().backward(retain_graph=True)
+
+# Access attention maps from transformer blocks
+image_attn_blocks = list(dict(model.visual.transformer.resblocks.named_children()).values())
+print(f"Number of transformer blocks: {len(image_attn_blocks)}")
+```
+
+---
+
+## API Reference
+
+### Module Functions (`clip`)
+
+#### `clip.available_models() -> List[str]`
+Returns a list of available model architecture names, including:
+- `RN50`, `RN101`, `RN50x4`, `RN50x16`, `RN50x64` (ResNet variants)
+- `ViT-B/32`, `ViT-B/16`, `ViT-L/14`, `ViT-L/14@336px` (Vision Transformer variants)
+
+#### `clip.load(name: str, device: Union[str, torch.device] = "cuda", jit: bool = True) -> Tuple[torch.nn.Module, Callable]`
+Loads the specified model architecture and returns a tuple `(model, preprocess)`.
+- `name`: Name from `clip.available_models()` or path to a model checkpoint `.pt` file.
+- `device`: Device to run on (`"cuda"`, `"cpu"`, etc.).
+- `jit`: When `True` (default), loads the optimized TorchScript JIT archive. Set `jit=False` to access internals, gradients, and custom attention hooks.
+
+#### `clip.tokenize(text: Union[str, List[str]], context_length: int = 77, truncate: bool = False) -> torch.LongTensor`
+Tokenizes string or list of strings into a `LongTensor` of shape `(batch_size, context_length)`.
+
+---
+
+### Model Methods (`torch.nn.Module`)
+
+#### `model.encode_image(image: torch.Tensor) -> torch.Tensor`
+Given a batch of normalized images `[N, 3, H, W]`, returns normalized vision feature vectors `[N, D]`.
+
+#### `model.encode_text(text: torch.LongTensor) -> torch.Tensor`
+Given a batch of token sequences `[N, context_length]`, returns normalized language feature vectors `[N, D]`.
+
+#### `model(image: torch.Tensor, text: torch.LongTensor) -> Tuple[torch.Tensor, torch.Tensor]`
+Performs a forward pass computing cross-modal cosine similarity logits scaled by 100:
+- `logits_per_image`: Tensor of shape `[N_image, N_text]`
+- `logits_per_text`: Tensor of shape `[N_text, N_image]`
+
+---
 
 ## More Examples
 
 ### Zero-Shot Prediction
 
-The code below performs zero-shot prediction using CLIP, as shown in Appendix B in the paper. This example takes an image from the [CIFAR-100 dataset](https://www.cs.toronto.edu/~kriz/cifar.html), and predicts the most likely labels among the 100 textual labels from the dataset.
+Predict the top classes from CIFAR-100 without fine-tuning:
 
 ```python
 import os
-import clip
 import torch
+import clip
 from torchvision.datasets import CIFAR100
 
-# Load the model
 device = "cuda" if torch.cuda.is_available() else "cpu"
-model, preprocess = clip.load('ViT-B/32', device)
+model, preprocess = clip.load("ViT-B/32", device=device)
 
-# Download the dataset
+# Download CIFAR-100 test set
 cifar100 = CIFAR100(root=os.path.expanduser("~/.cache"), download=True, train=False)
 
-# Prepare the inputs
+# Prepare single sample input
 image, class_id = cifar100[3637]
 image_input = preprocess(image).unsqueeze(0).to(device)
 text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in cifar100.classes]).to(device)
 
-# Calculate features
+# Compute embeddings
 with torch.no_grad():
     image_features = model.encode_image(image_input)
     text_features = model.encode_text(text_inputs)
 
-# Pick the top 5 most similar labels for the image
+# Normalize and compute cosine similarity
 image_features /= image_features.norm(dim=-1, keepdim=True)
 text_features /= text_features.norm(dim=-1, keepdim=True)
 similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
 values, indices = similarity[0].topk(5)
 
-# Print the result
 print("\nTop predictions:\n")
 for value, index in zip(values, indices):
     print(f"{cifar100.classes[index]:>16s}: {100 * value.item():.2f}%")
 ```
 
-The output will look like the following (the exact numbers may be slightly different depending on the compute device):
-
-```
+Sample output:
+```text
 Top predictions:
 
            snake: 65.31%
           turtle: 12.29%
-    sweet_pepper: 3.83%
-          lizard: 1.88%
-       crocodile: 1.75%
+    sweet_pepper:  3.83%
+          lizard:  1.88%
+       crocodile:  1.75%
 ```
 
-Note that this example uses the `encode_image()` and `encode_text()` methods that return the encoded features of given inputs.
+---
 
+### Linear-Probe Evaluation
 
-### Linear-probe evaluation
-
-The example below uses [scikit-learn](https://scikit-learn.org/) to perform logistic regression on image features.
+Extract frozen CLIP features and train a logistic regression classifier on top:
 
 ```python
 import os
-import clip
 import torch
-
+import clip
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from torch.utils.data import DataLoader
 from torchvision.datasets import CIFAR100
 from tqdm import tqdm
 
-# Load the model
 device = "cuda" if torch.cuda.is_available() else "cpu"
-model, preprocess = clip.load('ViT-B/32', device)
+model, preprocess = clip.load("ViT-B/32", device=device)
 
-# Load the dataset
+# Load dataset
 root = os.path.expanduser("~/.cache")
-train = CIFAR100(root, download=True, train=True, transform=preprocess)
-test = CIFAR100(root, download=True, train=False, transform=preprocess)
-
+train_set = CIFAR100(root, download=True, train=True, transform=preprocess)
+test_set = CIFAR100(root, download=True, train=False, transform=preprocess)
 
 def get_features(dataset):
-    all_features = []
-    all_labels = []
-    
+    all_features, all_labels = [], []
     with torch.no_grad():
         for images, labels in tqdm(DataLoader(dataset, batch_size=100)):
             features = model.encode_image(images.to(device))
-
             all_features.append(features)
             all_labels.append(labels)
-
     return torch.cat(all_features).cpu().numpy(), torch.cat(all_labels).cpu().numpy()
 
-# Calculate the image features
-train_features, train_labels = get_features(train)
-test_features, test_labels = get_features(test)
+# Extract features
+train_features, train_labels = get_features(train_set)
+test_features, test_labels = get_features(test_set)
 
-# Perform logistic regression
+# Fit Logistic Regression
 classifier = LogisticRegression(random_state=0, C=0.316, max_iter=1000, verbose=1)
 classifier.fit(train_features, train_labels)
 
-# Evaluate using the logistic regression classifier
+# Evaluate
 predictions = classifier.predict(test_features)
-accuracy = np.mean((test_labels == predictions).astype(np.float)) * 100.
-print(f"Accuracy = {accuracy:.3f}")
+accuracy = np.mean((test_labels == predictions).astype(float)) * 100.0
+print(f"Linear probe accuracy = {accuracy:.3f}%")
 ```
 
-Note that the `C` value should be determined via a hyperparameter sweep using a validation split.
+---
+
+## Citation
+
+```bibtex
+@inproceedings{Radford2021LearningTV,
+  title={Learning Transferable Visual Models From Natural Language Supervision},
+  author={Alec Radford and Jong Wook Kim and Chris Hallacy and Aditya Ramesh and Gabriel Goh and Sandhini Agarwal and Girish Sastry and Amanda Askell and Pamela Mishkin and Jack Clark and Gretchen Krueger and Ilya Sutskever},
+  booktitle={ICML},
+  year={2021}
+}
+```
+
+For Transformer interpretability and relevance propagation:
+
+```bibtex
+@article{chefer2021generic,
+  title={Generic Attention-model Explainability for Interpreting Bi-modal and Multi-modal Transformers},
+  author={Chefer, Hila and Gur, Shir and Wolf, Lior},
+  journal={arXiv preprint arXiv:2103.15679},
+  year={2021}
+}
+```
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE). For safety and usage constraints, refer to the [Model Card](model-card.md).
