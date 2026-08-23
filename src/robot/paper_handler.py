@@ -95,12 +95,12 @@ class PaperHandler:
         self._move_to("safe_paper", allow_joint=False)
 
     def drop(self, object_name):
-        self._move_to("safe_tools", allow_joint=True)
+        self._move_to("safe_tools", allow_joint=False)
         self._move_to(f"above_{object_name}", allow_joint=True)
         self._move_to(object_name, allow_joint=True)
         self._open_gripper()
         self._move_to(f"above_{object_name}", allow_joint=True)
-        self._move_to("safe_tools", allow_joint=True)
+        self._move_to("safe_tools", allow_joint=False)
 
     def execute_stamping(self):
         self._move_to("safe_tools", allow_joint=True)
