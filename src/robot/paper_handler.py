@@ -234,6 +234,21 @@ class PaperHandler:
         logger.info(f"Moving to {location_name}...")
         self.rtde_c.moveL(target, speed, speed * 2)
         
+        # Live validation
+        timeout = 10.0
+        start = time.time()
+        while time.time() - start < timeout:
+            if self.rtde_r is None:
+                break
+            curr = self.rtde_r.getActualTCPPose()
+            dist = math.sqrt(sum((a - b)**2 for a, b in zip(curr[:3], target[:3])))
+            if dist < 0.005:  # 5mm tolerance for validation
+                break
+            time.sleep(0.01)
+        else:
+            if self.rtde_r is not None:
+                logger.warning(f"Warning: Move to {location_name} timed out or did not reach target accurately. (Off by {dist*1000:.1f}mm)")
+        
     def _open_gripper(self):
         if self.gripper_connected:
             self.gripper.move_and_wait_for_pos(self.gripper_open_pos, self.gripper_speed, self.gripper_force) # Fully open (adjust based on actual gripper max open)
@@ -284,6 +299,21 @@ class PaperHandler:
             self.rtde_c.forceMode(tool_task_frame, tool_selection_vector, tool_wrench, force_type, force_limits)
             time.sleep(0.5) # Wait for force stabilization
             self.rtde_c.moveL(target, speed, speed * 2)
+            
+            # Live validation
+            timeout = 10.0
+            start = time.time()
+            while time.time() - start < timeout:
+                if self.rtde_r is None:
+                    break
+                curr = self.rtde_r.getActualTCPPose()
+                dist = math.sqrt(sum((a - b)**2 for a, b in zip(curr[:3], target[:3])))
+                if dist < 0.005:
+                    break
+                time.sleep(0.01)
+            else:
+                if self.rtde_r is not None:
+                    logger.warning(f"Warning: Force move to {location_name} timed out or did not reach target accurately. (Off by {dist*1000:.1f}mm)")
         finally:
             self.rtde_c.forceModeStop()
             time.sleep(0.1)
