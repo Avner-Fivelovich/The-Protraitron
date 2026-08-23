@@ -75,6 +75,7 @@ class UR5eController:
                 self.p0_joints = data.get("p0_joints")
             
             self.p1 = data.get("p1")
+            self.p2 = data.get("p2")
             
             # Prioritize marker.yaml canvas dimensions if paper_manipulation.yaml doesn't explicitly override
             self.width = data.get("width", self.cfg.get("canvas_width", 0.19))
@@ -86,7 +87,37 @@ class UR5eController:
                 logger.warning("Calibration point P1 is missing in config.")
         except Exception as e:
             logger.error(f"Failed to load calibration: {e}")
+            self.p1 = None
+            self.p2 = None
+
+        if self.p1 is None:
+            # Set default p1 and p0_pose if not loaded from calibration file
+            self.p1 = [-0.8706, 0.1412, 0.2553]
+            self.p0_pose = [-0.8676, 0.1412, 0.2553, 0.0, 3.1415, 0.0]
+            logger.warning("Using default hardcoded calibration point (P1).")
             
+    def get_x_surface(self, y_target: float) -> float:
+        """
+        Calculates the expected surface X depth (plane tilt) at a given Y coordinate
+        using linear interpolation between P1 (left edge) and P2 (right edge).
+        """
+        if not self.p1:
+            return 0.0
+            
+        x1 = self.p1[0]
+        y1 = self.p1[1]
+        
+        # If P2 is not calibrated, assume the board is perfectly flat along X
+        if not self.p2 or self.width <= 0:
+            return x1
+            
+        x2 = self.p2[0]
+        y2 = self.p2[1]
+        
+        # Linear interpolation for X based on Y target
+        x_surface = x1 + ((y_target - y1) / self.width) * (x2 - x1)
+        return x_surface
+
     def connect(self) -> bool:
         """
         Initializes socket interfaces to communicate with the UR5e controller.
@@ -247,8 +278,11 @@ class UR5eController:
             
             # 1. Move to the safe hover pose above the start of the stroke in the Y-Z plane
             x0, y0 = stroke[0]
+            Y_start = self.p1[1] + x0 * self.width
+            X_hover_dynamic = self.get_x_surface(Y_start) + self.cfg.get('hover_distance', 0.005)
+            
             self.log_event(f"Stroke {idx + 1}/{total_strokes} - Safe hover move started")
-            hover_pose = self._move_to_hover(x0, y0, X_hover, rx, ry, rz)
+            hover_pose = self._move_to_hover(x0, y0, X_hover_dynamic, rx, ry, rz)
             self.log_event(f"Stroke {idx + 1}/{total_strokes} - Safe hover move completed")
             
             # 2. Probe surface point along X-axis at this Y-Z coordinate
@@ -278,7 +312,9 @@ class UR5eController:
             # 5. Disable force compliance and retract to hover plane
             self.log_event(f"Stroke {idx + 1}/{total_strokes} - Compliance disabled and retract started")
             x_last, y_last = stroke[-1]
-            self._stop_compliance_and_retract(x_last, y_last, X_hover, rx, ry, rz)
+            Y_end = self.p1[1] + x_last * self.width
+            X_hover_dynamic_end = self.get_x_surface(Y_end) + self.cfg.get('hover_distance', 0.005)
+            self._stop_compliance_and_retract(x_last, y_last, X_hover_dynamic_end, rx, ry, rz)
             self.log_event(f"Stroke {idx + 1}/{total_strokes} - Compliance disabled and retract completed")
             
         # Return to safe starting joint configuration

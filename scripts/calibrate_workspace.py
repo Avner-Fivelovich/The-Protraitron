@@ -137,7 +137,28 @@ def main():
         logger.info(f"Final P0 Joints: {[round(c, 4) for c in p0_joints_final]}")
         
         # -------------------------------------------------------------
-        # Save results (rewriting P0 and adding P1) to calibration file
+        # Probe surface for Top-Right/Bottom-Right (P2) along the Y axis
+        # -------------------------------------------------------------
+        p2_hover_pose = list(p0_pose_final)
+        p2_hover_pose[1] += paper_width # move right across the paper
+        logger.info(f"Moving to P2 hover location: {[round(c, 4) for c in p2_hover_pose[:3]]}...")
+        rtde_c.moveL(p2_hover_pose, move_speed, move_accel)
+        time.sleep(0.5)
+        
+        logger.info("Probing Surface for P2 (depth mapping)...")
+        p2_surface = probe_surface_point(rtde_c, rtde_r, p_start_pose=p2_hover_pose, cfg=cfg)
+        if not p2_surface:
+            logger.error("Probing P2 failed. Aborting calibration.")
+            return
+            
+        # Retract back to P2 hover, then to P0 hover
+        logger.info("Retracting from P2 and returning to P0 draw_home...")
+        rtde_c.moveL(p2_hover_pose, move_speed, move_accel)
+        rtde_c.moveL(p0_pose_final, move_speed, move_accel)
+        time.sleep(0.5)
+        
+        # -------------------------------------------------------------
+        # Save results (rewriting P0, P1, and adding P2) to calibration file
         # -------------------------------------------------------------
         with open(output_path, "r") as f:
             cal_data_final = yaml.safe_load(f) or {}
@@ -148,6 +169,7 @@ def main():
         cal_data_final["locations"]["draw_home"] = [float(p) for p in p0_pose_final]
         cal_data_final["p0_joints"] = [float(q) for q in p0_joints_final]
         cal_data_final["p1"] = [float(p) for p in p1_surface]
+        cal_data_final["p2"] = [float(p) for p in p2_surface]
         cal_data_final["width"] = paper_width
         cal_data_final["height"] = paper_height
         
