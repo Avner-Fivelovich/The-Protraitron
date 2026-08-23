@@ -261,7 +261,36 @@ class CalibrationGUI:
             self.status_var.set(f"Freedrive Error: {e}")
             
     def create_widgets(self):
-        status_frame = tk.Frame(self.master)
+        # Main Canvas for scrolling
+        self.canvas = tk.Canvas(self.master)
+        self.scrollbar = tk.Scrollbar(self.master, orient="vertical", command=self.canvas.yview)
+        self.main_frame = tk.Frame(self.canvas)
+
+        self.main_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+
+        self.canvas.create_window((0, 0), window=self.main_frame, anchor="nw", tags="main_frame_window")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        
+        self.canvas.bind('<Configure>', lambda e: self.canvas.itemconfig("main_frame_window", width=e.width))
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+        
+        # Bind mouse wheel for scrolling (cross-platform)
+        def _on_mousewheel(event):
+            if event.num == 4 or event.delta > 0:
+                self.canvas.yview_scroll(-1, "units")
+            elif event.num == 5 or event.delta < 0:
+                self.canvas.yview_scroll(1, "units")
+        
+        self.master.bind_all("<MouseWheel>", _on_mousewheel)
+        self.master.bind_all("<Button-4>", _on_mousewheel)
+        self.master.bind_all("<Button-5>", _on_mousewheel)
+
+        status_frame = tk.Frame(self.main_frame)
         status_frame.pack(pady=5)
         
         self.status_var = tk.StringVar(value="Connecting...")
@@ -273,7 +302,7 @@ class CalibrationGUI:
         self.freedrive_btn = tk.Button(status_frame, text="🖐 Freedrive (Hand-Guide)", command=self.toggle_freedrive, bg="#e0e0e0", state="disabled")
         self.freedrive_btn.pack(side="left", padx=5)
 
-        coords_frame = tk.Frame(self.master)
+        coords_frame = tk.Frame(self.main_frame)
         coords_frame.pack(pady=2)
         self.coords_var = tk.StringVar(value="TCP: X: -- Y: -- Z: -- | Rx: -- Ry: -- Rz: --")
         tk.Label(coords_frame, textvariable=self.coords_var, font=("Courier", 11)).pack(side="left")
@@ -281,12 +310,12 @@ class CalibrationGUI:
         
         self.stage_var = tk.StringVar()
         self.desc_var = tk.StringVar()
-        tk.Label(self.master, textvariable=self.stage_var, font=("Helvetica", 16, "bold")).pack(pady=5)
-        tk.Label(self.master, textvariable=self.desc_var).pack(pady=5)
+        tk.Label(self.main_frame, textvariable=self.stage_var, font=("Helvetica", 16, "bold")).pack(pady=5)
+        tk.Label(self.main_frame, textvariable=self.desc_var).pack(pady=5)
         
         self.update_stage_display()
         
-        btn_frame = tk.Frame(self.master)
+        btn_frame = tk.Frame(self.main_frame)
         btn_frame.pack(pady=10)
         
         tk.Button(btn_frame, text="Back", command=self.prev_stage).grid(row=0, column=0, padx=5)
@@ -299,7 +328,7 @@ class CalibrationGUI:
         self.step_var = tk.DoubleVar(value=saved_state.get("step_var", move_settings.get("default_step", 0.005)))
         self.accel_var = tk.DoubleVar(value=saved_state.get("accel_var", move_settings.get("default_accel", 0.10)))
 
-        settings_frame = tk.LabelFrame(self.master, text="Movement Settings")
+        settings_frame = tk.LabelFrame(self.main_frame, text="Movement Settings")
         settings_frame.pack(pady=5, padx=10, fill="x")
         
         tk.Label(settings_frame, text="Speed (m/s):").grid(row=0, column=0, padx=5)
@@ -328,7 +357,7 @@ class CalibrationGUI:
         self.grip_open_pos_var = tk.IntVar(value=saved_state.get("grip_open_pos_var", 50))
         self.grip_close_pos_var = tk.IntVar(value=saved_state.get("grip_close_pos_var", 100))
 
-        gripper_frame = tk.LabelFrame(self.master, text="Gripper")
+        gripper_frame = tk.LabelFrame(self.main_frame, text="Gripper")
         gripper_frame.pack(pady=5, padx=10, fill="x")
         self.gripper_buttons = []
         for column, label, command in (
@@ -357,7 +386,7 @@ class CalibrationGUI:
         
         settings_frame.grid_columnconfigure(1, weight=1)
 
-        jog_frame = tk.LabelFrame(self.master, text="Jogging Keyboard (W/S=X, A/D=Y, Q/E=Z, F=Freedrive)")
+        jog_frame = tk.LabelFrame(self.main_frame, text="Jogging Keyboard (W/S=X, A/D=Y, Q/E=Z, F=Freedrive)")
         jog_frame.pack(pady=10, padx=10, fill="x")
         
         axes = [(0, "X", 1), (1, "Y", 2), (2, "Z", 3)]
@@ -372,7 +401,7 @@ class CalibrationGUI:
         self.master.bind('<f>', lambda e: self.toggle_freedrive())
 
         # Test Sequences Frame
-        test_frame = tk.LabelFrame(self.master, text="Test Action Sequences")
+        test_frame = tk.LabelFrame(self.main_frame, text="Test Action Sequences")
         test_frame.pack(pady=10, padx=10, fill="x")
         
         self.test_buttons = []
@@ -397,7 +426,7 @@ class CalibrationGUI:
                     desc_parts.append("WAIT_PULL")
             
             desc_str = " ➔ ".join(desc_parts)
-            tk.Label(test_frame, text=desc_str, font=("Courier", 8), wraplength=450, justify="left", fg="gray").grid(row=row, column=0, padx=5, sticky="w")
+            tk.Label(test_frame, text=desc_str, font=("Courier", 10), wraplength=450, justify="left", fg="gray").grid(row=row, column=0, padx=5, sticky="w")
             row += 1
             
             btn = tk.Button(test_frame, text=seq_name, command=lambda name=seq_name: self.run_test_sequence(name), state="disabled")
@@ -411,7 +440,7 @@ class CalibrationGUI:
         test_frame.grid_columnconfigure(0, weight=1)
 
         # Go To Location Frame
-        goto_frame = tk.LabelFrame(self.master, text="Go To Saved Location")
+        goto_frame = tk.LabelFrame(self.main_frame, text="Go To Saved Location")
         goto_frame.pack(pady=5, padx=10, fill="x")
         
         self.goto_var = tk.StringVar()
