@@ -127,23 +127,38 @@ class PaperHandler:
         self._move_to("safe_paper", allow_joint=True)
         self._move_to("cut_start_pos", allow_joint=True)
         
-        # Activate force compliance to push the knife into the paper
-        cut_force = self.config.get("cut_force", 7.0)
-        tool_task_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        tool_selection_vector = [1, 0, 0, 0, 0, 0] # Compliance only on Base X
-        tool_wrench = [-cut_force, 0.0, 0.0, 0.0, 0.0, 0.0]
-        limits = [0.15, 0.15, 0.15, 0.2, 0.2, 0.2]
+        start_target = self.locs.get("cut_start_pos")
+        end_target = self.locs.get("cut_end_pos")
+        p_start = start_target.get("pose") if isinstance(start_target, dict) else start_target
+        p_end = end_target.get("pose") if isinstance(end_target, dict) else end_target
         
         if self.rtde_c:
+            from src.common.robot_utils import probe_surface_point
+            from src.common.config_utils import load_config_from_yaml
+            probe_cfg = load_config_from_yaml("config/marker.yaml")
+            
+            logger.info("Probing surface for cutting...")
+            p_contact = probe_surface_point(self.rtde_c, self.rtde_r, p_start, probe_cfg)
+            if not p_contact:
+                logger.error("Failed to probe surface for cutting. Aborting cut.")
+                self._move_to("safe_paper", allow_joint=True)
+                return
+                
+            p_start = list(p_contact)
+            p_end = list(p_end)
+            p_end[0] = p_contact[0]
+            
+            # Activate force compliance to push the knife into the paper
+            cut_force = self.config.get("cut_force", 7.0)
+            tool_task_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            tool_selection_vector = [1, 0, 0, 0, 0, 0] # Compliance only on Base X
+            tool_wrench = [-cut_force, 0.0, 0.0, 0.0, 0.0, 0.0]
+            limits = [0.15, 0.15, 0.15, 0.2, 0.2, 0.2]
+            
             logger.info(f"Activating force mode for cutting (Force: {cut_force}N)...")
             self.rtde_c.forceModeSetDamping(0.5)
             self.rtde_c.forceMode(tool_task_frame, tool_selection_vector, tool_wrench, 2, limits)
             time.sleep(0.5)
-            
-            start_target = self.locs.get("cut_start_pos")
-            end_target = self.locs.get("cut_end_pos")
-            p_start = start_target.get("pose") if isinstance(start_target, dict) else start_target
-            p_end = end_target.get("pose") if isinstance(end_target, dict) else end_target
             
             if p_start and p_end and len(p_start) == 6 and len(p_end) == 6:
                 dist = math.sqrt(sum((b - a)**2 for a, b in zip(p_start[:3], p_end[:3])))
