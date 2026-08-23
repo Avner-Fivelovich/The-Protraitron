@@ -207,14 +207,16 @@ class PaperHandler:
         self._move_to("user_handover_location", allow_joint=True)
         self._move_to("safe_tools", allow_joint=True)
         self._move_to("safe_paper", allow_joint=True)
-
-    def put_new_paper(self):
-        self._move_to("safe_paper", allow_joint=True)
+        
+        # Park the upper magnet so it is out of the way for pulling new paper
         self._move_to("upper_magnet_end", allow_joint=True)
         self._close_gripper()
         self._move_to("safe_paper", allow_joint=True)
         self._move_to("upper_magnet_park", allow_joint=True)
         self._open_gripper()
+        self._move_to("safe_paper", allow_joint=True)
+
+    def put_new_paper(self):
         self._move_to("safe_paper", allow_joint=True)
         self._move_to("fresh_paper_grab", allow_joint=False)
         self._close_gripper()
