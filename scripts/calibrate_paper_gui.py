@@ -166,6 +166,20 @@ class CalibrationGUI:
                 pass
             self.master.after(200, self._update_live_coords)
 
+    def copy_location(self):
+        try:
+            if self.rtde_r:
+                pose = self.rtde_r.getActualTCPPose()
+                pose_str = f"[{pose[0]:.4f}, {pose[1]:.4f}, {pose[2]:.4f}, {pose[3]:.4f}, {pose[4]:.4f}, {pose[5]:.4f}]"
+                self.master.clipboard_clear()
+                self.master.clipboard_append(pose_str)
+                logger.info(f"Copied current pose to clipboard: {pose_str}")
+            else:
+                logger.warning("Cannot copy location: Robot not connected.")
+        except Exception as e:
+            logger.error(f"Failed to copy location: {e}")
+
+
     def connect_robot(self):
         try:
             logger.info(f"Connecting to UR5e RTDE at {self.robot_ip}...")
@@ -263,6 +277,7 @@ class CalibrationGUI:
         coords_frame.pack(pady=2)
         self.coords_var = tk.StringVar(value="TCP: X: -- Y: -- Z: -- | Rx: -- Ry: -- Rz: --")
         tk.Label(coords_frame, textvariable=self.coords_var, font=("Courier", 11)).pack(side="left")
+        tk.Button(coords_frame, text="📋 Copy", command=self.copy_location).pack(side="left", padx=10)
         
         self.stage_var = tk.StringVar()
         self.desc_var = tk.StringVar()
