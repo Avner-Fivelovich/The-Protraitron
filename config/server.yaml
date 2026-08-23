@@ -70,8 +70,8 @@ calibration_gui:
     default_accel: 0.1
     default_step: 0.005
   gripper_settings:
-    default_speed: 100
-    default_force: 100
+    default_speed: 50
+    default_force: 50
     default_step: 5
 
 paper_manipulation_defaults:

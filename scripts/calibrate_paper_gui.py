@@ -284,8 +284,8 @@ class CalibrationGUI:
         tk.Radiobutton(mode_frame, text="Linear (moveL)", variable=self.move_mode_var, value="linear").pack(side="left", padx=5)
 
         gripper_settings = GUI_CONFIG.get("gripper_settings", {})
-        self.grip_speed_var = tk.IntVar(value=saved_state.get("grip_speed_var", gripper_settings.get("default_speed", 100)))
-        self.grip_force_var = tk.IntVar(value=saved_state.get("grip_force_var", gripper_settings.get("default_force", 100)))
+        self.grip_speed_var = tk.IntVar(value=saved_state.get("grip_speed_var", gripper_settings.get("default_speed", 50)))
+        self.grip_force_var = tk.IntVar(value=saved_state.get("grip_force_var", gripper_settings.get("default_force", 50)))
         self.grip_step_var = tk.IntVar(value=saved_state.get("grip_step_var", gripper_settings.get("default_step", 5)))
         self.grip_turn_var = tk.DoubleVar(value=saved_state.get("grip_turn_var", gripper_settings.get("default_turn_degrees", 10.0)))
 

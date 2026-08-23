@@ -2,9 +2,9 @@ limits:
   min_position: 0
   max_position: 255
   min_speed: 0
-  max_speed: 255
+  max_speed: 127
   min_force: 0
-  max_force: 255
+  max_force: 127
 
 timeouts:
   socket_timeout: 2.0
@@ -19,7 +19,7 @@ calibration:
   force: 1
 
 defaults:
-  open_speed: 100
-  open_force: 100
-  close_speed: 100
-  close_force: 100
+  open_speed: 127
+  open_force: 127
+  close_speed: 127
+  close_force: 127
