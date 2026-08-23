@@ -62,8 +62,8 @@ class CalibrationGUI:
             ("safe_tools", "Safe location above the tool docks"),
             ("above_marker_dock", "Hover location above the marker dock"),
             ("marker_dock", "Location to store the marker"),
-            ("magnet_1_start", "Current location of Magnet 1"),
-            ("magnet_1_park", "Temporary parking location for Magnet 1"),
+            ("lower_magnet_start", "Current location of the lower magnet"),
+            ("lower_magnet_park", "Temporary parking location for the lower magnet"),
             ("above_knife", "Hover location above the knife dock"),
             ("knife_dock", "Location to store the knife"),
             ("cut_start_pos", "Start location of the paper cut"),
@@ -72,11 +72,17 @@ class CalibrationGUI:
             ("cut_paper_pull_dest", "Location to pull the cut paper to"),
             ("safe_midpoint_to_user", "Safe midpoint to user handover"),
             ("user_handover_location", "Target location to handover the paper to the user"),
-            ("magnet_2_start", "Current location of Magnet 2"),
-            ("magnet_2_park", "Temporary parking location for Magnet 2"),
+            ("upper_magnet_start", "Current location of the upper magnet"),
+            ("upper_magnet_park", "Temporary parking location for the upper magnet"),
+            ("upper_magnet_end", "Final location for the upper magnet after rolling"),
             ("fresh_paper_grab", "Location to grab the edge of the fresh paper roll"),
             ("fresh_paper_pull_dest", "End location after pulling the fresh paper down"),
-            ("paper_straighten_start", "Location below magnet 2 to start straightening paper")
+            ("paper_straighten_start", "Location below the upper magnet to start straightening paper"),
+            ("above_stamp", "Hover location above the stamp dock"),
+            ("stamp", "Location to grab the stamp"),
+            ("above_ink", "Hover location above the ink pad"),
+            ("ink", "Location to press the stamp into the ink pad"),
+            ("stamping_pos", "Location to press the stamp onto the paper")
         ]
         self.current_stage_idx = 0
         
