@@ -126,7 +126,27 @@ class PaperHandler:
     def execute_cut(self):
         self._move_to("safe_paper", allow_joint=True)
         self._move_to("cut_start_pos", allow_joint=True)
+        
+        # Activate force compliance to push the knife into the paper
+        cut_force = self.config.get("cut_force", 15.0)
+        tool_task_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        tool_selection_vector = [1, 0, 0, 0, 0, 0] # Compliance only on Base X
+        tool_wrench = [-cut_force, 0.0, 0.0, 0.0, 0.0, 0.0]
+        limits = [0.15, 0.15, 0.15, 0.2, 0.2, 0.2]
+        
+        if self.rtde_c:
+            logger.info(f"Activating force mode for cutting (Force: {cut_force}N)...")
+            self.rtde_c.forceModeSetDamping(0.5)
+            self.rtde_c.forceMode(tool_task_frame, tool_selection_vector, tool_wrench, 2, limits)
+            time.sleep(0.5)
+            
         self._move_to("cut_end_pos", speed=self.cut_movement_speed, allow_joint=False)
+        
+        if self.rtde_c:
+            logger.info("Stopping force mode...")
+            self.rtde_c.forceModeStop()
+            time.sleep(0.1)
+            
         self._move_to("safe_paper", allow_joint=True)
 
     def hand_to_user(self):
