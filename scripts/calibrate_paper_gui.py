@@ -64,7 +64,7 @@ class CalibrationGUI:
             ("marker_dock", "Location to store the marker"),
             ("lower_magnet_start", "Current location of the lower magnet"),
             ("lower_magnet_park", "Temporary parking location for the lower magnet"),
-            ("above_knife", "Hover location above the knife dock"),
+            ("above_knife_dock", "Hover location above the knife dock"),
             ("knife_dock", "Location to store the knife"),
             ("cut_start_pos", "Start location of the paper cut"),
             ("cut_end_pos", "End location of the paper cut"),
