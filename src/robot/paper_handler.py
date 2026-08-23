@@ -92,6 +92,7 @@ class PaperHandler:
         self._close_gripper()
         self._move_to(f"above_{object_name}", allow_joint=True)
         self._move_to("safe_tools", allow_joint=True)
+        self._move_to("safe_paper", allow_joint=False)
 
     def drop(self, object_name):
         self._move_to("safe_tools", allow_joint=True)
