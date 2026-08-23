@@ -76,16 +76,7 @@ class PaperHandler:
             except Exception as e:
                 logger.error(f"Failed to disconnect gripper: {e}")
 
-    def execute_paper_swap(self):
-        """Executes the full paper manipulation sequence."""
-        if not self.locs:
-            logger.error("No locations found in config. Please run calibration first.")
-            return False
-            
-        logger.info("Starting paper swap sequence...")
-        
-        self.connect_gripper()
-        
+
     def pick_up(self, object_name):
         self._move_to("safe_tools", allow_joint=True)
         self._move_to(f"above_{object_name}", allow_joint=True)
@@ -105,24 +96,19 @@ class PaperHandler:
         self._move_to("safe_tools", allow_joint=False)
 
     def execute_stamping(self):
+        self.pick_up("stamp")
+        
         self._move_to("safe_tools", allow_joint=True)
-        self._move_to("above_stamp", allow_joint=True)
-        self._move_to("stamp", allow_joint=True)
-        self._close_gripper()
-        self._move_to("above_stamp", allow_joint=True)
         self._move_to("above_ink", allow_joint=True)
         self._move_to("ink", allow_joint=True)
         self._move_to("above_ink", allow_joint=True)
-        self._move_to("safe_tools", allow_joint=True)
+        
         self._move_to("safe_paper", allow_joint=True)
         self._move_to("stamping_pos", allow_joint=True)
         self._move_to("safe_paper", allow_joint=True)
-        self._move_to("safe_tools", allow_joint=True)
-        self._move_to("above_stamp", allow_joint=True)
-        self._move_to("stamp", allow_joint=True)
-        self._open_gripper()
-        self._move_to("above_stamp", allow_joint=True)
-        self._move_to("safe_tools", allow_joint=True)
+        
+        self.drop("stamp")
+
 
     def execute_cut(self):
         self._move_to("safe_paper", allow_joint=True)
