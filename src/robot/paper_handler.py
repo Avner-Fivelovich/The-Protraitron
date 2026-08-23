@@ -186,6 +186,7 @@ class PaperHandler:
         self._move_to("safe_paper", allow_joint=True)
         self._move_to("safe_tools", allow_joint=True)
         self._move_to("cut_paper_grab", allow_joint=True)
+        self._close_gripper()
         self._move_to("cut_paper_pull_dest", speed=self.pull_paper_speed, allow_joint=False)
         self._move_to("safe_midpoint_to_user", allow_joint=True)
         self._move_to("user_handover_location", allow_joint=True)
@@ -239,16 +240,22 @@ class PaperHandler:
                 raise ValueError(f"Invalid hybrid pose for: {location_name}")
             target_pose = pose
             
-            if allow_joint and joints and len(joints) >= 6:
-                logger.info(f"Using moveJ (arc motion) for {location_name} to avoid singularities...")
-                self.rtde_c.moveJ(joints, speed*2, speed*4)
+            if allow_joint:
+                if joints and len(joints) >= 6:
+                    logger.info(f"Using moveJ (arc motion) for {location_name} to avoid singularities...")
+                    self.rtde_c.moveJ(joints, speed*2, speed*4)
+                else:
+                    logger.info(f"Using moveJ_IK for {location_name} (joints missing)...")
+                    self.rtde_c.moveJ_IK(target_pose, speed*2, speed*4)
             else:
                 self.rtde_c.moveL(pose, speed, speed * 2)
         else:
-            if len(target) < 6:
-                raise ValueError(f"Invalid or missing location: {location_name}")
             target_pose = target
-            self.rtde_c.moveL(target_pose, speed, speed * 2)
+            if allow_joint:
+                logger.info(f"Using moveJ_IK for {location_name}...")
+                self.rtde_c.moveJ_IK(target_pose, speed*2, speed*4)
+            else:
+                self.rtde_c.moveL(target_pose, speed, speed * 2)
         
         # Live validation
         timeout = 10.0
