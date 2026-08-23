@@ -57,26 +57,26 @@ class CalibrationGUI:
         self.locations = self.config.get("locations", {})
         
         self.stages = [
-            ("P0", "Starting draw location"),
+            ("draw_home", "Starting draw location"),
             ("safe_paper", "Safe location away from paper"),
             ("safe_tools", "Safe location above the tool docks"),
-            ("above_dock", "Hover location above the marker dock"),
+            ("above_marker_dock", "Hover location above the marker dock"),
             ("marker_dock", "Location to store the marker"),
             ("magnet_1_start", "Current location of Magnet 1"),
-            ("magnet_1_temp", "Temporary parking location for Magnet 1"),
+            ("magnet_1_park", "Temporary parking location for Magnet 1"),
             ("above_knife", "Hover location above the knife dock"),
             ("knife_dock", "Location to store the knife"),
-            ("start_cut_location", "Start location of the paper cut"),
-            ("end_cut_location", "End location of the paper cut"),
-            ("paper_location", "Location to grab the cut paper"),
-            ("pull_paper_location", "Location to pull the cut paper to"),
+            ("cut_start_pos", "Start location of the paper cut"),
+            ("cut_end_pos", "End location of the paper cut"),
+            ("cut_paper_grab", "Location to grab the cut paper"),
+            ("cut_paper_pull_dest", "Location to pull the cut paper to"),
             ("safe_midpoint_to_user", "Safe midpoint to user handover"),
-            ("user_handing_location", "Target location to handover the paper to the user"),
+            ("user_handover_location", "Target location to handover the paper to the user"),
             ("magnet_2_start", "Current location of Magnet 2"),
-            ("magnet_2_temp", "Temporary parking location for Magnet 2"),
-            ("new_paper_location", "Location to grab the edge of the fresh paper roll"),
-            ("paper_pull_end", "End location after pulling the fresh paper down"),
-            ("below_magnet_2_start", "Location below magnet 2 to start straightening paper")
+            ("magnet_2_park", "Temporary parking location for Magnet 2"),
+            ("fresh_paper_grab", "Location to grab the edge of the fresh paper roll"),
+            ("fresh_paper_pull_dest", "End location after pulling the fresh paper down"),
+            ("paper_straighten_start", "Location below magnet 2 to start straightening paper")
         ]
         self.current_stage_idx = 0
         
