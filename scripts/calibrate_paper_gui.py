@@ -11,6 +11,8 @@ from tkinter import ttk
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.common.logger import get_logger
+from src.robot.paper_roller import rotate_tool_orientation
+from src.robot.robotiq_gripper import RobotiqGripper
 
 logger = get_logger("PaperCalibrationGUI")
 
@@ -20,8 +22,6 @@ try:
 except ImportError:
     logger.critical("The 'ur_rtde' library is not installed in the active environment.")
     sys.exit(1)
-
-from src.robot.robotiq_gripper import RobotiqGripper
 
 CENTRAL_CONFIG_PATH = "config/server.yaml"
 
@@ -44,7 +44,8 @@ class CalibrationGUI:
         
         self.rtde_c = None
         self.rtde_r = None
-        self.gripper = RobotiqGripper()
+        self.gripper = None
+        self.gripper_connected = False
         self.motion_lock = threading.Lock()
         self.is_moving = False
         self.freedrive_active = False
@@ -110,18 +111,44 @@ class CalibrationGUI:
     def connect_robot(self):
         try:
             logger.info(f"Connecting to UR5e RTDE at {self.robot_ip}...")
-            self.rtde_c = rtde_control.RTDEControlInterface(self.robot_ip)
             self.rtde_r = rtde_receive.RTDEReceiveInterface(self.robot_ip)
-            gripper_port = CENTRAL_CONFIG.get("hardware", {}).get("gripper_port", 63352)
-            logger.info(f"Connecting to Gripper at {self.robot_ip}:{gripper_port}...")
-            self.gripper.connect(self.robot_ip, gripper_port)
-            self.gripper.activate()
-            self.status_var.set("Connected to UR5e & Gripper")
+            flags = (
+                rtde_control.RTDEControlInterface.FLAG_DISABLE_REMOTE_CONTROL_CHECK
+                | rtde_control.RTDEControlInterface.FLAG_USE_EXT_UR_CAP
+            )
+            try:
+                self.rtde_c = rtde_control.RTDEControlInterface(self.robot_ip, flags=flags, ur_cap_port=50002)
+            except Exception as external_control_error:
+                logger.warning(
+                    f"External URCap port 50002 unavailable ({external_control_error}); "
+                    "falling back to standard RTDE control."
+                )
+                self.rtde_c = rtde_control.RTDEControlInterface(self.robot_ip)
+            self.status_var.set("Connected to UR5e")
             self.freedrive_btn.config(state="normal")
+
+            gripper_port = CENTRAL_CONFIG.get("hardware", {}).get("gripper_port", 63352)
+            try:
+                logger.info(f"Connecting to Robotiq gripper at {self.robot_ip}:{gripper_port}...")
+                self.gripper = RobotiqGripper()
+                self.gripper.connect(self.robot_ip, gripper_port)
+                if self.gripper.mock_mode:
+                    logger.warning("Robotiq gripper is in mock mode; gripper controls are disabled.")
+                    self.gripper = None
+                else:
+                    self.gripper.activate(auto_calibrate=False)
+                    self.gripper_connected = True
+                    self.gripper_btn_state("normal")
+                    logger.info("Robotiq gripper connected and activated.")
+            except Exception as gripper_error:
+                self.gripper = None
+                self.gripper_connected = False
+                logger.error(f"Gripper connection failed: {gripper_error}")
+
             if not self.keepalive_started:
                 self.keepalive_started = True
                 threading.Thread(target=self._keepalive_loop, daemon=True).start()
-            logger.info("Successfully connected to UR5e & Gripper.")
+            logger.info("Successfully connected to UR5e.")
         except Exception as e:
             logger.error(f"Robot connection failed: {e}")
             self.status_var.set(f"Connection Failed: {e}")
@@ -150,7 +177,7 @@ class CalibrationGUI:
                 self.rtde_c.endFreedriveMode()
                 self.freedrive_active = False
                 self.freedrive_btn.config(text="🖐 Freedrive (Hand-Guide)", bg="#e0e0e0")
-                self.status_var.set("Connected to UR5e & Gripper")
+                self.status_var.set("Connected to UR5e")
                 logger.info("Freedrive mode disabled.")
         except Exception as e:
             logger.error(f"Error toggling freedrive: {e}")
@@ -207,6 +234,33 @@ class CalibrationGUI:
         tk.Label(mode_frame, text="Mode:").pack(side="left", padx=5)
         tk.Radiobutton(mode_frame, text="Joint IK (Safe / No Stops)", variable=self.move_mode_var, value="joint_ik").pack(side="left", padx=5)
         tk.Radiobutton(mode_frame, text="Linear (moveL)", variable=self.move_mode_var, value="linear").pack(side="left", padx=5)
+
+        gripper_settings = GUI_CONFIG.get("gripper_settings", {})
+        self.grip_speed_var = tk.IntVar(value=gripper_settings.get("default_speed", 100))
+        self.grip_force_var = tk.IntVar(value=gripper_settings.get("default_force", 100))
+        self.grip_step_var = tk.IntVar(value=gripper_settings.get("default_step", 5))
+        self.grip_turn_var = tk.DoubleVar(value=gripper_settings.get("default_turn_degrees", 10.0))
+
+        gripper_frame = tk.LabelFrame(self.master, text="Gripper")
+        gripper_frame.pack(pady=5, padx=10, fill="x")
+        self.gripper_buttons = []
+        for column, label, command in (
+            (0, "Open", lambda: self.async_grip(0)),
+            (1, "Turn +", lambda: self.rotate_gripper(1)),
+            (2, "Turn -", lambda: self.rotate_gripper(-1)),
+            (3, "Close", lambda: self.async_grip(100)),
+        ):
+            button = tk.Button(gripper_frame, text=label, command=command, state="disabled", width=10)
+            button.grid(row=0, column=column, padx=5, pady=5)
+            self.gripper_buttons.append(button)
+
+        tk.Label(gripper_frame, text="Speed").grid(row=1, column=0)
+        tk.Scale(gripper_frame, variable=self.grip_speed_var, from_=1, to=100, orient="horizontal").grid(row=1, column=1, sticky="ew")
+        tk.Label(gripper_frame, text="Force").grid(row=2, column=0)
+        tk.Scale(gripper_frame, variable=self.grip_force_var, from_=1, to=100, orient="horizontal").grid(row=2, column=1, sticky="ew")
+        tk.Label(gripper_frame, text="Turn (degrees)").grid(row=3, column=0)
+        tk.Scale(gripper_frame, variable=self.grip_turn_var, from_=1, to=90, resolution=1, orient="horizontal").grid(row=3, column=1, sticky="ew")
+        gripper_frame.grid_columnconfigure(1, weight=1)
         
         settings_frame.grid_columnconfigure(1, weight=1)
 
@@ -218,45 +272,18 @@ class CalibrationGUI:
             tk.Button(jog_frame, text=f"+{axis_name}", command=lambda idx=axis_idx: self.jog(idx, 1)).grid(row=0, column=col_offset, padx=5, pady=5)
             tk.Button(jog_frame, text=f"-{axis_name}", command=lambda idx=axis_idx: self.jog(idx, -1)).grid(row=1, column=col_offset, padx=5, pady=5)
         
-        grip_frame = tk.LabelFrame(self.master, text="Gripper Controls (O=Open, C=Close, G=Toggle)")
-        grip_frame.pack(pady=10, padx=10, fill="x")
-        
-        grip_settings_conf = GUI_CONFIG.get("gripper_settings", {})
-        self.grip_speed_var = tk.IntVar(value=grip_settings_conf.get("default_speed", 100))
-        self.grip_force_var = tk.IntVar(value=grip_settings_conf.get("default_force", 100))
-        self.grip_step_var = tk.IntVar(value=grip_settings_conf.get("default_step", 5))
-        
-        # Gripper Settings
-        grip_settings = tk.Frame(grip_frame)
-        grip_settings.pack(fill="x", padx=5, pady=5)
-        tk.Label(grip_settings, text="Speed (%):").grid(row=0, column=0, sticky="e")
-        tk.Scale(grip_settings, variable=self.grip_speed_var, from_=1, to=100, orient="horizontal").grid(row=0, column=1, sticky="ew")
-        tk.Label(grip_settings, text="Force (%):").grid(row=1, column=0, sticky="e")
-        tk.Scale(grip_settings, variable=self.grip_force_var, from_=1, to=100, orient="horizontal").grid(row=1, column=1, sticky="ew")
-        tk.Label(grip_settings, text="Step (%):").grid(row=2, column=0, sticky="e")
-        tk.Scale(grip_settings, variable=self.grip_step_var, from_=1, to=50, orient="horizontal").grid(row=2, column=1, sticky="ew")
-        grip_settings.grid_columnconfigure(1, weight=1)
-
-        # Gripper Actions
-        grip_actions = tk.Frame(grip_frame)
-        grip_actions.pack(pady=8)
-        
-        tk.Button(grip_actions, text="🟢 Open Gripper (O)", command=lambda: self.async_grip(0), bg="#d4edda", font=("Helvetica", 10, "bold"), padx=8, pady=4).pack(side="left", padx=5)
-        tk.Button(grip_actions, text="🔴 Close Gripper (C)", command=lambda: self.async_grip(100), bg="#f8d7da", font=("Helvetica", 10, "bold"), padx=8, pady=4).pack(side="left", padx=5)
-        tk.Button(grip_actions, text="Jog Open (-)", command=lambda: self.jog_gripper(-1)).pack(side="left", padx=5)
-        tk.Button(grip_actions, text="Jog Close (+)", command=lambda: self.jog_gripper(1)).pack(side="left", padx=5)
-        
         # Keyboard bindings (multiplier 1 for positive, -1 for negative)
         for key, axis, direction in [('w', 0, 1), ('s', 0, -1), ('a', 1, 1), ('d', 1, -1), ('q', 2, 1), ('e', 2, -1)]:
             self.master.bind(f'<{key}>', lambda e, a=axis, d=direction: self.jog(a, d))
         self.master.bind('<space>', lambda e: self.save_point())
         self.master.bind('<f>', lambda e: self.toggle_freedrive())
-        self.master.bind('<o>', lambda e: self.async_grip(0))
-        self.master.bind('<c>', lambda e: self.async_grip(100))
-        self.master.bind('<g>', lambda e: self.toggle_gripper())
+
+    def gripper_btn_state(self, state):
+        for button in self.gripper_buttons:
+            button.config(state=state)
         
     def toggle_gripper(self):
-        if not self.gripper or not self.gripper.is_connected():
+        if not self.gripper_connected or not self.gripper:
             logger.warning("Gripper attempted toggle, but is not connected.")
             return
         cur_pos = self.gripper.get_current_position()
@@ -264,8 +291,62 @@ class CalibrationGUI:
         target = 100 if cur_pos <= 128 else 0
         self.async_grip(target)
 
+    def rotate_gripper(self, direction):
+        if not self.rtde_c or not self.rtde_r:
+            logger.warning("Gripper rotation attempted, but the robot is not connected.")
+            return
+        if self.is_moving:
+            return
+        angle = direction * self.grip_turn_var.get()
+        threading.Thread(target=self._execute_rotation, args=(angle,), daemon=True).start()
+
+    def _execute_rotation(self, angle):
+        with self.motion_lock:
+            if self.is_moving:
+                return
+            self.is_moving = True
+            try:
+                if self.freedrive_active:
+                    self.toggle_freedrive()
+
+                if self.rtde_r.isProtectiveStopped():
+                    self.status_var.set("Protective Stop! Unlock on Pendant")
+                    return
+                if self.rtde_r.isEmergencyStopped():
+                    self.status_var.set("Emergency Stop active!")
+                    return
+                if not self.rtde_c.isProgramRunning():
+                    self.rtde_c.reuploadScript()
+                    time.sleep(0.3)
+
+                pose = list(self.rtde_r.getActualTCPPose())
+                pose[3:] = rotate_tool_orientation(*pose[3:], angle, axis="z")
+                logger.info(f"Rotating gripper around tool Z by {angle:+.1f} degrees")
+
+                try:
+                    if not self.rtde_c.isPoseWithinSafetyLimits(pose):
+                        self.status_var.set("Rotation rejected: Safety limits")
+                        return
+                except Exception:
+                    pass
+
+                if self.move_mode_var.get() == "joint_ik":
+                    success = self.rtde_c.moveJ_IK(pose, speed=0.3, acceleration=0.4)
+                else:
+                    success = self.rtde_c.moveL(pose, self.speed_var.get(), self.accel_var.get())
+
+                if success:
+                    self.status_var.set("Connected to UR5e")
+                else:
+                    self.status_var.set("Rotation failed")
+            except Exception as e:
+                logger.error(f"Exception during gripper rotation: {e}", exc_info=True)
+                self.status_var.set(f"Rotation Error: {e}")
+            finally:
+                self.is_moving = False
+
     def async_grip(self, target_percent):
-        if not self.gripper or not self.gripper.is_connected():
+        if not self.gripper_connected or not self.gripper:
             logger.warning("Gripper attempted move, but is not connected.")
             return
         speed = int((self.grip_speed_var.get() / 100.0) * 255)
@@ -275,7 +356,7 @@ class CalibrationGUI:
         threading.Thread(target=self.gripper.move_and_wait_for_pos, args=(target, speed, force), daemon=True).start()
         
     def jog_gripper(self, direction):
-        if not self.gripper or not self.gripper.is_connected():
+        if not self.gripper_connected or not self.gripper:
             logger.warning("Gripper attempted jog, but is not connected.")
             return
         try:
@@ -323,7 +404,7 @@ class CalibrationGUI:
                     try:
                         self.rtde_c.reuploadScript()
                         time.sleep(0.3)
-                        self.status_var.set("Connected to UR5e & Gripper")
+                        self.status_var.set("Connected to UR5e")
                     except Exception as err:
                         logger.error(f"Failed to reupload script: {err}")
                         self.status_var.set("Script error - Check Pendant")
@@ -378,7 +459,7 @@ class CalibrationGUI:
                         logger.error(f"Motion command returned False! Target pose: {pose}")
                         self.status_var.set("Move failed (near singularity or unreachable)")
                 else:
-                    self.status_var.set("Connected to UR5e & Gripper")
+                    self.status_var.set("Connected to UR5e")
             except Exception as e:
                 logger.error(f"Exception during jog: {e}", exc_info=True)
                 self.status_var.set(f"Jog Error: {e}")
@@ -421,8 +502,17 @@ class CalibrationGUI:
                 self.rtde_c.endFreedriveMode()
             except Exception:
                 pass
-        for obj in (self.rtde_c, self.rtde_r, self.gripper if self.gripper and self.gripper.socket else None):
-            if obj: obj.disconnect()
+        for obj in (self.rtde_c, self.rtde_r):
+            if obj:
+                try:
+                    obj.disconnect()
+                except Exception:
+                    pass
+        if self.gripper:
+            try:
+                self.gripper.disconnect()
+            except Exception:
+                pass
         self.master.destroy()
 
 if __name__ == "__main__":
