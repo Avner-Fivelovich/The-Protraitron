@@ -129,7 +129,9 @@ class CalibrationGUI:
                 "grip_speed_var": self.grip_speed_var.get(),
                 "grip_force_var": self.grip_force_var.get(),
                 "grip_step_var": self.grip_step_var.get(),
-                "grip_turn_var": self.grip_turn_var.get()
+                "grip_turn_var": self.grip_turn_var.get(),
+                "grip_open_pos_var": self.grip_open_pos_var.get(),
+                "grip_close_pos_var": self.grip_close_pos_var.get()
             }
             with open(self.get_state_path(), 'w') as f:
                 yaml.safe_dump(state, f, default_flow_style=False)
@@ -289,25 +291,34 @@ class CalibrationGUI:
         self.grip_step_var = tk.IntVar(value=saved_state.get("grip_step_var", gripper_settings.get("default_step", 5)))
         self.grip_turn_var = tk.DoubleVar(value=saved_state.get("grip_turn_var", gripper_settings.get("default_turn_degrees", 10.0)))
 
+        self.grip_open_pos_var = tk.IntVar(value=saved_state.get("grip_open_pos_var", 50))
+        self.grip_close_pos_var = tk.IntVar(value=saved_state.get("grip_close_pos_var", 100))
+
         gripper_frame = tk.LabelFrame(self.master, text="Gripper")
         gripper_frame.pack(pady=5, padx=10, fill="x")
         self.gripper_buttons = []
         for column, label, command in (
-            (0, "Open", lambda: self.async_grip(50)),
+            (0, "Open", lambda: self.async_grip(self.grip_open_pos_var.get())),
             (1, "Turn +", lambda: self.rotate_gripper(1)),
             (2, "Turn -", lambda: self.rotate_gripper(-1)),
-            (3, "Close", lambda: self.async_grip(100)),
+            (3, "Close", lambda: self.async_grip(self.grip_close_pos_var.get())),
         ):
             button = tk.Button(gripper_frame, text=label, command=command, state="disabled", width=10)
             button.grid(row=0, column=column, padx=5, pady=5)
             self.gripper_buttons.append(button)
 
-        tk.Label(gripper_frame, text="Speed").grid(row=1, column=0)
-        tk.Scale(gripper_frame, variable=self.grip_speed_var, from_=1, to=100, orient="horizontal").grid(row=1, column=1, sticky="ew")
-        tk.Label(gripper_frame, text="Force").grid(row=2, column=0)
-        tk.Scale(gripper_frame, variable=self.grip_force_var, from_=1, to=100, orient="horizontal").grid(row=2, column=1, sticky="ew")
-        tk.Label(gripper_frame, text="Turn (degrees)").grid(row=3, column=0)
-        tk.Scale(gripper_frame, variable=self.grip_turn_var, from_=1, to=90, resolution=1, orient="horizontal").grid(row=3, column=1, sticky="ew")
+        tk.Label(gripper_frame, text="Open Pos (%)").grid(row=1, column=0)
+        tk.Scale(gripper_frame, variable=self.grip_open_pos_var, from_=0, to=100, orient="horizontal").grid(row=1, column=1, sticky="ew")
+        
+        tk.Label(gripper_frame, text="Close Pos (%)").grid(row=2, column=0)
+        tk.Scale(gripper_frame, variable=self.grip_close_pos_var, from_=0, to=100, orient="horizontal").grid(row=2, column=1, sticky="ew")
+
+        tk.Label(gripper_frame, text="Speed").grid(row=3, column=0)
+        tk.Scale(gripper_frame, variable=self.grip_speed_var, from_=1, to=100, orient="horizontal").grid(row=3, column=1, sticky="ew")
+        tk.Label(gripper_frame, text="Force").grid(row=4, column=0)
+        tk.Scale(gripper_frame, variable=self.grip_force_var, from_=1, to=100, orient="horizontal").grid(row=4, column=1, sticky="ew")
+        tk.Label(gripper_frame, text="Turn (degrees)").grid(row=5, column=0)
+        tk.Scale(gripper_frame, variable=self.grip_turn_var, from_=1, to=90, resolution=1, orient="horizontal").grid(row=5, column=1, sticky="ew")
         gripper_frame.grid_columnconfigure(1, weight=1)
         
         settings_frame.grid_columnconfigure(1, weight=1)
@@ -423,8 +434,8 @@ class CalibrationGUI:
             logger.warning("Gripper attempted toggle, but is not connected.")
             return
         cur_pos = self.gripper.get_current_position()
-        # If currently open (<=128), close it; otherwise open it to 50%
-        target = 100 if cur_pos <= 128 else 50
+        # If currently open (<=128), close it; otherwise open it
+        target = self.grip_close_pos_var.get() if cur_pos <= 128 else self.grip_open_pos_var.get()
         self.async_grip(target)
 
     def run_test_sequence(self, seq_name):
