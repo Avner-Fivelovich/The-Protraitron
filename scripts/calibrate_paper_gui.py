@@ -403,20 +403,19 @@ class CalibrationGUI:
         goto_frame = tk.LabelFrame(self.main_frame, text="Go To Saved Location")
         goto_frame.pack(pady=5, padx=10, fill="x")
         
-        self.goto_var = tk.StringVar()
-        self.goto_combo = ttk.Combobox(goto_frame, textvariable=self.goto_var, state="readonly")
-        self.goto_combo.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-        
-        self.goto_btn = tk.Button(goto_frame, text="Go", command=self.go_to_location, state="disabled", bg="#ccffcc")
-        self.goto_btn.grid(row=0, column=1, padx=5, pady=5)
+        chk_frame = tk.Frame(goto_frame)
+        chk_frame.pack(fill="x", pady=2)
         
         self.use_movel_var = tk.BooleanVar(value=False)
-        self.use_movel_chk = tk.Checkbutton(goto_frame, text="Use moveL (Linear)", variable=self.use_movel_var)
-        self.use_movel_chk.grid(row=0, column=2, padx=5, pady=5)
+        self.use_movel_chk = tk.Checkbutton(chk_frame, text="Use moveL (Linear) [l]", variable=self.use_movel_var, bg="#ffcccc")
+        self.use_movel_chk.pack(side="left", padx=5)
         
-        goto_frame.grid_columnconfigure(0, weight=1)
+        self.master.bind('l', lambda e: self.use_movel_var.set(not self.use_movel_var.get()))
         
-        self.update_goto_combo()
+        self.goto_btns_frame = tk.Frame(goto_frame)
+        self.goto_btns_frame.pack(fill="x", pady=2)
+        
+        self.update_goto_grid()
 
     def update_goto_grid(self):
         for widget in self.goto_btns_frame.winfo_children():
