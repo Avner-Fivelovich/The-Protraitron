@@ -150,13 +150,14 @@ class PaperHandler:
             
             # Activate force compliance to push the knife into the paper
             cut_force = self.config.get("cut_force", 15.0)
+            cut_damping = self.config.get("cut_damping", 0.005)
             tool_task_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
             tool_selection_vector = [1, 0, 0, 0, 0, 0] # Compliance only on Base X
             tool_wrench = [-cut_force, 0.0, 0.0, 0.0, 0.0, 0.0]
             limits = [0.15, 0.15, 0.15, 0.2, 0.2, 0.2]
             
-            logger.info(f"Activating force mode for cutting (Force: {cut_force}N)...")
-            self.rtde_c.forceModeSetDamping(0.5)
+            logger.info(f"Activating force mode for cutting (Force: {cut_force}N, Damping: {cut_damping})...")
+            self.rtde_c.forceModeSetDamping(cut_damping)
             self.rtde_c.forceMode(tool_task_frame, tool_selection_vector, tool_wrench, 2, limits)
             time.sleep(0.5)
             
