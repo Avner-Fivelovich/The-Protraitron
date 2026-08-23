@@ -133,8 +133,7 @@ class CalibrationGUI:
                     f"External URCap port 50002 unavailable ({external_control_error}); "
                     "falling back to standard RTDE control."
                 )
-                fallback_flags = rtde_control.RTDEControlInterface.FLAG_DISABLE_REMOTE_CONTROL_CHECK
-                self.rtde_c = rtde_control.RTDEControlInterface(self.robot_ip, flags=fallback_flags)
+                self.rtde_c = rtde_control.RTDEControlInterface(self.robot_ip)
             self.status_var.set("Connected to UR5e")
             self.freedrive_btn.config(state="normal")
 

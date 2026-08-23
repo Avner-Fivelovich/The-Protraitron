@@ -107,8 +107,7 @@ class UR5eController:
                 self.rtde_c = rtde_control.RTDEControlInterface(self.ip, flags=flags, ur_cap_port=50002)
             except Exception as ext_err:
                 logger.warning(f"External URCap port unavailable ({ext_err}), falling back to standard RTDE...")
-                fallback_flags = rtde_control.RTDEControlInterface.FLAG_DISABLE_REMOTE_CONTROL_CHECK
-                self.rtde_c = rtde_control.RTDEControlInterface(self.ip, flags=fallback_flags)
+                self.rtde_c = rtde_control.RTDEControlInterface(self.ip)
             self.rtde_r = rtde_receive.RTDEReceiveInterface(self.ip)
             logger.success("UR5e Control & Receive interfaces connected.")
             return True
