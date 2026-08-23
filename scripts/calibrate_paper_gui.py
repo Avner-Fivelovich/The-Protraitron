@@ -379,21 +379,36 @@ class CalibrationGUI:
         dummy_ph = PaperHandler(None, None)
         seqs = dummy_ph.get_partial_sequences()
         
-        row, col = 0, 0
-        for seq_name in seqs.keys():
+        row = 0
+        for seq_name, seq_actions in seqs.items():
+            desc_parts = []
+            for act in seq_actions:
+                if act[0] == "move":
+                    desc_parts.append(act[1])
+                elif act[0] == "move_speed":
+                    desc_parts.append(act[1][0])
+                elif act[0] == "gripper":
+                    desc_parts.append(f"[{act[1].upper()}]")
+                elif act[0] == "force_cut":
+                    desc_parts.append(f"CUT_TO({act[1][0]})")
+                elif act[0] == "force_straighten":
+                    desc_parts.append(f"STRAIGHTEN({act[1]})")
+                elif act[0] == "wait_pull":
+                    desc_parts.append("WAIT_PULL")
+            
+            desc_str = " ➔ ".join(desc_parts)
+            tk.Label(test_frame, text=desc_str, font=("Courier", 8), wraplength=450, justify="left", fg="gray").grid(row=row, column=0, padx=5, sticky="w")
+            row += 1
+            
             btn = tk.Button(test_frame, text=seq_name, command=lambda name=seq_name: self.run_test_sequence(name), state="disabled")
-            btn.grid(row=row, column=col, padx=5, pady=5, sticky="ew")
+            btn.grid(row=row, column=0, padx=5, pady=2, sticky="ew")
             self.test_buttons.append(btn)
-            col += 1
-            if col > 1:
-                col = 0
-                row += 1
+            row += 1
                 
         btn_all = tk.Button(test_frame, text="Run Full Paper Swap", bg="#ffcccc", command=lambda: self.run_test_sequence("all"), state="disabled")
-        btn_all.grid(row=row+1, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
+        btn_all.grid(row=row, column=0, padx=5, pady=10, sticky="ew")
         self.test_buttons.append(btn_all)
         test_frame.grid_columnconfigure(0, weight=1)
-        test_frame.grid_columnconfigure(1, weight=1)
 
         # Go To Location Frame
         goto_frame = tk.LabelFrame(self.master, text="Go To Saved Location")
