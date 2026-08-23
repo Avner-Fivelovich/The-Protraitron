@@ -59,9 +59,10 @@ class PaperHandler:
             try:
                 logger.info(f"Connecting to Robotiq gripper at {ip}:{self.gripper_port}...")
                 self.gripper.connect(ip, self.gripper_port)
-                self.gripper.activate()
+                if not self.gripper.is_active():
+                    self.gripper.activate()
                 self.gripper_connected = True
-                logger.success("Gripper connected and activated.")
+                logger.success("Gripper connected and ready.")
             except Exception as e:
                 logger.error(f"Failed to connect to gripper: {e}")
 
