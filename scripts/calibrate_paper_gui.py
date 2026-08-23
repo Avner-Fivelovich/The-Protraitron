@@ -200,9 +200,7 @@ class CalibrationGUI:
             self.freedrive_btn.config(state="normal")
             if hasattr(self, 'goto_btn'):
                 self.goto_btn.config(state="normal")
-            if hasattr(self, 'test_buttons'):
-                for btn in self.test_buttons:
-                    btn.config(state="normal")
+
 
             gripper_port = CENTRAL_CONFIG.get("hardware", {}).get("gripper_port", 63352)
             try:
@@ -400,44 +398,6 @@ class CalibrationGUI:
         self.master.bind('<space>', lambda e: self.save_point())
         self.master.bind('<f>', lambda e: self.toggle_freedrive())
 
-        # Test Sequences Frame
-        test_frame = tk.LabelFrame(self.main_frame, text="Test Action Sequences")
-        test_frame.pack(pady=10, padx=10, fill="x")
-        
-        self.test_buttons = []
-        dummy_ph = PaperHandler(None, None)
-        seqs = dummy_ph.get_partial_sequences()
-        
-        row = 0
-        for seq_name, seq_actions in seqs.items():
-            desc_parts = []
-            for act in seq_actions:
-                if act[0] == "move":
-                    desc_parts.append(act[1])
-                elif act[0] == "move_speed":
-                    desc_parts.append(act[1][0])
-                elif act[0] == "gripper":
-                    desc_parts.append(f"[{act[1].upper()}]")
-                elif act[0] == "force_cut":
-                    desc_parts.append(f"CUT_TO({act[1][0]})")
-                elif act[0] == "force_straighten":
-                    desc_parts.append(f"STRAIGHTEN({act[1]})")
-                elif act[0] == "wait_pull":
-                    desc_parts.append("WAIT_PULL")
-            
-            desc_str = " ➔ ".join(desc_parts)
-            tk.Label(test_frame, text=desc_str, font=("Courier", 10), wraplength=450, justify="left", fg="gray").grid(row=row, column=0, padx=5, sticky="w")
-            row += 1
-            
-            btn = tk.Button(test_frame, text=seq_name, command=lambda name=seq_name: self.run_test_sequence(name), state="disabled")
-            btn.grid(row=row, column=0, padx=5, pady=2, sticky="ew")
-            self.test_buttons.append(btn)
-            row += 1
-                
-        btn_all = tk.Button(test_frame, text="Run Full Paper Swap", bg="#ffcccc", command=lambda: self.run_test_sequence("all"), state="disabled")
-        btn_all.grid(row=row, column=0, padx=5, pady=10, sticky="ew")
-        self.test_buttons.append(btn_all)
-        test_frame.grid_columnconfigure(0, weight=1)
 
         # Go To Location Frame
         goto_frame = tk.LabelFrame(self.main_frame, text="Go To Saved Location")
@@ -458,20 +418,33 @@ class CalibrationGUI:
         
         self.update_goto_combo()
 
-    def update_goto_combo(self):
-        loc_keys = list(self.locations.keys())
-        self.goto_combo['values'] = loc_keys
-        if loc_keys:
-            self.goto_combo.set(loc_keys[0])
+    def update_goto_grid(self):
+        for widget in self.goto_btns_frame.winfo_children():
+            widget.destroy()
             
-    def go_to_location(self):
-        loc_name = self.goto_var.get()
-        if not loc_name or loc_name not in self.locations:
-            logger.warning(f"Invalid location selected: {loc_name}")
+        loc_keys = list(self.locations.keys())
+        cols = 3
+        for i, name in enumerate(loc_keys):
+            row = i // cols
+            col = i % cols
+            
+            is_hybrid = isinstance(self.locations[name], dict) and "joints" in self.locations[name]
+            bg_color = "#e6ffe6" if is_hybrid else "#e0e0e0"
+            
+            btn = tk.Button(self.goto_btns_frame, text=name, bg=bg_color,
+                            command=lambda n=name: self.go_to_location(n))
+            btn.grid(row=row, column=col, padx=2, pady=2, sticky="ew")
+            self.goto_btns_frame.grid_columnconfigure(col, weight=1)
+            
+    def go_to_location(self, loc_name=None):
+        if not loc_name:
             return
             
-        target = self.locations[loc_name]
-        if not self.rtde_c or not self.rtde_r:
+        target = self.locations.get(loc_name)
+        if not target:
+            return
+            
+        if not self.rtde_c:
             logger.warning("Robot is not connected.")
             return
             
@@ -479,7 +452,6 @@ class CalibrationGUI:
             return
             
         threading.Thread(target=self._execute_go_to, args=(loc_name, target), daemon=True).start()
-        
     def _execute_go_to(self, loc_name, target):
         with self.motion_lock:
             if self.is_moving: return
@@ -489,14 +461,20 @@ class CalibrationGUI:
                     self.toggle_freedrive()
                 
                 self.status_var.set(f"Moving to {loc_name}...")
-                speed = self.speed_var.get()
-                accel = self.accel_var.get()
-                mode = self.move_mode_var.get()
                 
-                if mode == "joint_ik":
-                    success = self.rtde_c.moveJ_IK(target, speed=0.3, acceleration=0.4)
+                use_linear = self.use_movel_var.get()
+                pose = target.get("pose") if isinstance(target, dict) else target
+                
+                success = False
+                if use_linear:
+                    logger.info(f"User requested linear move (moveL) to {loc_name}.")
+                    success = self.rtde_c.moveL(pose, speed=0.1, acceleration=0.2)
+                elif isinstance(target, dict) and "joints" in target:
+                    logger.info(f"User requested joint move (moveJ) to {loc_name} using verified hybrid joints.")
+                    success = self.rtde_c.moveJ(target["joints"], speed=0.8, acceleration=0.8)
                 else:
-                    success = self.rtde_c.moveL(target, speed, accel)
+                    logger.info(f"User requested joint move (moveJ_IK) to {loc_name}.")
+                    success = self.rtde_c.moveJ_IK(pose, speed=0.3, acceleration=0.4)
                     
                 if success:
                     self.status_var.set(f"Arrived at {loc_name}")
@@ -507,7 +485,6 @@ class CalibrationGUI:
                 self.status_var.set("Move Error!")
             finally:
                 self.is_moving = False
-
     def gripper_btn_state(self, state):
         for button in self.gripper_buttons:
             button.config(state=state)
@@ -521,52 +498,6 @@ class CalibrationGUI:
         target = self.grip_close_pos_var.get() if cur_pos <= 128 else self.grip_open_pos_var.get()
         self.async_grip(target)
 
-    def run_test_sequence(self, seq_name):
-        if not self.rtde_c or not self.rtde_r:
-            logger.warning("Cannot run test sequence: robot is not connected.")
-            return
-        if self.is_moving:
-            return
-            
-        threading.Thread(target=self._execute_test_sequence, args=(seq_name,), daemon=True).start()
-        
-    def _execute_test_sequence(self, seq_name):
-        with self.motion_lock:
-            if self.is_moving: return
-            self.is_moving = True
-            try:
-                if self.freedrive_active:
-                    self.toggle_freedrive()
-                    
-                self.status_var.set(f"Testing {seq_name}...")
-                
-                # We instantiate a fresh PaperHandler using current config locations
-                # We need to save the current locations to the yaml first so PaperHandler loads them
-                self.save_config()
-                
-                ph = PaperHandler(self.rtde_c, self.rtde_r, config_path=OUTPUT_PATH)
-                ph.gripper = self.gripper
-                ph.gripper_connected = self.gripper_connected
-                
-                if seq_name == "all":
-                    success = ph.execute_paper_swap()
-                else:
-                    seqs = ph.get_partial_sequences()
-                    if seq_name in seqs:
-                        success = ph.execute_sequence(seqs[seq_name])
-                    else:
-                        success = False
-                        
-                if success:
-                    self.status_var.set("Test Sequence complete!")
-                else:
-                    self.status_var.set("Test Sequence failed!")
-                    
-            except Exception as e:
-                logger.error(f"Error during sequence test: {e}")
-                self.status_var.set("Test Error!")
-            finally:
-                self.is_moving = False
 
     def rotate_gripper(self, direction):
         if not self.rtde_c or not self.rtde_r:
