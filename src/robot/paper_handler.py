@@ -140,12 +140,36 @@ class PaperHandler:
             self.rtde_c.forceMode(tool_task_frame, tool_selection_vector, tool_wrench, 2, limits)
             time.sleep(0.5)
             
-        self._move_to("cut_end_pos", speed=self.cut_movement_speed, allow_joint=False)
-        
-        if self.rtde_c:
+            start_target = self.locs.get("cut_start_pos")
+            end_target = self.locs.get("cut_end_pos")
+            p_start = start_target.get("pose") if isinstance(start_target, dict) else start_target
+            p_end = end_target.get("pose") if isinstance(end_target, dict) else end_target
+            
+            if p_start and p_end and len(p_start) == 6 and len(p_end) == 6:
+                dist = math.sqrt(sum((b - a)**2 for a, b in zip(p_start[:3], p_end[:3])))
+                speed = self.cut_movement_speed
+                total_time = dist / speed if speed > 0 else 0
+                DT = 0.002
+                num_steps = int(total_time / DT)
+                
+                try:
+                    for step in range(num_steps + 1):
+                        t_start = self.rtde_c.initPeriod()
+                        frac = min(1.0, (step * DT) / total_time) if total_time > 0 else 1.0
+                        wp = [a + (b - a) * frac for a, b in zip(p_start, p_end)]
+                        self.rtde_c.servoL(wp, 0.0, 0.0, DT, 0.03, 2000)
+                        self.rtde_c.waitPeriod(t_start)
+                finally:
+                    self.rtde_c.servoStop()
+            else:
+                self._move_to("cut_end_pos", speed=self.cut_movement_speed, allow_joint=False)
+                
             logger.info("Stopping force mode...")
             self.rtde_c.forceModeStop()
             time.sleep(0.1)
+            
+        else:
+            self._move_to("cut_end_pos", speed=self.cut_movement_speed, allow_joint=False)
             
         self._move_to("safe_paper", allow_joint=True)
 
