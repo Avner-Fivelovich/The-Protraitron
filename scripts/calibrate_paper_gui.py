@@ -106,6 +106,37 @@ class CalibrationGUI:
             yaml.safe_dump(self.config, f, default_flow_style=False)
         logger.info(f"Saved config to {OUTPUT_PATH}")
 
+    def get_state_path(self):
+        return os.path.join(os.path.dirname(OUTPUT_PATH), ".calibrate_gui_state.yaml")
+
+    def load_gui_state(self):
+        state_path = self.get_state_path()
+        if os.path.exists(state_path):
+            try:
+                with open(state_path, 'r') as f:
+                    return yaml.safe_load(f) or {}
+            except Exception as e:
+                logger.error(f"Error loading GUI state: {e}")
+        return {}
+
+    def save_gui_state(self):
+        try:
+            state = {
+                "speed_var": self.speed_var.get(),
+                "accel_var": self.accel_var.get(),
+                "step_var": self.step_var.get(),
+                "move_mode_var": self.move_mode_var.get(),
+                "grip_speed_var": self.grip_speed_var.get(),
+                "grip_force_var": self.grip_force_var.get(),
+                "grip_step_var": self.grip_step_var.get(),
+                "grip_turn_var": self.grip_turn_var.get()
+            }
+            with open(self.get_state_path(), 'w') as f:
+                yaml.safe_dump(state, f, default_flow_style=False)
+            logger.info("Saved GUI parameters state.")
+        except Exception as e:
+            logger.error(f"Error saving GUI state: {e}")
+
     def _keepalive_loop(self):
         while not self.closing:
             time.sleep(1.0)
@@ -137,6 +168,8 @@ class CalibrationGUI:
                 self.rtde_c = rtde_control.RTDEControlInterface(self.robot_ip)
             self.status_var.set("Connected to UR5e")
             self.freedrive_btn.config(state="normal")
+            if hasattr(self, 'goto_btn'):
+                self.goto_btn.config(state="normal")
             if hasattr(self, 'test_buttons'):
                 for btn in self.test_buttons:
                     btn.config(state="normal")
@@ -224,10 +257,11 @@ class CalibrationGUI:
         tk.Button(btn_frame, text="Save Point & Next", command=self.save_point, bg="green").grid(row=0, column=1, padx=5)
         tk.Button(btn_frame, text="Skip", command=self.next_stage).grid(row=0, column=2, padx=5)
         
+        saved_state = self.load_gui_state()
         move_settings = GUI_CONFIG.get("movement_settings", {})
-        self.speed_var = tk.DoubleVar(value=move_settings.get("default_speed", 0.03))
-        self.step_var = tk.DoubleVar(value=move_settings.get("default_step", 0.005))
-        self.accel_var = tk.DoubleVar(value=move_settings.get("default_accel", 0.10))
+        self.speed_var = tk.DoubleVar(value=saved_state.get("speed_var", move_settings.get("default_speed", 0.03)))
+        self.step_var = tk.DoubleVar(value=saved_state.get("step_var", move_settings.get("default_step", 0.005)))
+        self.accel_var = tk.DoubleVar(value=saved_state.get("accel_var", move_settings.get("default_accel", 0.10)))
 
         settings_frame = tk.LabelFrame(self.master, text="Movement Settings")
         settings_frame.pack(pady=5, padx=10, fill="x")
@@ -242,7 +276,7 @@ class CalibrationGUI:
         tk.Scale(settings_frame, variable=self.step_var, from_=0.001, to=0.05, resolution=0.001, orient="horizontal").grid(row=2, column=1, padx=5, sticky="ew")
 
         # Interpolation mode selector
-        self.move_mode_var = tk.StringVar(value="joint_ik")
+        self.move_mode_var = tk.StringVar(value=saved_state.get("move_mode_var", "joint_ik"))
         mode_frame = tk.Frame(settings_frame)
         mode_frame.grid(row=3, column=0, columnspan=2, pady=4, sticky="w")
         tk.Label(mode_frame, text="Mode:").pack(side="left", padx=5)
@@ -250,10 +284,10 @@ class CalibrationGUI:
         tk.Radiobutton(mode_frame, text="Linear (moveL)", variable=self.move_mode_var, value="linear").pack(side="left", padx=5)
 
         gripper_settings = GUI_CONFIG.get("gripper_settings", {})
-        self.grip_speed_var = tk.IntVar(value=gripper_settings.get("default_speed", 100))
-        self.grip_force_var = tk.IntVar(value=gripper_settings.get("default_force", 100))
-        self.grip_step_var = tk.IntVar(value=gripper_settings.get("default_step", 5))
-        self.grip_turn_var = tk.DoubleVar(value=gripper_settings.get("default_turn_degrees", 10.0))
+        self.grip_speed_var = tk.IntVar(value=saved_state.get("grip_speed_var", gripper_settings.get("default_speed", 100)))
+        self.grip_force_var = tk.IntVar(value=saved_state.get("grip_force_var", gripper_settings.get("default_force", 100)))
+        self.grip_step_var = tk.IntVar(value=saved_state.get("grip_step_var", gripper_settings.get("default_step", 5)))
+        self.grip_turn_var = tk.DoubleVar(value=saved_state.get("grip_turn_var", gripper_settings.get("default_turn_degrees", 10.0)))
 
         gripper_frame = tk.LabelFrame(self.master, text="Gripper")
         gripper_frame.pack(pady=5, padx=10, fill="x")
@@ -315,6 +349,70 @@ class CalibrationGUI:
         self.test_buttons.append(btn_all)
         test_frame.grid_columnconfigure(0, weight=1)
         test_frame.grid_columnconfigure(1, weight=1)
+
+        # Go To Location Frame
+        goto_frame = tk.LabelFrame(self.master, text="Go To Saved Location")
+        goto_frame.pack(pady=5, padx=10, fill="x")
+        
+        self.goto_var = tk.StringVar()
+        self.goto_combo = ttk.Combobox(goto_frame, textvariable=self.goto_var, state="readonly")
+        self.goto_combo.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        
+        self.goto_btn = tk.Button(goto_frame, text="Go", command=self.go_to_location, state="disabled", bg="#ccffcc")
+        self.goto_btn.grid(row=0, column=1, padx=5, pady=5)
+        goto_frame.grid_columnconfigure(0, weight=1)
+        
+        self.update_goto_combo()
+
+    def update_goto_combo(self):
+        loc_keys = list(self.locations.keys())
+        self.goto_combo['values'] = loc_keys
+        if loc_keys:
+            self.goto_combo.set(loc_keys[0])
+            
+    def go_to_location(self):
+        loc_name = self.goto_var.get()
+        if not loc_name or loc_name not in self.locations:
+            logger.warning(f"Invalid location selected: {loc_name}")
+            return
+            
+        target = self.locations[loc_name]
+        if not self.rtde_c or not self.rtde_r:
+            logger.warning("Robot is not connected.")
+            return
+            
+        if self.is_moving:
+            return
+            
+        threading.Thread(target=self._execute_go_to, args=(loc_name, target), daemon=True).start()
+        
+    def _execute_go_to(self, loc_name, target):
+        with self.motion_lock:
+            if self.is_moving: return
+            self.is_moving = True
+            try:
+                if self.freedrive_active:
+                    self.toggle_freedrive()
+                
+                self.status_var.set(f"Moving to {loc_name}...")
+                speed = self.speed_var.get()
+                accel = self.accel_var.get()
+                mode = self.move_mode_var.get()
+                
+                if mode == "joint_ik":
+                    success = self.rtde_c.moveJ_IK(target, speed=0.3, acceleration=0.4)
+                else:
+                    success = self.rtde_c.moveL(target, speed, accel)
+                    
+                if success:
+                    self.status_var.set(f"Arrived at {loc_name}")
+                else:
+                    self.status_var.set(f"Failed to move to {loc_name}")
+            except Exception as e:
+                logger.error(f"Error moving to {loc_name}: {e}")
+                self.status_var.set("Move Error!")
+            finally:
+                self.is_moving = False
 
     def gripper_btn_state(self, state):
         for button in self.gripper_buttons:
@@ -581,6 +679,7 @@ class CalibrationGUI:
             self.update_stage_display()
         
     def on_closing(self):
+        self.save_gui_state()
         self.closing = True
         if self.freedrive_active and self.rtde_c:
             try:
