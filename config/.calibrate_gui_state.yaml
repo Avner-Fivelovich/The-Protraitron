@@ -4,7 +4,7 @@ grip_force_var: 50
 grip_open_pos_var: 50
 grip_speed_var: 50
 grip_step_var: 5
-grip_turn_var: 10.0
+grip_turn_var: 90.0
 move_mode_var: linear
 speed_var: 0.03
-step_var: 0.005
+step_var: 0.001

@@ -52,9 +52,9 @@ class UR5eController:
         self.width = 0.19
         self.height = 0.27
         
-        # Load calibration parameters and default compliance configs
-        self.load_calibration()
+        # Load configs
         self.cfg = load_config_from_yaml(self.marker_config_path)
+        self.load_calibration()
         
     def load_calibration(self):
         """
@@ -70,8 +70,10 @@ class UR5eController:
             self.p0_joints = data.get("p0_joints")
             self.p0_pose = data.get("locations", {}).get("draw_home")
             self.p1 = data.get("p1")
-            self.width = data.get("width", 0.19)
-            self.height = data.get("height", 0.27)
+            
+            # Prioritize marker.yaml canvas dimensions if paper_manipulation.yaml doesn't explicitly override
+            self.width = data.get("width", self.cfg.get("canvas_width", 0.19))
+            self.height = data.get("height", self.cfg.get("canvas_height", 0.27))
             
             if self.p1:
                 logger.success("Calibration loaded successfully from config.")
