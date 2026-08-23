@@ -85,143 +85,92 @@ class PaperHandler:
         
         self.connect_gripper()
         
-    def get_partial_sequences(self):
-        return {
-            "Store Marker & Grab Magnet 1": [
-                ("move", "safe_paper"),
-                ("move", "safe_tools"),
-                ("move", "above_marker_dock"),
-                ("move", "marker_dock"),
-                ("gripper", "open"),
-                ("move", "above_marker_dock"),
-                ("move", "safe_tools"),
-                ("move", "safe_paper"),
-                ("move", "magnet_1_start"),
-                ("gripper", "close"),
-                ("move", "safe_paper"),
-                ("move", "magnet_1_park"),
-                ("gripper", "open"),
-                ("move", "safe_paper")
-            ],
-            "Grab Knife & Cut Paper": [
-                ("move", "safe_paper"),
-                ("move", "safe_tools"),
-                ("move", "above_knife"),
-                ("move", "knife_dock"),
-                ("gripper", "close"),
-                ("move", "above_knife"),
-                ("move", "safe_tools"),
-                ("move", "safe_paper"),
-                ("move", "cut_start_pos"),
-                ("force_cut", ("cut_end_pos", self.cut_movement_speed)),
-                ("move", "safe_paper"),
-                ("move", "safe_tools"),
-                ("move", "above_knife"),
-                ("move", "knife_dock"),
-                ("gripper", "open"),
-                ("move", "safe_tools"),
-                ("move", "safe_paper")
-            ],
-            "Handover Drawing": [
-                ("move", "safe_paper"),
-                ("move", "cut_paper_grab"),
-                ("gripper", "close"),
-                ("move_speed", ("cut_paper_pull_dest", self.pull_paper_speed)),
-                ("move", "safe_paper"),
-                ("move_speed", ("safe_midpoint_to_user", self.handover_speed)),
-                ("move_speed", ("user_handover_location", self.handover_speed)),
-                ("wait_pull", self.pull_timeout),
-                ("gripper", "open"),
-                ("move_speed", ("safe_midpoint_to_user", self.handover_speed)),
-                ("move", "safe_paper")
-            ],
-            "Load New Paper": [
-                ("move", "safe_paper"),
-                ("move", "magnet_2_start"),
-                ("gripper", "close"),
-                ("move", "safe_paper"),
-                ("move", "magnet_2_park"),
-                ("gripper", "open"),
-                ("move", "safe_paper"),
-                ("move", "fresh_paper_grab"),
-                ("gripper", "close"),
-                ("move_speed", ("fresh_paper_pull_dest", self.fetch_paper_speed)),
-                ("gripper", "open"),
-                ("move", "safe_paper")
-            ],
-            "Replace Magnets & Grab Marker": [
-                ("move", "safe_paper"),
-                ("move", "magnet_2_park"),
-                ("gripper", "close"),
-                ("move", "safe_paper"),
-                ("move", "magnet_2_start"),
-                ("gripper", "open"),
-                ("move", "safe_paper"),
-                ("move", "magnet_1_park"),
-                ("gripper", "close"),
-                ("move", "safe_paper"),
-                ("move", "paper_straighten_start"),
-                ("force_straighten", "magnet_1_start"),
-                ("gripper", "open"),
-                ("move", "safe_paper"),
-                ("move", "safe_tools"),
-                ("move", "above_marker_dock"),
-                ("move", "marker_dock"),
-                ("gripper", "close"),
-                ("move", "above_marker_dock"),
-                ("move", "safe_tools"),
-                ("move", "safe_paper"),
-                ("move", "draw_home")
-            ]
-        }
+    def pick_up(self, object_name):
+        self._move_to("safe_tools", allow_joint=True)
+        self._move_to(f"above_{object_name}", allow_joint=True)
+        self._move_to(object_name, allow_joint=True)
+        self._close_gripper()
+        self._move_to(f"above_{object_name}", allow_joint=True)
+        self._move_to("safe_tools", allow_joint=True)
 
-    def execute_paper_swap(self):
-        """Executes the full paper manipulation sequence."""
-        if not self.locs:
-            logger.error("No locations found in config. Please run calibration first.")
-            return False
-            
-        logger.info("Starting full paper swap sequence...")
-        
-        self.connect_gripper()
-        
-        # Stitch all partial sequences together for the full swap
-        sequence = []
-        for seq_name, seq_actions in self.get_partial_sequences().items():
-            sequence.extend(seq_actions)
-            
-        return self.execute_sequence(sequence)
+    def drop(self, object_name):
+        self._move_to("safe_tools", allow_joint=True)
+        self._move_to(f"above_{object_name}", allow_joint=True)
+        self._move_to(object_name, allow_joint=True)
+        self._open_gripper()
+        self._move_to(f"above_{object_name}", allow_joint=True)
+        self._move_to("safe_tools", allow_joint=True)
 
-    def execute_sequence(self, sequence):
-        try:
-            for action in sequence:
-                act_type = action[0]
-                if act_type == "move":
-                    self._move_to(action[1])
-                elif act_type == "move_speed":
-                    self._move_to(action[1][0], speed=action[1][1])
-                elif act_type == "gripper":
-                    if action[1] == "open":
-                        self._open_gripper()
-                    else:
-                        self._close_gripper()
-                elif act_type == "wait_pull":
-                    success = self._wait_for_human_pull(timeout=action[1])
-                    if not success:
-                        logger.warning("Human pull timeout. Aborting sequence.")
-                        self._open_gripper()
-                        return False
-                elif act_type == "force_cut":
-                    self._force_move(action[1][0], speed=action[1][1])
-                elif act_type == "force_straighten":
-                    self._force_move(action[1], speed=self.default_speed)
-                    
-            logger.info("Sequence completed successfully.")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Sequence execution failed: {e}")
-            return False
+    def execute_stamping(self):
+        self._move_to("safe_tools", allow_joint=True)
+        self._move_to("above_stamp", allow_joint=True)
+        self._move_to("stamp", allow_joint=True)
+        self._close_gripper()
+        self._move_to("above_stamp", allow_joint=True)
+        self._move_to("above_ink", allow_joint=True)
+        self._move_to("ink", allow_joint=True)
+        self._move_to("above_ink", allow_joint=True)
+        self._move_to("safe_tools", allow_joint=True)
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("stamping_pos", allow_joint=True)
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("safe_tools", allow_joint=True)
+        self._move_to("above_stamp", allow_joint=True)
+        self._move_to("stamp", allow_joint=True)
+        self._open_gripper()
+        self._move_to("above_stamp", allow_joint=True)
+        self._move_to("safe_tools", allow_joint=True)
+
+    def execute_cut(self):
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("cut_start_pos", allow_joint=True)
+        self._move_to("cut_end_pos", speed=self.cut_movement_speed, allow_joint=False)
+        self._move_to("safe_paper", allow_joint=True)
+
+    def hand_to_user(self):
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("lower_magnet_start", allow_joint=True)
+        self._close_gripper()
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("lower_magnet_park", allow_joint=True)
+        self._open_gripper()
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("safe_tools", allow_joint=True)
+        self._move_to("cut_paper_grab", allow_joint=True)
+        self._move_to("cut_paper_pull_dest", speed=self.pull_paper_speed, allow_joint=False)
+        self._move_to("safe_midpoint_to_user", allow_joint=True)
+        self._move_to("user_handover_location", allow_joint=True)
+        self._wait_for_human_pull()
+        self._open_gripper()
+        self._move_to("user_handover_location", allow_joint=True)
+        self._move_to("safe_tools", allow_joint=True)
+        self._move_to("safe_paper", allow_joint=True)
+
+    def put_new_paper(self):
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("upper_magnet_end", allow_joint=True)
+        self._close_gripper()
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("upper_magnet_park", allow_joint=True)
+        self._open_gripper()
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("fresh_paper_grab", allow_joint=True)
+        self._close_gripper()
+        self._move_to("fresh_paper_pull_dest", speed=self.fetch_paper_speed, allow_joint=False)
+        self._open_gripper()
+        self._move_to("upper_magnet_park", allow_joint=True)
+        self._close_gripper()
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("upper_magnet_start", allow_joint=True)
+        self._open_gripper()
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("lower_magnet_park", allow_joint=True)
+        self._close_gripper()
+        self._move_to("safe_paper", allow_joint=True)
+        self._move_to("paper_straighten_start", allow_joint=True)
+        self._move_to("lower_magnet_start", allow_joint=False)
+        self._open_gripper()
+        self._move_to("safe_paper", allow_joint=True)
 
     def _move_to(self, location_name, speed=None, allow_joint=False):
         if speed is None:
@@ -341,3 +290,40 @@ class PaperHandler:
         finally:
             self.rtde_c.forceModeStop()
             time.sleep(0.1)
+
+    def execute_paper_swap(self):
+        """Executes the full paper manipulation sequence by chaining atomic functions."""
+        if not self.locs:
+            logger.error("No locations found in config. Please run calibration first.")
+            return False
+            
+        logger.info("Starting full paper swap sequence using atomic functions...")
+        self.connect_gripper()
+        
+        try:
+            # 1. Store Marker (drop it)
+            self.drop("marker_dock")
+            
+            # 2. Grab Knife & Cut
+            self.pick_up("knife_dock")
+            self.execute_cut()
+            self.drop("knife_dock")
+            
+            # 3. Handover Drawing
+            self.hand_to_user()
+            
+            # 4. Load New Paper
+            self.put_new_paper()
+            
+            # 5. Grab Marker
+            self.pick_up("marker_dock")
+            
+            # 6. Go Home
+            self._move_to("draw_home", allow_joint=True)
+            
+            logger.info("Sequence completed successfully.")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Sequence execution failed: {e}")
+            return False
