@@ -13,6 +13,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.common.logger import get_logger
 from src.robot.paper_roller import rotate_tool_orientation
 from src.robot.robotiq_gripper import RobotiqGripper
+from src.robot.paper_handler import PaperHandler
 
 logger = get_logger("PaperCalibrationGUI")
 
@@ -136,6 +137,9 @@ class CalibrationGUI:
                 self.rtde_c = rtde_control.RTDEControlInterface(self.robot_ip)
             self.status_var.set("Connected to UR5e")
             self.freedrive_btn.config(state="normal")
+            if hasattr(self, 'test_buttons'):
+                for btn in self.test_buttons:
+                    btn.config(state="normal")
 
             gripper_port = CENTRAL_CONFIG.get("hardware", {}).get("gripper_port", 63352)
             try:
@@ -288,6 +292,30 @@ class CalibrationGUI:
         self.master.bind('<space>', lambda e: self.save_point())
         self.master.bind('<f>', lambda e: self.toggle_freedrive())
 
+        # Test Sequences Frame
+        test_frame = tk.LabelFrame(self.master, text="Test Action Sequences")
+        test_frame.pack(pady=10, padx=10, fill="x")
+        
+        self.test_buttons = []
+        dummy_ph = PaperHandler(None, None)
+        seqs = dummy_ph.get_partial_sequences()
+        
+        row, col = 0, 0
+        for seq_name in seqs.keys():
+            btn = tk.Button(test_frame, text=seq_name, command=lambda name=seq_name: self.run_test_sequence(name), state="disabled")
+            btn.grid(row=row, column=col, padx=5, pady=5, sticky="ew")
+            self.test_buttons.append(btn)
+            col += 1
+            if col > 1:
+                col = 0
+                row += 1
+                
+        btn_all = tk.Button(test_frame, text="Run Full Paper Swap", bg="#ffcccc", command=lambda: self.run_test_sequence("all"), state="disabled")
+        btn_all.grid(row=row+1, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
+        self.test_buttons.append(btn_all)
+        test_frame.grid_columnconfigure(0, weight=1)
+        test_frame.grid_columnconfigure(1, weight=1)
+
     def gripper_btn_state(self, state):
         for button in self.gripper_buttons:
             button.config(state=state)
@@ -300,6 +328,53 @@ class CalibrationGUI:
         # If currently open (<=50), close it; otherwise open it
         target = 100 if cur_pos <= 128 else 0
         self.async_grip(target)
+
+    def run_test_sequence(self, seq_name):
+        if not self.rtde_c or not self.rtde_r:
+            logger.warning("Cannot run test sequence: robot is not connected.")
+            return
+        if self.is_moving:
+            return
+            
+        threading.Thread(target=self._execute_test_sequence, args=(seq_name,), daemon=True).start()
+        
+    def _execute_test_sequence(self, seq_name):
+        with self.motion_lock:
+            if self.is_moving: return
+            self.is_moving = True
+            try:
+                if self.freedrive_active:
+                    self.toggle_freedrive()
+                    
+                self.status_var.set(f"Testing {seq_name}...")
+                
+                # We instantiate a fresh PaperHandler using current config locations
+                # We need to save the current locations to the yaml first so PaperHandler loads them
+                self.save_config()
+                
+                ph = PaperHandler(self.rtde_c, self.rtde_r, config_path=self.output_path)
+                ph.gripper = self.gripper
+                ph.gripper_connected = self.gripper_connected
+                
+                if seq_name == "all":
+                    success = ph.execute_paper_swap()
+                else:
+                    seqs = ph.get_partial_sequences()
+                    if seq_name in seqs:
+                        success = ph.execute_sequence(seqs[seq_name])
+                    else:
+                        success = False
+                        
+                if success:
+                    self.status_var.set("Test Sequence complete!")
+                else:
+                    self.status_var.set("Test Sequence failed!")
+                    
+            except Exception as e:
+                logger.error(f"Error during sequence test: {e}")
+                self.status_var.set("Test Error!")
+            finally:
+                self.is_moving = False
 
     def rotate_gripper(self, direction):
         if not self.rtde_c or not self.rtde_r:

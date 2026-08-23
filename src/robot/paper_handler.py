@@ -19,8 +19,10 @@ class PaperHandler:
         # Load parameters
         self.speeds = self.config.get("speeds", {})
         self.default_speed = self.speeds.get("default_move", 0.1)
-        self.cut_speed = self.speeds.get("cut_pull", 0.3)
-        self.fetch_speed = self.speeds.get("fetch_pull", 0.05)
+        self.cut_movement_speed = self.speeds.get("cut_movement_speed", 0.05)
+        self.pull_paper_speed = self.speeds.get("pull_paper_speed", 0.1)
+        self.fetch_paper_speed = self.speeds.get("fetch_paper_speed", 0.05)
+        self.handover_speed = self.speeds.get("handover_speed", 0.15)
         
         self.force_thresholds = self.config.get("force_thresholds", {})
         self.handover_pull = self.force_thresholds.get("handover_pull", 5.0)
@@ -83,38 +85,114 @@ class PaperHandler:
         
         self.connect_gripper()
         
-        sequence = [
-            ("move", "pen_dock"),
-            ("gripper", "open"),
-            ("move", "magnet_1_start"),
-            ("gripper", "close"),
-            ("move", "magnet_1_temp"),
-            ("gripper", "open"),
-            ("move", "magnet_2_start"),
-            ("gripper", "close"),
-            ("move", "magnet_2_temp"),
-            ("gripper", "open"),
-            ("move", "paper_grab"),
-            ("gripper", "close"),
-            ("move_speed", ("cut_trajectory", self.cut_speed)),
-            ("move", "handover_target"),
-            ("wait_pull", self.pull_timeout),
-            ("gripper", "open"),
-            ("move", "new_paper_roll"),
-            ("gripper", "close"),
-            ("move_speed", ("paper_pull_end", self.fetch_speed)),
-            ("gripper", "open"),
-            ("move", "magnet_2_temp"),
-            ("gripper", "close"),
-            ("move", "magnet_2_start"),
-            ("gripper", "open"),
-            ("move", "magnet_1_temp"),
-            ("gripper", "close"),
-            ("straighten", "magnet_1"),
-            ("move", "pen_dock"),
-            ("gripper", "close"),
-        ]
+    def get_partial_sequences(self):
+        return {
+            "Store Marker & Grab Magnet 1": [
+                ("move", "safe_paper"),
+                ("move", "safe_tools"),
+                ("move", "above_dock"),
+                ("move", "marker_dock"),
+                ("gripper", "open"),
+                ("move", "above_dock"),
+                ("move", "safe_tools"),
+                ("move", "safe_paper"),
+                ("move", "magnet_1_start"),
+                ("gripper", "close"),
+                ("move", "safe_paper"),
+                ("move", "magnet_1_temp"),
+                ("gripper", "open"),
+                ("move", "safe_paper")
+            ],
+            "Grab Knife & Cut Paper": [
+                ("move", "safe_paper"),
+                ("move", "safe_tools"),
+                ("move", "above_knife"),
+                ("move", "knife_dock"),
+                ("gripper", "close"),
+                ("move", "above_knife"),
+                ("move", "safe_tools"),
+                ("move", "safe_paper"),
+                ("move", "start_cut_location"),
+                ("force_cut", ("end_cut_location", self.cut_movement_speed)),
+                ("move", "safe_paper"),
+                ("move", "safe_tools"),
+                ("move", "above_knife"),
+                ("move", "knife_dock"),
+                ("gripper", "open"),
+                ("move", "safe_tools"),
+                ("move", "safe_paper")
+            ],
+            "Handover Drawing": [
+                ("move", "safe_paper"),
+                ("move", "paper_location"),
+                ("gripper", "close"),
+                ("move_speed", ("pull_paper_location", self.pull_paper_speed)),
+                ("move", "safe_paper"),
+                ("move_speed", ("safe_midpoint_to_user", self.handover_speed)),
+                ("move_speed", ("user_handing_location", self.handover_speed)),
+                ("wait_pull", self.pull_timeout),
+                ("gripper", "open"),
+                ("move_speed", ("safe_midpoint_to_user", self.handover_speed)),
+                ("move", "safe_paper")
+            ],
+            "Load New Paper": [
+                ("move", "safe_paper"),
+                ("move", "magnet_2_start"),
+                ("gripper", "close"),
+                ("move", "safe_paper"),
+                ("move", "magnet_2_temp"),
+                ("gripper", "open"),
+                ("move", "safe_paper"),
+                ("move", "new_paper_location"),
+                ("gripper", "close"),
+                ("move_speed", ("paper_pull_end", self.fetch_paper_speed)),
+                ("gripper", "open"),
+                ("move", "safe_paper")
+            ],
+            "Replace Magnets & Grab Marker": [
+                ("move", "safe_paper"),
+                ("move", "magnet_2_temp"),
+                ("gripper", "close"),
+                ("move", "safe_paper"),
+                ("move", "magnet_2_start"),
+                ("gripper", "open"),
+                ("move", "safe_paper"),
+                ("move", "magnet_1_temp"),
+                ("gripper", "close"),
+                ("move", "safe_paper"),
+                ("move", "below_magnet_2_start"),
+                ("force_straighten", "magnet_1_start"),
+                ("gripper", "open"),
+                ("move", "safe_paper"),
+                ("move", "safe_tools"),
+                ("move", "above_dock"),
+                ("move", "marker_dock"),
+                ("gripper", "close"),
+                ("move", "above_dock"),
+                ("move", "safe_tools"),
+                ("move", "safe_paper"),
+                ("move", "P0")
+            ]
+        }
+
+    def execute_paper_swap(self):
+        """Executes the full paper manipulation sequence."""
+        if not self.locs:
+            logger.error("No locations found in config. Please run calibration first.")
+            return False
+            
+        logger.info("Starting full paper swap sequence...")
         
+        self.connect_gripper()
+        
+        # Stitch all partial sequences together for the full swap
+        sequence = []
+        for seq_name, seq_actions in self.get_partial_sequences().items():
+            sequence.extend(seq_actions)
+            
+        return self.execute_sequence(sequence)
+
+    def execute_sequence(self, sequence):
         try:
             for action in sequence:
                 act_type = action[0]
@@ -133,14 +211,16 @@ class PaperHandler:
                         logger.warning("Human pull timeout. Aborting sequence.")
                         self._open_gripper()
                         return False
-                elif act_type == "straighten":
-                    self._return_and_straighten_magnet_1()
+                elif act_type == "force_cut":
+                    self._force_move(action[1][0], speed=action[1][1])
+                elif act_type == "force_straighten":
+                    self._force_move(action[1], speed=self.default_speed)
                     
-            logger.info("Paper swap sequence complete. Ready for next drawing.")
+            logger.info("Sequence completed successfully.")
             return True
             
         except Exception as e:
-            logger.error(f"Paper swap sequence failed: {e}")
+            logger.error(f"Sequence execution failed: {e}")
             return False
 
     def _move_to(self, location_name, speed=None):
@@ -182,19 +262,28 @@ class PaperHandler:
                 return True
             time.sleep(self.force_check_interval)
 
-    def _return_and_straighten_magnet_1(self):
-        logger.info("Returning and straightening Magnet 1...")
-        target = self.locs.get("magnet_1_start")
-        if not target:
-            raise ValueError("magnet_1_start not set")
+    def _force_move(self, location_name, speed=None):
+        if speed is None:
+            speed = self.default_speed
+        
+        target = self.locs.get(location_name)
+        if not target or len(target) < 6:
+            raise ValueError(f"Invalid or missing location: {location_name}")
             
-        # Move just below target (assume Y is the direction of straightening)
-        # We will move according to config offset in Y (or relative to the board)
-        straighten_start = list(target)
-        straighten_start[1] -= self.straightening_offset_y 
+        logger.info(f"Force moving to {location_name}...")
         
-        self.rtde_c.moveL(straighten_start, self.default_speed, self.default_speed * 2)
+        tool_task_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        tool_selection_vector = [1, 0, 0, 0, 0, 0] # Compliance only on Base X
+        # Negative X points towards the drawing board (standard Portraitron setup)
+        tool_wrench = [-15.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        force_type = 2
+        force_limits = [2.0, 2.0, 1.5, 1.0, 1.0, 1.0]
         
-        # Slide to target
-        self.rtde_c.moveL(target, self.fetch_speed, self.fetch_speed * 2)
-        self._open_gripper()
+        try:
+            self.rtde_c.forceModeSetDamping(0.005)
+            self.rtde_c.forceMode(tool_task_frame, tool_selection_vector, tool_wrench, force_type, force_limits)
+            time.sleep(0.5) # Wait for force stabilization
+            self.rtde_c.moveL(target, speed, speed * 2)
+        finally:
+            self.rtde_c.forceModeStop()
+            time.sleep(0.1)
