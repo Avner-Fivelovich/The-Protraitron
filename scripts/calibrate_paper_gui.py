@@ -293,7 +293,7 @@ class CalibrationGUI:
         gripper_frame.pack(pady=5, padx=10, fill="x")
         self.gripper_buttons = []
         for column, label, command in (
-            (0, "Open", lambda: self.async_grip(0)),
+            (0, "Open", lambda: self.async_grip(50)),
             (1, "Turn +", lambda: self.rotate_gripper(1)),
             (2, "Turn -", lambda: self.rotate_gripper(-1)),
             (3, "Close", lambda: self.async_grip(100)),
@@ -423,8 +423,8 @@ class CalibrationGUI:
             logger.warning("Gripper attempted toggle, but is not connected.")
             return
         cur_pos = self.gripper.get_current_position()
-        # If currently open (<=50), close it; otherwise open it
-        target = 100 if cur_pos <= 128 else 0
+        # If currently open (<=128), close it; otherwise open it to 50%
+        target = 100 if cur_pos <= 128 else 50
         self.async_grip(target)
 
     def run_test_sequence(self, seq_name):

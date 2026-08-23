@@ -1,5 +1,5 @@
 limits:
-  min_position: 0
+  min_position: 127
   max_position: 255
   min_speed: 0
   max_speed: 127

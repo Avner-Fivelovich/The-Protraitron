@@ -31,7 +31,7 @@ class PaperHandler:
         
         self.gripper_cfg = self.config.get("gripper", {})
         self.gripper_port = self.gripper_cfg.get("port", 63352)
-        self.gripper_open_pos = self.gripper_cfg.get("open_pos", 0)
+        self.gripper_open_pos = self.gripper_cfg.get("open_pos", 127)
         self.gripper_close_pos = self.gripper_cfg.get("close_pos", 255)
         self.gripper_speed = self.gripper_cfg.get("speed", 127)
         self.gripper_force = self.gripper_cfg.get("force", 127)
