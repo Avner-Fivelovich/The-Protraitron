@@ -223,16 +223,32 @@ class PaperHandler:
             logger.error(f"Sequence execution failed: {e}")
             return False
 
-    def _move_to(self, location_name, speed=None):
+    def _move_to(self, location_name, speed=None, allow_joint=False):
         if speed is None:
             speed = self.default_speed
         
         target = self.locs.get(location_name)
-        if not target or len(target) < 6:
+        if not target:
             raise ValueError(f"Invalid or missing location: {location_name}")
             
         logger.info(f"Moving to {location_name}...")
-        self.rtde_c.moveL(target, speed, speed * 2)
+        if isinstance(target, dict):
+            pose = target.get("pose")
+            joints = target.get("joints")
+            if not pose or len(pose) < 6:
+                raise ValueError(f"Invalid hybrid pose for: {location_name}")
+            target_pose = pose
+            
+            if allow_joint and joints and len(joints) >= 6:
+                logger.info(f"Using moveJ (arc motion) for {location_name} to avoid singularities...")
+                self.rtde_c.moveJ(joints, speed*2, speed*4)
+            else:
+                self.rtde_c.moveL(pose, speed, speed * 2)
+        else:
+            if len(target) < 6:
+                raise ValueError(f"Invalid or missing location: {location_name}")
+            target_pose = target
+            self.rtde_c.moveL(target_pose, speed, speed * 2)
         
         # Live validation
         timeout = 10.0
@@ -241,7 +257,7 @@ class PaperHandler:
             if self.rtde_r is None:
                 break
             curr = self.rtde_r.getActualTCPPose()
-            dist = math.sqrt(sum((a - b)**2 for a, b in zip(curr[:3], target[:3])))
+            dist = math.sqrt(sum((a - b)**2 for a, b in zip(curr[:3], target_pose[:3])))
             if dist < 0.005:  # 5mm tolerance for validation
                 break
             time.sleep(0.01)
@@ -282,8 +298,16 @@ class PaperHandler:
             speed = self.default_speed
         
         target = self.locs.get(location_name)
-        if not target or len(target) < 6:
+        if not target:
             raise ValueError(f"Invalid or missing location: {location_name}")
+            
+        if isinstance(target, dict):
+            target_pose = target.get("pose")
+        else:
+            target_pose = target
+            
+        if not target_pose or len(target_pose) < 6:
+            raise ValueError(f"Invalid location pose for: {location_name}")
             
         logger.info(f"Force moving to {location_name}...")
         
@@ -298,7 +322,7 @@ class PaperHandler:
             self.rtde_c.forceModeSetDamping(0.005)
             self.rtde_c.forceMode(tool_task_frame, tool_selection_vector, tool_wrench, force_type, force_limits)
             time.sleep(0.5) # Wait for force stabilization
-            self.rtde_c.moveL(target, speed, speed * 2)
+            self.rtde_c.moveL(target_pose, speed, speed * 2)
             
             # Live validation
             timeout = 10.0
@@ -307,7 +331,7 @@ class PaperHandler:
                 if self.rtde_r is None:
                     break
                 curr = self.rtde_r.getActualTCPPose()
-                dist = math.sqrt(sum((a - b)**2 for a, b in zip(curr[:3], target[:3])))
+                dist = math.sqrt(sum((a - b)**2 for a, b in zip(curr[:3], target_pose[:3])))
                 if dist < 0.005:
                     break
                 time.sleep(0.01)

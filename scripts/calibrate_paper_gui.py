@@ -753,7 +753,8 @@ class CalibrationGUI:
         if self.rtde_r:
             key = self.stages[self.current_stage_idx][0]
             pose = self.rtde_r.getActualTCPPose()
-            self.locations[key] = pose
+            joints = self.rtde_r.getActualQ()
+            self.locations[key] = {"pose": pose, "joints": joints}
             self.save_config()
             logger.info(f"Saved {key}: {pose}")
         self.next_stage()
