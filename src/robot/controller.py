@@ -67,8 +67,13 @@ class UR5eController:
             with open(self.calibration_path, "r") as f:
                 data = yaml.safe_load(f) or {}
             
-            self.p0_joints = data.get("p0_joints")
             self.p0_pose = data.get("locations", {}).get("draw_home")
+            if isinstance(self.p0_pose, dict):
+                self.p0_joints = self.p0_pose.get("joints", data.get("p0_joints"))
+                self.p0_pose = self.p0_pose.get("pose")
+            else:
+                self.p0_joints = data.get("p0_joints")
+            
             self.p1 = data.get("p1")
             
             # Prioritize marker.yaml canvas dimensions if paper_manipulation.yaml doesn't explicitly override
@@ -144,7 +149,8 @@ class UR5eController:
         
     def home(self):
         """
-        Moves configuration linearly back to the starting hover pose P0 using moveL.
+        Moves configuration back to the starting hover pose P0.
+        Uses moveJ if joint angles are available, otherwise moveL.
         """
         if self.dryrun:
             logger.info("[DRY RUN] Homing bypassed.")
@@ -158,9 +164,13 @@ class UR5eController:
             logger.error("Homing failed: No p0_pose stored in calibration.")
             return
             
-        logger.info("Homing to Bottom-Left starting hover pose (P0) using moveL...")
         try:
-            self.rtde_c.moveL(self.p0_pose, self.cfg.get('home_speed', 0.1), self.cfg.get('home_accel', 0.2))
+            if hasattr(self, 'p0_joints') and self.p0_joints and len(self.p0_joints) >= 6:
+                logger.info("Homing to Bottom-Left starting hover pose (P0) using moveJ...")
+                self.rtde_c.moveJ(self.p0_joints, self.cfg.get('home_speed', 0.1)*2, self.cfg.get('home_accel', 0.2)*4)
+            else:
+                logger.info("Homing to Bottom-Left starting hover pose (P0) using moveL...")
+                self.rtde_c.moveL(self.p0_pose, self.cfg.get('home_speed', 0.1), self.cfg.get('home_accel', 0.2))
             logger.success("Robot arrived at P0.")
         except Exception as e:
             logger.error(f"Homing failed (possibly disconnected): {e}")
