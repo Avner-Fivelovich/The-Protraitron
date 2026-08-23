@@ -539,7 +539,7 @@ class CalibrationGUI:
                 # We need to save the current locations to the yaml first so PaperHandler loads them
                 self.save_config()
                 
-                ph = PaperHandler(self.rtde_c, self.rtde_r, config_path=self.output_path)
+                ph = PaperHandler(self.rtde_c, self.rtde_r, config_path=OUTPUT_PATH)
                 ph.gripper = self.gripper
                 ph.gripper_connected = self.gripper_connected
                 
