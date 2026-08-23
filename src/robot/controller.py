@@ -159,8 +159,11 @@ class UR5eController:
             return
             
         logger.info("Homing to Bottom-Left starting hover pose (P0) using moveL...")
-        self.rtde_c.moveL(self.p0_pose, self.cfg.get('home_speed', 0.1), self.cfg.get('home_accel', 0.2))
-        logger.success("Robot arrived at P0.")
+        try:
+            self.rtde_c.moveL(self.p0_pose, self.cfg.get('home_speed', 0.1), self.cfg.get('home_accel', 0.2))
+            logger.success("Robot arrived at P0.")
+        except Exception as e:
+            logger.error(f"Homing failed (possibly disconnected): {e}")
         
     def log_event(self, event_name: str):
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
@@ -242,9 +245,9 @@ class UR5eController:
             self.log_event(f"Stroke {idx + 1}/{total_strokes} - Probing surface started")
             p_contact = probe_surface_point(self.rtde_c, self.rtde_r, hover_pose, self.cfg)
             if not p_contact:
-                logger.error(f"Probing failed for stroke {idx + 1}. Skipping this stroke.")
-                self.log_event(f"Stroke {idx + 1}/{total_strokes} - Probing failed")
-                continue
+                logger.error(f"Probing failed or robot disconnected at stroke {idx + 1}. Aborting drawing sequence.")
+                self.log_event(f"Stroke {idx + 1}/{total_strokes} - Probing failed. Aborting.")
+                break
             self.log_event(f"Stroke {idx + 1}/{total_strokes} - Surface contact established")
                 
             # Apply drawing depth offset to contact X pose (decreasing X pushes closer to board)
