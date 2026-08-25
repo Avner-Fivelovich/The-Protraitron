@@ -368,10 +368,12 @@ class PaperHandler:
             # 1. Store Marker (drop it)
             self.drop("marker_dock")
             
-            # 2. Grab Knife & Cut
-            self.pick_up("knife_dock")
-            self.execute_cut()
-            self.drop("knife_dock")
+            # 2. Safe Standby & Manual Cut (Replaces knife pickup & cutting)
+            self._move_to("safe_paper", allow_joint=True)
+            logger.info("=" * 60)
+            logger.info("ROBOT IN SAFE STANDBY: WAITING FOR MANUAL PAPER CUT")
+            logger.info("=" * 60)
+            input("\n[OPERATOR ACTION REQUIRED] Please cut the paper manually, then press [ENTER] to continue with handover...")
             
             # 3. Handover Drawing
             self.hand_to_user()
