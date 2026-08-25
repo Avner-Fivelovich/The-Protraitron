@@ -3,6 +3,7 @@ import math
 import os
 from src.common.logger import get_logger
 from src.common.config_utils import load_config_from_yaml
+from src.common.robot_utils import probe_surface_point
 from src.robot.robotiq_gripper import RobotiqGripper
 
 logger = get_logger("PaperHandler")
@@ -93,18 +94,23 @@ class PaperHandler:
         self._move_to(object_name, allow_joint=True)
         self._open_gripper()
         self._move_to(f"above_{object_name}", allow_joint=True)
-        self._move_to("safe_tools", allow_joint=False)
+        self._move_to("safe_tools", allow_joint=True)
 
     def execute_stamping(self):
-        self.pick_up("stamp")
-        
         self._move_to("safe_tools", allow_joint=True)
+        self._move_to("above_stamp", allow_joint=True)
+        self._move_to("stamp", allow_joint=True)
+        self._close_gripper()
+
         self._move_to("above_ink", allow_joint=True)
         self._move_to("ink", allow_joint=True)
         self._move_to("above_ink", allow_joint=True)
         
+        self._move_to("safe_tools", allow_joint=True)
         self._move_to("safe_paper", allow_joint=True)
         self._move_to("stamping_pos", allow_joint=True)
+        p_stamp = self.locs.get("stamping_pos").get("pose") if isinstance(self.locs.get("stamping_pos"), dict) else self.locs.get("stamping_pos")
+        probe_surface_point(self.rtde_c, self.rtde_r, p_stamp, self.config)
         self._move_to("safe_paper", allow_joint=True)
         
         self.drop("stamp")
