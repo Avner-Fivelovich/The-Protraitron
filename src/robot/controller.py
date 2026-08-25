@@ -540,13 +540,13 @@ class UR5eController:
 
         textstr = "\n".join(info_lines)
         props = dict(boxstyle='round,pad=0.5', facecolor='#f8f9fa', alpha=0.9, edgecolor='#cccccc', linewidth=1)
-        ax.text(0.02, 0.98, textstr, transform=ax.transAxes, fontsize=8.5,
+        ax.text(1.05, 0.98, textstr, transform=ax.transAxes, fontsize=8.5,
                 verticalalignment='top', bbox=props, fontfamily='sans-serif')
 
         # Show legend if we had labels
         handles, labels = ax.get_legend_handles_labels()
         if labels:
-            ax.legend(handles, labels, loc='upper right', framealpha=0.9)
+            ax.legend(handles, labels, loc='lower left', bbox_to_anchor=(1.05, 0.0), framealpha=0.9)
 
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)

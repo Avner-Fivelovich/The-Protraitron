@@ -56,6 +56,7 @@ class SVGPathParser:
     A stateful parser for parsing tokenized SVG path strings.
     """
     def __init__(self, bezier_steps: int = BEZIER_STEPS_DEFAULT):
+        """Initializes the parser state and bezier curve resolution."""
         self.bezier_steps = bezier_steps
         self.strokes = []
         self.current_stroke = []
@@ -67,18 +68,22 @@ class SVGPathParser:
         self.last_quad_control = None
 
     def add_point(self, pt: np.ndarray):
+        """Appends a new point to the current active subpath."""
         self.current_stroke.append(list(pt))
 
     def close_subpath(self):
+        """Finalizes the current subpath and adds it to the strokes list."""
         if self.current_stroke:
             self.strokes.append(self.current_stroke)
             self.current_stroke = []
 
     def _reset_controls(self):
+        """Clears the tracked control points from previous curve commands."""
         self.last_cubic_control = None
         self.last_quad_control = None
 
     def _handle_move(self, tokens: list, i: int, is_relative: bool) -> tuple:
+        """Handles 'M' and 'm' (Move) commands. Closes current subpath and moves pen."""
         x = safe_float(tokens[i])
         y = safe_float(tokens[i+1])
         
@@ -94,6 +99,7 @@ class SVGPathParser:
         return i + 2, next_cmd
 
     def _handle_line(self, tokens: list, i: int, is_relative: bool) -> int:
+        """Handles 'L' and 'l' (Line) commands. Draws a straight line to the coordinate."""
         x = safe_float(tokens[i])
         y = safe_float(tokens[i+1])
         
@@ -105,6 +111,7 @@ class SVGPathParser:
         return i + 2
 
     def _handle_horizontal(self, tokens: list, i: int, is_relative: bool) -> int:
+        """Handles 'H' and 'h' (Horizontal Line) commands."""
         val = safe_float(tokens[i])
         if is_relative:
             self.current_point[0] += val
@@ -115,6 +122,7 @@ class SVGPathParser:
         return i + 1
 
     def _handle_vertical(self, tokens: list, i: int, is_relative: bool) -> int:
+        """Handles 'V' and 'v' (Vertical Line) commands."""
         val = safe_float(tokens[i])
         if is_relative:
             self.current_point[1] += val
@@ -125,6 +133,7 @@ class SVGPathParser:
         return i + 1
 
     def _handle_cubic(self, tokens: list, i: int, is_relative: bool) -> int:
+        """Handles 'C' and 'c' (Cubic Bezier Curve) commands."""
         x1, y1 = safe_float(tokens[i]), safe_float(tokens[i+1])
         x2, y2 = safe_float(tokens[i+2]), safe_float(tokens[i+3])
         x, y = safe_float(tokens[i+4]), safe_float(tokens[i+5])
@@ -144,6 +153,7 @@ class SVGPathParser:
         return i + 6
 
     def _handle_smooth_cubic(self, tokens: list, i: int, is_relative: bool) -> int:
+        """Handles 'S' and 's' (Smooth Cubic Bezier Curve) commands. Infers first control point."""
         x2, y2 = safe_float(tokens[i]), safe_float(tokens[i+1])
         x, y = safe_float(tokens[i+2]), safe_float(tokens[i+3])
         
@@ -166,6 +176,7 @@ class SVGPathParser:
         return i + 4
 
     def _handle_quad(self, tokens: list, i: int, is_relative: bool) -> int:
+        """Handles 'Q' and 'q' (Quadratic Bezier Curve) commands."""
         x1, y1 = safe_float(tokens[i]), safe_float(tokens[i+1])
         x, y = safe_float(tokens[i+2]), safe_float(tokens[i+3])
         
@@ -183,6 +194,7 @@ class SVGPathParser:
         return i + 4
 
     def _handle_smooth_quad(self, tokens: list, i: int, is_relative: bool) -> int:
+        """Handles 'T' and 't' (Smooth Quadratic Bezier Curve) commands. Infers control point."""
         x, y = safe_float(tokens[i]), safe_float(tokens[i+1])
         
         if self.last_quad_control is not None:
@@ -203,6 +215,7 @@ class SVGPathParser:
         return i + 2
 
     def _handle_close(self) -> None:
+        """Handles 'Z' and 'z' (Close Path) commands. Draws a line back to the start point."""
         if not np.allclose(self.current_point, self.start_point):
             self.current_point = np.copy(self.start_point)
             self.add_point(self.current_point)
@@ -211,6 +224,7 @@ class SVGPathParser:
         return None
 
     def parse_tokens(self, tokens: list):
+        """Iterates through tokenized SVG commands and dispatches them to appropriate handlers."""
         i = 0
         cmd = None
         while i < len(tokens):
