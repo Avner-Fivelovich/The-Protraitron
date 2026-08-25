@@ -138,27 +138,31 @@ def detect_and_crop_face(input_path: str, output_path: str) -> tuple[bool, list]
     img = cv2.imread(input_path)
     height, width = img.shape[:2]
     
-    # Run face detection
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    cascade_file = VISION_CONFIG.get('cascade_file', 'haarcascade_frontalface_default.xml')
-    cascade_path = cv2.data.haarcascades + cascade_file
-    face_cascade = cv2.CascadeClassifier(cascade_path)
-    
-    scale_factor = VISION_CONFIG.get('face_detect_scale_factor', 1.1)
-    min_neighbors = VISION_CONFIG.get('face_detect_min_neighbors', 5)
-    min_size = tuple(VISION_CONFIG.get('face_detect_min_size', [100, 100]))
-    
-    faces = face_cascade.detectMultiScale(
-        gray, 
-        scaleFactor=scale_factor, 
-        minNeighbors=min_neighbors, 
-        minSize=min_size
-    )
+    faces = []
+    try:
+        if hasattr(cv2, 'CascadeClassifier'):
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            cascade_file = VISION_CONFIG.get('cascade_file', 'haarcascade_frontalface_default.xml')
+            cascade_path = cv2.data.haarcascades + cascade_file
+            face_cascade = cv2.CascadeClassifier(cascade_path)
+            
+            scale_factor = VISION_CONFIG.get('face_detect_scale_factor', 1.1)
+            min_neighbors = VISION_CONFIG.get('face_detect_min_neighbors', 5)
+            min_size = tuple(VISION_CONFIG.get('face_detect_min_size', [100, 100]))
+            
+            faces = face_cascade.detectMultiScale(
+                gray, 
+                scaleFactor=scale_factor, 
+                minNeighbors=min_neighbors, 
+                minSize=min_size
+            )
+    except Exception as e:
+        print(f"Face detector warning: {e}. Using center crop.")
     
     target_square_size = VISION_CONFIG.get('target_square_size', 1024)
     
     if len(faces) == 0:
-        print("Warning: No faces detected. Defaulting to center square crop.")
+        print("Using center square crop.")
         crop_size = min(height, width)
         x1 = (width - crop_size) // 2
         y1 = (height - crop_size) // 2

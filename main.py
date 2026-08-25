@@ -18,6 +18,7 @@ from src.robot.text_drawing import run_text_drawing
 from src.robot.svg_drawing import load_svg_file, normalize_svg_strokes
 from src.robot.path_optimization import optimize_strokes_tsp, log_optimization_stats, merge_close_strokes
 from src.robot.swiftsketch_integration import run_swiftsketch_inference
+from src.robot.controlsketch_integration import run_remote_controlsketch
 from src.robot.mask_filtering import (
     load_binary_mask, filter_strokes_with_mask, plot_mask_filtering_results,
     load_swiftsketch_config, get_mask_foreground_bbox
@@ -211,6 +212,7 @@ def parse_args():
     parser.add_argument("--merge-threshold", type=float, default=proc_cfg.get("merge_threshold", 0.002), help="Distance threshold in meters for stroke merging")
     parser.add_argument("--mask", type=str, default=None, help="Path to binary mask image to filter noisy strokes (default: None)")
     parser.add_argument("--mask-keep-ratio", type=float, default=proc_cfg.get("mask_keep_ratio", 0.7), help="Minimum ratio of points inside mask to keep a stroke")
+    parser.add_argument("--quality", "-q", choices=["fast", "high", "controlsketch"], default="fast", help="Sketch generation quality: 'fast' (SwiftSketch ~7s) or 'high' (ControlSketch 96s on GPU cluster ~2 min)")
     parser.add_argument("--approve", action="store_true", default=proc_cfg.get("approve", False), help="Display drawing preview and require approval before starting physical robot drawing")
     parser.add_argument("--paper-swap", action="store_true", default=hw_cfg.get("paper_swap", False), help="Execute the hardware paper swap sequence after drawing completes")
     
@@ -472,32 +474,37 @@ def run_one_shot_svg(controller, svg_path: str, optimize: bool = None, merge_thr
     except Exception as e:
         logger.error(f"Error during SVG execution: {e}")
 
-def run_one_shot_sketch(controller, image_path: str, optimize: bool = None, merge_threshold: float = 0.002, approve: bool = False, paper_swap: bool = False, paper_handler: PaperHandler = None):
+def run_one_shot_sketch(controller, image_path: str, optimize: bool = None, merge_threshold: float = 0.002, approve: bool = False, paper_swap: bool = False, paper_handler: PaperHandler = None, quality: str = "fast"):
     """
-    Runs SwiftSketch to generate a vector portrait, then draws it.
+    Runs SwiftSketch or ControlSketch to generate a vector portrait, then draws it.
     """
-    logger.info(f"One-shot sketch mode: processing '{image_path}'...")
+    logger.info(f"One-shot sketch mode: processing '{image_path}' (quality={quality})...")
     
     # Define output SVG path
     base_name = os.path.splitext(os.path.basename(image_path))[0]
-    output_svg_path = os.path.join(PLOTS_DIR, GENERATED_SKETCHES_DIR, f"{base_name}_sketch.svg")
     
-    # Run inference
-    success = run_swiftsketch_inference(image_path, output_svg_path, controller.cfg)
+    if quality in ["high", "controlsketch", "high_quality"]:
+        output_svg_path = os.path.join(PLOTS_DIR, GENERATED_SKETCHES_DIR, f"{base_name}_controlsketch_96.svg")
+        logger.info(f"Running High-Quality ControlSketch 96-stroke optimization on cluster for '{image_path}'...")
+        success = run_remote_controlsketch(image_path, output_svg_path, controller.cfg, num_strokes=96)
+    else:
+        output_svg_path = os.path.join(PLOTS_DIR, GENERATED_SKETCHES_DIR, f"{base_name}_sketch.svg")
+        success = run_swiftsketch_inference(image_path, output_svg_path, controller.cfg)
+        
     if not success:
-        logger.error("Failed to generate sketch using SwiftSketch.")
+        logger.error("Failed to generate sketch.")
         return
         
     # Draw the generated SVG
-    logger.info("SwiftSketch generation completed. Proceeding to draw...")
+    logger.info("Sketch generation completed. Proceeding to draw...")
     run_one_shot_svg(controller, output_svg_path, optimize, merge_threshold, approve=approve, paper_swap=paper_swap, paper_handler=paper_handler)
 
-def run_camera_capture_and_sketch(controller, optimize: bool = None, merge_threshold: float = 0.002, approve: bool = False):
+def run_camera_capture_and_sketch(controller, optimize: bool = None, merge_threshold: float = 0.002, approve: bool = False, paper_swap: bool = False, paper_handler: PaperHandler = None, quality: str = "fast"):
     """
     Runs interactive camera capture, face cropping, background removal,
-    and then executes SwiftSketch drawing.
+    and then executes sketch drawing.
     """
-    logger.info("Starting camera capture session...")
+    logger.info(f"Starting camera capture session (quality={quality})...")
     os.makedirs(PLOTS_DIR, exist_ok=True)
     raw_path = os.path.join(PLOTS_DIR, CAPTURED_RAW)
     cropped_path = os.path.join(PLOTS_DIR, CAPTURED_CROPPED)
@@ -516,9 +523,9 @@ def run_camera_capture_and_sketch(controller, optimize: bool = None, merge_thres
         logger.error("Background removal/masking failed.")
         return
         
-    # 4. Run SwiftSketch drawing pipeline
-    logger.info("Captured subject successfully preprocessed. Forwarding to SwiftSketch...")
-    run_one_shot_sketch(controller, final_path, optimize, merge_threshold, approve=approve)
+    # 4. Run sketch drawing pipeline
+    logger.info("Captured subject successfully preprocessed. Forwarding to sketch generator...")
+    run_one_shot_sketch(controller, final_path, optimize, merge_threshold, approve=approve, paper_swap=paper_swap, paper_handler=paper_handler, quality=quality)
 
 def main():
     """
@@ -574,13 +581,13 @@ def main():
             sys.exit(0)
             
         elif args.sketch is not None:
-            run_one_shot_sketch(controller, args.sketch, args.optimize, args.merge_threshold, args.approve, args.paper_swap, paper_handler=paper_handler)
+            run_one_shot_sketch(controller, args.sketch, args.optimize, args.merge_threshold, args.approve, args.paper_swap, paper_handler=paper_handler, quality=args.quality)
             if paper_handler: paper_handler.disconnect()
             controller.disconnect()
             sys.exit(0)
             
         elif args.capture:
-            run_camera_capture_and_sketch(controller, args.optimize, args.merge_threshold, args.approve)
+            run_camera_capture_and_sketch(controller, args.optimize, args.merge_threshold, args.approve, args.paper_swap, paper_handler=paper_handler, quality=args.quality)
             if paper_handler: paper_handler.disconnect()
             controller.disconnect()
             sys.exit(0)

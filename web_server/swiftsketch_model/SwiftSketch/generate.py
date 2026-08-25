@@ -223,15 +223,19 @@ def main():
                     print(f"The final SwiftSketch SVG was saved to the input dictionary {image_file}, key is '{key}'")
 
            
-            if args.save_svg:
-            # Save each SVG content with its corresponding name
-                for svg_content, name in zip(final_svg_content_list, images_files):
-                    base_name = os.path.splitext(name)[0] 
-                    output_file_path = os.path.join(output_path, f"{base_name}.svg")  # Construct file path
-                    with open(output_file_path, 'w') as svg_file:
-                        svg_file.write(svg_content)  # Write the SVG content to the file
+        else:
+            sample_denorm = sketch_utils.denormalize_points(diffusion_control_points, args.scaling_factor, args.canvas_width)
+            _, final_svg_content_list = sketch_utils.rander_image_from_points(sample_denorm, args.canvas_width, args.canvas_height, return_svg_content=True)
 
-                print(f"SVG files saved in: {output_path}")
+        if args.save_svg:
+            # Save each SVG content with its corresponding name
+            for svg_content, name in zip(final_svg_content_list, images_files):
+                base_name = os.path.splitext(name)[0] 
+                output_file_path = os.path.join(output_path, f"{base_name}.svg")  # Construct file path
+                with open(output_file_path, 'w') as svg_file:
+                    svg_file.write(svg_content)  # Write the SVG content to the file
+
+            print(f"SVG files saved in: {output_path}")
         
         print("finish save batch number", batch_count)
         batch_count+=1

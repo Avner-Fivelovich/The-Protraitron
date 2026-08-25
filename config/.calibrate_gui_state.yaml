@@ -6,5 +6,5 @@ grip_speed_var: 50
 grip_step_var: 5
 grip_turn_var: 1.0
 move_mode_var: joint_ik
-speed_var: 0.01
-step_var: 0.001
+speed_var: 0.005
+step_var: 0.05

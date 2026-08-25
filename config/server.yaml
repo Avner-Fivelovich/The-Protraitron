@@ -10,6 +10,13 @@ directories:
   sketch_dir: "plots/generated_sketches"
   temp_swiftsketch_dir: "plots"
 
+cluster:
+  hostname: "slurm-client.cs.tau.ac.il"
+  username: "regevshabath"
+  remote_repo_path: "/vol/joberant_nobck/data/NLP_368307701_2526a/avnerf/SwiftSketch-Protraitron"
+  conda_env: "swiftsketch_env"
+  conda_activate_path: "/vol/joberant_nobck/data/NLP_368307701_2526a/avnerf/anaconda3/bin/activate"
+
 hardware:
   robot_ip: "192.168.57.100"
 
