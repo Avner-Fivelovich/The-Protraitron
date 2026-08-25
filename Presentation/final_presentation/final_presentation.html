@@ -1,0 +1,1009 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The PORTRAITRON 3000 - Final Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700;900&family=Inter:ital,wght@0,400;0,700;0,900;1,400&family=JetBrains+Mono&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #1a1a1c;
+      --dark: #0f0f10;
+      --accent: #26a69a;
+      --purple: #9c27b0;
+      --deep: #4a148c;
+      --card: #252528;
+      --silver: #e0e0e0;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-sans: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--dark);
+      color: var(--silver);
+      font-family: var(--font-sans);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .presentation {
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      padding: 100px 80px 80px 80px;
+      background-color: var(--bg);
+      border: 15px solid var(--dark);
+      overflow: hidden;
+    }
+
+    .slide.active {
+      display: flex;
+      animation: slideIn 0.4s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.98);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .slide::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(var(--dark) 1px, transparent 1px), linear-gradient(90deg, var(--dark) 1px, transparent 1px);
+      background-size: 100px 100px;
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--dark);
+      padding: 15px 40px;
+      border-bottom: 3px solid var(--deep);
+    }
+
+    .brand {
+      background: var(--purple);
+      color: white;
+      font-family: var(--font-display);
+      font-weight: 900;
+      padding: 6px 20px;
+      transform: skewX(-12deg);
+      font-size: 1.2rem;
+      box-shadow: 4px 4px 0 var(--deep);
+    }
+
+    .lab-meta {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+    }
+
+    .slide-title {
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: var(--purple);
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .slide-title::before {
+      content: '';
+      width: 12px;
+      height: 60px;
+      background: var(--accent);
+    }
+
+    .grid {
+      display: grid;
+      gap: 25px;
+      flex: 1;
+    }
+
+    .card {
+      background: var(--card);
+      border: 2px solid var(--deep);
+      padding: 30px;
+      position: relative;
+      box-shadow: 8px 8px 0 var(--dark);
+      overflow-y: auto;
+    }
+
+    .card::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .card::-webkit-scrollbar-track {
+      background: var(--dark);
+    }
+
+    .card::-webkit-scrollbar-thumb {
+      background: var(--purple);
+    }
+
+    .card h3 {
+      color: var(--accent);
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      margin-bottom: 12px;
+      border-left: 5px solid var(--purple);
+    }
+
+    .step-label {
+      color: var(--accent);
+      font-weight: 900;
+      font-size: 1.4rem;
+      min-width: 80px;
+    }
+
+    .nav-controls {
+      position: fixed;
+      bottom: 60px;
+      right: 60px;
+      display: flex;
+      gap: 15px;
+      z-index: 200;
+    }
+
+    .nav-btn {
+      width: 60px;
+      height: 60px;
+      background: var(--purple);
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 900;
+      box-shadow: 4px 4px 0 var(--deep);
+      transition: transform 0.1s;
+    }
+
+    .nav-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 var(--deep);
+    }
+
+    .nav-btn:hover {
+      background: var(--accent);
+    }
+
+    .progress-bar {
+      position: fixed;
+      bottom: 45px;
+      left: 80px;
+      right: 80px;
+      height: 4px;
+      background: var(--card);
+      z-index: 150;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .title-slide {
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .behold {
+      font-size: 7.5rem;
+      color: var(--accent);
+      font-weight: 900;
+      margin-bottom: 10px;
+      text-shadow: 6px 6px 0 var(--deep);
+      line-height: 1.1;
+    }
+
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 0 40px;
+      background: var(--dark);
+      border-top: 2px solid var(--deep);
+      color: #555;
+    }
+
+    /* EASTER EGGS / EVIL ACCESSORIES from POC */
+
+    .scheme-bubble {
+      position: fixed;
+      top: 80px;
+      left: 250px;
+      background: #fff9c4;
+      color: black;
+      border: 3px solid #ff9800;
+      padding: 15px;
+      border-radius: 12px;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 0.95rem;
+      box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      max-width: 380px;
+      display: none;
+      animation: bubblePop 0.3s ease-out;
+    }
+
+    .scheme-bubble::after {
+      content: '';
+      position: absolute;
+      top: -15px;
+      left: 30px;
+      border-width: 0 15px 15px;
+      border-style: solid;
+      border-color: #fff9c4 transparent;
+      width: 0;
+    }
+
+    .scheme-bubble::before {
+      content: '';
+      position: absolute;
+      top: -19px;
+      left: 28px;
+      border-width: 0 17px 17px;
+      border-style: solid;
+      border-color: #ff9800 transparent;
+      width: 0;
+      z-index: -1;
+    }
+
+    @keyframes bubblePop {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .platypus-detector {
+      position: fixed;
+      bottom: 20px;
+      left: 40px;
+      width: 140px;
+      height: 140px;
+      background: radial-gradient(circle, #2e7d32 10%, #1b5e20 80%, #000 100%);
+      border: 6px solid #455a64;
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(76, 175, 80, 0.4), inset 0 0 20px #000;
+      z-index: 100;
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      color: #81c784;
+      font-size: 0.65rem;
+      font-weight: bold;
+    }
+
+    .platypus-detector::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent 48%, rgba(76, 175, 80, 0.3) 50%, transparent 52%);
+      animation: radarSweep 2s linear infinite;
+      pointer-events: none;
+    }
+
+    .platypus-fedora {
+      position: absolute;
+      font-size: 2.2rem;
+      top: 25%;
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      transform: translateY(-20px);
+    }
+
+    .platypus-detector.detected .platypus-fedora {
+      opacity: 1;
+      transform: translateY(0) rotate(-10deg);
+    }
+
+    @keyframes radarSweep {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .backstory-drawer {
+      position: fixed;
+      top: 15vh;
+      right: -320px;
+      width: 350px;
+      background: #2d1b4e;
+      border: 4px solid var(--purple);
+      border-right: none;
+      box-shadow: -10px 10px 30px rgba(0, 0, 0, 0.6);
+      color: #e1bee7;
+      z-index: 200;
+      transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      border-radius: 12px 0 0 12px;
+    }
+
+    .backstory-drawer.open {
+      right: 0;
+    }
+
+    .backstory-handle {
+      position: absolute;
+      left: -44px;
+      top: 40px;
+      background: var(--purple);
+      color: white;
+      padding: 15px 8px;
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      writing-mode: vertical-lr;
+      transform: rotate(180deg);
+      cursor: pointer;
+      border-radius: 0 8px 8px 0;
+      box-shadow: -4px 4px 8px rgba(0, 0, 0, 0.3);
+      letter-spacing: 0.1em;
+    }
+
+    .backstory-content {
+      padding: 30px;
+    }
+
+    .backstory-title {
+      color: #ffeb3b;
+      font-size: 1.3rem;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--purple);
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .backstory-text {
+      font-style: italic;
+      font-size: 1.1rem;
+      line-height: 1.5;
+      min-height: 120px;
+    }
+
+    .backstory-btn {
+      background: var(--accent);
+      color: black;
+      border: none;
+      padding: 8px 16px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      margin-top: 15px;
+      width: 100%;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .backstory-btn:hover {
+      background: #4db6ac;
+    }
+
+    .self-destruct {
+      background: #d32f2f;
+      color: white;
+      border: 4px solid #7f0000;
+      padding: 5px 15px;
+      font-family: var(--font-display);
+      font-weight: 900;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      box-shadow: 0 4px 0 #7f0000;
+      margin-left: 15px;
+      transition: transform 0.1s;
+      border-radius: 4px;
+    }
+
+    .self-destruct:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #7f0000;
+    }
+
+    .self-destruct:hover {
+      background: #b71c1c;
+    }
+
+    @keyframes evil-shake {
+
+      0%,
+      100% {
+        transform: translate(0, 0);
+      }
+
+      10% {
+        transform: translate(-10px, -10px);
+      }
+
+      20% {
+        transform: translate(10px, 10px);
+      }
+
+      30% {
+        transform: translate(-10px, 10px);
+      }
+
+      40% {
+        transform: translate(10px, -10px);
+      }
+    }
+
+    .shaking {
+      animation: evil-shake 0.1s linear infinite;
+    }
+
+    @keyframes rapid-shake {
+
+      0%,
+      100% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      10% {
+        transform: translate(-15px, 10px) rotate(-2deg);
+      }
+
+      30% {
+        transform: translate(15px, -10px) rotate(2deg);
+      }
+
+      50% {
+        transform: translate(-12px, -12px) rotate(-1.5deg);
+      }
+
+      70% {
+        transform: translate(12px, 12px) rotate(2deg);
+      }
+
+      90% {
+        transform: translate(-10px, 8px) rotate(-0.5deg);
+      }
+    }
+
+    .wild-shaking {
+      animation: rapid-shake 0.05s linear infinite;
+    }
+
+    @keyframes textPulse {
+      from {
+        transform: scale(0.95);
+        text-shadow: 0 0 20px #ff3d00, 0 0 40px #ff3d00;
+      }
+
+      to {
+        transform: scale(1.05);
+        text-shadow: 0 0 50px #ffeb3b, 0 0 20px #ff3d00;
+      }
+    }
+
+    @keyframes debrisBlow {
+      0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(0) rotate(var(--rot));
+        opacity: 0;
+      }
+    }
+
+    .burnt-out {
+      filter: grayscale(0.9) blur(3px) contrast(1.6) sepia(0.6) brightness(0.2) !important;
+      pointer-events: none !important;
+      transition: filter 1s ease;
+    }
+
+    .img-placeholder {
+      border: 5px dashed var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.5);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Explosion & Self Destruct Overlay Screen -->
+  <div id="explosion-screen"
+    style="display: none; position: fixed; inset: 0; z-index: 99999; background: transparent; pointer-events: none;">
+    <div id="flash-overlay"
+      style="position: absolute; inset: 0; background: white; opacity: 0; transition: opacity 0.05s ease;"></div>
+    <div id="burnt-overlay"
+      style="position: absolute; inset: 0; background: radial-gradient(circle, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.95) 100%), #120c1f; opacity: 0; transition: opacity 1.5s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #ff3d00; pointer-events: none;">
+      <h1
+        style="font-family: 'Space Grotesk', sans-serif; font-size: 5rem; font-weight: 900; text-transform: uppercase; text-shadow: 0 0 30px #ff3d00; margin-bottom: 20px; animation: textPulse 1s infinite alternate; line-height: 1.1;"
+        id="explosion-text-1">CURSE YOU, PERRY THE PLATYPUS!!!</h1>
+      <p style="font-family: 'JetBrains Mono', monospace; font-size: 1.4rem; color: #ffeb3b; margin-bottom: 30px; padding: 0 40px; max-width: 800px; line-height: 1.5;"
+        id="explosion-text-2">The Portraitron 3000 Inator has self-destructed in a spectacular explosion of metal,
+        smoke, and pure evil cartoon science!</p>
+      <button onclick="resetSelfDestruct()" id="rebuild-btn"
+        style="background: #ffeb3b; color: black; border: none; padding: 15px 35px; font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 1.3rem; cursor: pointer; box-shadow: 0 6px 0 #b2a300; text-transform: uppercase; border-radius: 6px; pointer-events: auto;">Rebuild
+        Inator</button>
+    </div>
+    <div id="debris-container" style="position: absolute; inset: 0; overflow: hidden; pointer-events: none;"></div>
+  </div>
+
+  <header id="main-header">
+    <div style="display: flex; align-items: center;">
+      <div class="brand" id="brand-logo" onclick="triggerSchemeInator()" style="cursor: pointer;"
+        title="Click for a scheme!">DOOFENSHMIRTZ EVIL INC.</div>
+      <button class="self-destruct" id="sd-btn" onclick="selfDestruct()">Self-Destruct</button>
+    </div>
+    <div class="lab-meta" id="lab-subtitle">ROBOTICS DIVISION // THE PORTRAITRON</div>
+  </header>
+
+  <div class="scheme-bubble" id="scheme-bubble">"Behold! The No-More-Tol-Inator!"</div>
+
+  <div class="backstory-drawer" id="backstory-drawer">
+    <div class="backstory-handle" id="backstory-handle" onclick="toggleBackstory()">Tragic Backstory</div>
+    <div class="backstory-content" id="backstory-content">
+      <h3 class="backstory-title" id="backstory-title">⚡ Child History Log ⚡</h3>
+      <p class="backstory-text" id="backstory-text">"Neither of my parents showed up to my actual birth..."</p>
+      <button class="backstory-btn" id="next-memory-btn" onclick="nextBackstory()">Next Sad Memory</button>
+    </div>
+  </div>
+
+  <div class="platypus-detector" id="platypus-detector" onclick="detectPlatypus()">
+    <div class="platypus-fedora" id="radar-emoji">🦆</div>
+    <span style="font-size: 0.75rem; color: #ffeb3b; margin-bottom: 5px; z-index: 10;">RADAR 3000</span>
+    <span id="detector-status" style="z-index: 10;">SCANNING...</span>
+  </div>
+
+  <div class="presentation" id="presentation-container">
+
+    <!-- SLIDE 1: Title -->
+    <section class="slide active title-slide" id="slide-1-title">
+      <h1 class="behold" id="title-main">BEHOLD!</h1>
+      <h2 style="font-size: 3rem; margin-bottom: 10px;" id="title-sub">The PORTRAITRON 3000</h2>
+      <h3 style="font-size: 2rem; color: var(--accent); margin-bottom: 30px;" id="title-phase">Final Presentation</h3>
+      <p style="font-size: 1.4rem; color: var(--silver); max-width: 800px; font-style: italic; opacity: 0.8;"
+        id="title-authors">Avner Fivelovich, Hila Regev Shabath, Shira Shmuely</p>
+    </section>
+
+    <!-- SLIDE 2: Original Plan -->
+    <section class="slide" id="slide-2-original">
+      <h2 class="slide-title" id="s2-title">Original Problem & Plan</h2>
+      <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;" id="s2-grid">
+        <div class="card" id="s2-card-func">
+          <h3 id="s2-h-func">Functionality</h3>
+          <p style="font-size: 1.15rem; line-height: 1.7;">
+            Capture a person standing in a <strong>very specific spot!</strong> The portrait was to be drawn on paper
+            using our patented marker mount, struck with a commemorative stamp of <em>our own faces</em>, and finally
+            handed over to the subject directly by the robot.
+          </p>
+        </div>
+        <div class="card" style="border-color: var(--accent);" id="s2-card-algo">
+          <h3 style="color: var(--purple);" id="s2-h-algo">Software & Algorithms</h3>
+          <ul style="font-size: 1.1rem; line-height: 1.8; margin-left: 20px;">
+            <li><strong>Capture:</strong> Take a high-definition picture of the subject (3s after a keyboard click).
+            </li>
+            <li><strong>Process:</strong> Convert camera input into vector strokes using the SwiftSketch algorithm.</li>
+            <li><strong>Optimize:</strong> Run a stroke-order choosing algorithm to make the robot draw efficiently.
+            </li>
+          </ul>
+        </div>
+        <div class="card" id="s2-card-draw">
+          <h3 id="s2-h-draw">Robotics & Execution</h3>
+          <ul style="font-size: 1.1rem; line-height: 1.8; margin-left: 20px;">
+            <li><strong>The Drawing:</strong> Pick up the marker contraption, execute the strokes on page (POC goal),
+              and let go.</li>
+            <li><strong>The Stamping:</strong> Pick up the stamp, perform stamping motion on the page, and let go.</li>
+            <li><strong>The Handoff (Nice to have):</strong> Grab the finished page and physically hand it to a
+              designated location.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: What Changed? -->
+    <section class="slide" id="slide-3-changes">
+      <h2 class="slide-title" id="s3-title">What Changed?</h2>
+      <div class="grid" style="grid-template-columns: 1fr 1fr;" id="s3-grid">
+        
+        <div class="card" id="s3-card-left-out">
+          <h3 id="s3-h-left">Scrapped & Replaced</h3>
+          <ul style="font-size: 1.15rem; line-height: 1.7; margin-left: 20px;">
+            <li style="margin-bottom: 12px;"><strong>The Algorithm:</strong> We realized the off-the-shelf <em>SwiftSketch</em> algorithm wasn't accurate enough for human faces, so we decided to train a custom model ourselves.</li>
+            <li style="margin-bottom: 12px;"><strong>Direct Handoff & Cutting:</strong> We gave up on the robot handing the page directly to the user (using grippers), and we also scrapped the automatic cutting motion with a knife. Instead, the robot gently pulls the paper forward to present it.</li>
+            <li style="margin-bottom: 12px;"><strong>The Stamp:</strong> We gave up on the commemorative stamp with our faces and decided to sign the drawing a bit differently.</li>
+          </ul>
+        </div>
+        
+        <div class="card" style="border-color: var(--accent);" id="s3-card-added">
+          <h3 style="color: var(--purple);" id="s3-h-added">Major Additions</h3>
+          <ul style="font-size: 1.15rem; line-height: 1.7; margin-left: 20px;">
+            <li style="margin-bottom: 12px;"><strong>Web-Based UI:</strong> Added an interactive web app so users can take or upload a photo and approve a portrait preview before the physical drawing begins.</li>
+            <li style="margin-bottom: 12px;"><strong>Paper Roll & Magnets:</strong> Replaced manually inserted sheets with a continuous paper roll. The robot pulls a section, holds it tight using top and bottom magnets, draws on it, disconnects them, and after a manual cut, it is handed to the user.</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SLIDE 4: Algorithms -->
+    <section class="slide" id="slide-4-algo">
+      <h2 class="slide-title" id="s4-title">Algorithms & Technologies</h2>
+      <div class="grid" style="grid-template-columns: 1fr;" id="s4-grid">
+        <div class="card" id="s4-card-algo">
+          <p style="font-size: 1.5rem; line-height: 1.8;"><strong>The Challenge:</strong> We
+            originally planned to use the SwiftSketch algorithm, but we saw it wasn't accurate enough for depicting
+            faces. <br><br><strong>The Solution:</strong> We decided to train a custom model ourselves to serve as the new source of truth!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: The Final Product - Web App -->
+    <section class="slide" id="slide-5-webapp">
+      <h2 class="slide-title" id="s5-title-webapp">The Final Product: The Web App</h2>
+      <div class="grid" style="grid-template-columns: 1fr;" id="s5-grid-webapp">
+        <div class="card" id="s5-card-app">
+          <ul style="font-size: 1.4rem; line-height: 1.8; margin-left: 20px;">
+            <li>User scans a barcode to enter.</li>
+            <li>User takes or uploads a picture of themselves.</li>
+            <li>User receives a sketch preview of how the drawing will look.</li>
+            <li>User approves the sketch and sends it to the Portraitron.</li>
+          </ul>
+          <div style="margin-top: 30px;">
+            <img src="MISSING_web_app.jpg" alt="Web App" class="img-placeholder" style="height: 300px; width: 100%;">
+            <p style="text-align:center; font-family:var(--font-mono); font-size: 0.9rem;">MISSING: web_app.jpg</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: The Final Product - Pipeline -->
+    <section class="slide" id="slide-6-pipeline">
+      <h2 class="slide-title" id="s6-title-pipeline">The Final Product: Software Pipeline</h2>
+      <div class="grid" style="grid-template-columns: 1fr;" id="s6-grid-pipeline">
+        <div class="card" id="s6-card-pipeline">
+          <h3 id="s6-h-pipeline">Converting the Image to Strokes</h3>
+          <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <div class="step" style="flex:1; min-width: 400px; display:flex; flex-direction:column; gap:10px; text-align:center;">
+              <span style="font-size: 1.1rem;"><strong>1. Image Input</strong><br>Receiving the original photo.</span>
+              <img src="assets/image_input.png" alt="Image Input" style="width: 100%; height: 220px; object-fit: contain; border-radius: 5px;">
+            </div>
+            <div class="step" style="flex:1; min-width: 400px; display:flex; flex-direction:column; gap:10px; text-align:center;">
+              <span style="font-size: 1.1rem;"><strong>2. Sketch Generation</strong><br>AI generates the SVG format.</span>
+              <img src="assets/sketch_gen.png" alt="Sketch Generation" style="width: 100%; height: 220px; object-fit: contain; border-radius: 5px;">
+            </div>
+            <div class="step" style="flex:1; min-width: 400px; display:flex; flex-direction:column; gap:10px; text-align:center;">
+              <span style="font-size: 1.1rem;"><strong>3. SVG Conversion</strong><br>Mapping 6-parameter Bezier curve entities to points (<code>svg_drawing.py</code>).</span>
+              <img src="assets/svg_conv.gif" alt="SVG Conversion Animation" style="width: 100%; height: 220px; object-fit: contain; border-radius: 5px;">
+            </div>
+            <div class="step" style="flex:1; min-width: 400px; display:flex; flex-direction:column; gap:10px; text-align:center;">
+              <span style="font-size: 1.1rem;"><strong>4. Noise Cleaning</strong><br>Mask filtering to prune noisy elements.</span>
+              <img src="assets/noise_clean.png" alt="Noise Cleaning Mask" style="width: 100%; height: 350px; object-fit: contain; border-radius: 5px;">
+            </div>
+            <div class="step" style="flex:1; min-width: 400px; display:flex; flex-direction:column; gap:10px; text-align:center;">
+              <span style="font-size: 1.1rem;"><strong>5. Path Optimization</strong><br>Connecting lines and running TSP to minimize robot air distance.</span>
+              <img src="assets/path_opt.png" alt="Path Optimization" style="width: 100%; height: 350px; object-fit: contain; border-radius: 5px;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: The Final Product - Portraitron -->
+    <section class="slide" id="slide-7-robot">
+      <h2 class="slide-title" id="s7-title-robot">The Final Product: The Portraitron</h2>
+      <div class="grid" style="grid-template-columns: 1fr;" id="s7-grid-robot">
+        <div class="card" style="border-color: var(--accent);" id="s7-card-robot">
+          <ul style="font-size: 1.4rem; line-height: 1.8; margin-left: 20px;">
+            <li>Pulls the paper and straightens it with two magnets (top/bottom).</li>
+            <li>Draws the picture.</li>
+            <li>Disconnects the magnets.</li>
+            <li>Gently pulls the paper forward, allowing a manual cut to hand it to the user.</li>
+            <li><strong>Tool Switching:</strong> Picks up and returns the stamp and marker seamlessly.</li>
+          </ul>
+          <div style="margin-top: 30px;">
+            <img src="MISSING_robot_action.jpg" alt="Robot in Action" class="img-placeholder"
+              style="height: 300px; width: 100%;">
+            <p style="text-align:center; font-family:var(--font-mono); font-size: 0.9rem;">MISSING: robot_action.jpg</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: Work Process & Experience -->
+    <section class="slide" id="slide-6-process">
+      <h2 class="slide-title" id="s6-title">Work Process & Challenges</h2>
+      <div class="grid" style="grid-template-columns: 1fr 1fr;" id="s6-grid">
+        <div class="card" id="s6-card-challenges">
+          <ul style="font-size: 1.15rem; line-height: 1.7; margin-left: 20px;">
+            <li><strong>Tool Mounts:</strong> The first pen mount did not fit the drawing tool!</li>
+            <li><strong>The Uneven Wall:</strong> Needed enough force to draw, but not too much to explode the marker.
+            </li>
+            <li><strong>Force Mode vs MoveL/MoveJ:</strong> We used MoveL/MoveJ for moving, but Force Mode is a PC loop
+              that gets input and defines new locations.</li>
+            <li><strong>Force Mode Misunderstanding:</strong> Noise and misunderstanding caused unexpected behavior —
+              like punching a hole in the wall!</li>
+            <li><strong>Calibration:</strong> Connecting and moving all the small tools required constant recalibration.
+            </li>
+          </ul>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 20px;" id="s6-images">
+          <img src="MISSING_work_process.jpg" alt="Work Process" class="img-placeholder"
+            style="height: 200px; width: 100%;">
+          <p style="text-align:center; font-family:var(--font-mono); font-size: 0.9rem;">MISSING: work_process.jpg (e.g.
+            broken mount, hole in wall)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: Commercial Potential -->
+    <section class="slide" id="slide-7-commercial">
+      <h2 class="slide-title" id="s7-title">Commercial Potential</h2>
+      <div class="grid" style="grid-template-columns: 1fr;" id="s7-grid">
+        <div class="card"
+          style="text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;"
+          id="s7-card">
+          <p style="font-size: 1.6rem; line-height: 1.6; max-width: 800px; margin-bottom: 30px;" id="s7-description">
+            The Portraitron can be used as a fun interactive booth for events, similar to a photo booth or event
+            photographer — but instead of taking a photo, a robot draws your portrait!
+          </p>
+          <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;" id="s7-tags">
+            <span class="step" style="border-left:none; border-bottom: 5px solid var(--purple); font-size:1.4rem;">💍
+              Weddings</span>
+            <span class="step" style="border-left:none; border-bottom: 5px solid var(--accent); font-size:1.4rem;">🎓
+              University Events</span>
+            <span class="step" style="border-left:none; border-bottom: 5px solid var(--purple); font-size:1.4rem;">🛍️
+              Shopping Malls</span>
+            <span class="step" style="border-left:none; border-bottom: 5px solid var(--accent); font-size:1.4rem;">🎢
+              Theme Parks</span>
+            <span class="step" style="border-left:none; border-bottom: 5px solid var(--purple); font-size:1.4rem;">🗺️
+              Tourist Attractions</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: Outro -->
+    <section class="slide title-slide" id="slide-8-outro">
+      <h1 class="behold" id="outro-main">THE TRI-STATE AREA IS FINALLY OURS!</h1>
+      <h2 style="font-size: 2.5rem; margin-top: 20px; color: var(--accent);" id="outro-sub">Thanks for Listening!</h2>
+    </section>
+
+  </div>
+
+  <div class="nav-controls" id="nav-buttons">
+    <button class="nav-btn" id="btn-prev" onclick="prev()">&#8592;</button>
+    <button class="nav-btn" id="btn-next" onclick="next()">&#8594;</button>
+  </div>
+  <div class="progress-bar" id="progress-bar">
+    <div class="progress-fill" id="p-fill"></div>
+  </div>
+
+  <footer id="footer">
+    <div id="footer-ver">VER_FINAL.3.0</div>
+    <div style="font-weight: 900; color: var(--accent);" id="footer-loc">LOCATION: TRI-STATE AREA SECRET LAB</div>
+    <div id="footer-copy">&copy; 2026 DOOFENSHMIRTZ EVIL INC.</div>
+  </footer>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const progress = document.getElementById('p-fill');
+
+    function update() {
+      slides.forEach((s, i) => s.classList.toggle('active', i === currentSlide));
+      progress.style.width = ((currentSlide + 1) / slides.length * 100) + '%';
+    }
+
+    function next() { if (currentSlide < slides.length - 1) { currentSlide++; update(); } }
+    function prev() { if (currentSlide > 0) { currentSlide--; update(); } }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') next();
+      if (e.key === 'ArrowLeft') prev();
+    });
+
+    // Scheme-Inator 3000
+    const schemeInators = [
+      "\"The No-More-Tol-Inator! To vaporize standard engineering tolerances so our custom pen mounts finally fit!\"",
+      "\"The Ink-Blot-Eraser-Inator! To instantly dissolve dwell-time marker stains before they ruin my canvas!\"",
+      "\"The Force-Mode-Activator-Inator! To force all velocity limit parameters on our UR5e to obey me!\"",
+      "\"The Robot-Artist-Inator! To steal all the jobs of street caricature artists!\""
+    ];
+    let schemeIndex = 0;
+    function triggerSchemeInator() {
+      const bubble = document.getElementById('scheme-bubble');
+      bubble.innerText = schemeInators[schemeIndex];
+      bubble.style.display = 'block';
+      schemeIndex = (schemeIndex + 1) % schemeInators.length;
+      setTimeout(() => bubble.style.display = 'none', 4000);
+    }
+
+    // Backstory Tragedy
+    const tragedies = [
+      "\"Neither of my parents showed up to my actual birth...\"",
+      "\"I was forced to stand completely still as a garden lawn gnome!\"",
+      "\"My only true friend was a balloon named Balloony, who floated away...\"",
+      "\"Roger won the favor of mother with a painting of our dog, while my work was ignored!\"",
+      "\"I was raised by ocelots in the dark wilderness!\""
+    ];
+    let backstoryIndex = 0;
+    function toggleBackstory() { document.getElementById('backstory-drawer').classList.toggle('open'); }
+    function nextBackstory() {
+      backstoryIndex = (backstoryIndex + 1) % tragedies.length;
+      document.getElementById('backstory-text').innerText = tragedies[backstoryIndex];
+    }
+
+    // Platypus Detector Radar
+    let detectorState = 0; // 0 = scanning, 1 = platypus, 2 = PERRY!
+    function detectPlatypus() {
+      const detector = document.getElementById('platypus-detector');
+      const status = document.getElementById('detector-status');
+      const emoji = document.getElementById('radar-emoji');
+      if (detectorState === 0) {
+        detector.classList.add('detected'); emoji.innerText = "🦆"; status.innerText = "A PLATYPUS?"; detectorState = 1;
+      } else if (detectorState === 1) {
+        emoji.innerText = "🕶️"; status.innerText = "PERRY THE PLATYPUS?!"; detectorState = 2;
+      } else {
+        detector.classList.remove('detected'); status.innerText = "SCANNING..."; detectorState = 0;
+      }
+    }
+
+    // Self-Destruct Explosion Sequence
+    let isExploded = false;
+    function selfDestruct() {
+      if (isExploded) return;
+      isExploded = true;
+      const sdBtn = document.getElementById('sd-btn');
+      const presentation = document.querySelector('.presentation');
+
+      sdBtn.innerText = "ACTIVATING...";
+      sdBtn.style.background = "#ff9800";
+      sdBtn.style.borderColor = "#e65100";
+      document.body.classList.add('shaking');
+
+      setTimeout(() => sdBtn.innerText = "DETONATION IN 3...", 600);
+      setTimeout(() => { sdBtn.innerText = "DETONATION IN 2..."; document.body.classList.remove('shaking'); document.body.classList.add('wild-shaking'); }, 1400);
+      setTimeout(() => sdBtn.innerText = "DETONATION IN 1...", 2200);
+      setTimeout(() => {
+        document.body.classList.remove('wild-shaking');
+        document.body.classList.add('shaking');
+        sdBtn.innerText = "BOOM!";
+        sdBtn.style.background = "#ff3d00";
+        document.getElementById('explosion-screen').style.display = 'block';
+        document.getElementById('flash-overlay').style.opacity = '1';
+        setTimeout(() => document.getElementById('flash-overlay').style.opacity = '0', 150);
+
+        const debrisContainer = document.getElementById('debris-container');
+        const colors = ['#ff3d00', '#ffeb3b', '#ff9100', '#212121', '#424242', '#9e9e9e', '#d50000'];
+        const rect = sdBtn.getBoundingClientRect();
+        const startX = rect.left + rect.width / 2;
+        const startY = rect.top + rect.height / 2;
+
+        for (let i = 0; i < 120; i++) {
+          const el = document.createElement('div');
+          const size = Math.random() * 24 + 6;
+          el.style.position = 'absolute'; el.style.left = startX + 'px'; el.style.top = startY + 'px';
+          el.style.width = size + 'px'; el.style.height = size + 'px';
+          el.style.borderRadius = Math.random() > 0.4 ? '50%' : '3px';
+          el.style.background = colors[Math.floor(Math.random() * colors.length)];
+          el.style.boxShadow = '0 0 10px ' + el.style.background;
+          const angle = Math.random() * Math.PI * 2;
+          const distance = Math.random() * Math.max(window.innerWidth, window.innerHeight) * 0.9;
+          el.style.setProperty('--tx', (Math.cos(angle) * distance) + 'px');
+          el.style.setProperty('--ty', (Math.sin(angle) * distance) + 'px');
+          el.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+          el.style.animation = 'debrisBlow ' + (Math.random() * 1.5 + 0.6) + 's cubic-bezier(0.1, 0.8, 0.25, 1) forwards';
+          debrisContainer.appendChild(el);
+        }
+
+        presentation.classList.add('burnt-out');
+        setTimeout(() => { document.getElementById('burnt-overlay').style.opacity = '1'; document.getElementById('burnt-overlay').style.pointerEvents = 'auto'; }, 300);
+
+        // Stop shaking a few seconds after the explosion
+        setTimeout(() => { document.body.classList.remove('shaking'); }, 1500);
+      }, 3000);
+    }
+
+    function resetSelfDestruct() {
+      isExploded = false;
+      const sdBtn = document.getElementById('sd-btn');
+      sdBtn.innerText = "Self-Destruct"; sdBtn.style.background = "#d32f2f"; sdBtn.style.borderColor = "#7f0000";
+      document.body.classList.remove('shaking', 'wild-shaking');
+      document.querySelector('.presentation').classList.remove('burnt-out');
+      document.getElementById('explosion-screen').style.display = 'none';
+      document.getElementById('burnt-overlay').style.opacity = '0';
+      document.getElementById('burnt-overlay').style.pointerEvents = 'none';
+      document.getElementById('debris-container').innerHTML = '';
+    }
+
+    update();
+  </script>
+</body>
+
+</html>
