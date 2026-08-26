@@ -196,12 +196,8 @@ class UR5eController:
             return
             
         try:
-            if hasattr(self, 'p0_joints') and self.p0_joints and len(self.p0_joints) >= 6:
-                logger.info("Homing to Bottom-Left starting hover pose (P0) using moveJ...")
-                self.rtde_c.moveJ(self.p0_joints, self.cfg.get('home_speed', 0.1)*2, self.cfg.get('home_accel', 0.2)*4)
-            else:
-                logger.info("Homing to Bottom-Left starting hover pose (P0) using moveL...")
-                self.rtde_c.moveL(self.p0_pose, self.cfg.get('home_speed', 0.1), self.cfg.get('home_accel', 0.2))
+            logger.info("Homing to Bottom-Left starting hover pose (P0) using moveL...")
+            self.rtde_c.moveL(self.p0_pose, self.cfg.get('home_speed', 0.1), self.cfg.get('home_accel', 0.2))
             logger.success("Robot arrived at P0.")
         except Exception as e:
             logger.error(f"Homing failed (possibly disconnected): {e}")
