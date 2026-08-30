@@ -68,6 +68,8 @@ class CalibrationGUI:
             ("knife_dock", "Location to store the knife"),
             ("cut_start_pos", "Start location of the paper cut"),
             ("cut_end_pos", "End location of the paper cut"),
+            ("small_knife_cut_start_pos", "Start location of the small knife paper cut"),
+            ("small_knife_cut_end_pos", "End location of the small knife paper cut"),
             ("cut_paper_grab", "Location to grab the cut paper"),
             ("cut_paper_pull_dest", "Location to pull the cut paper to"),
             ("safe_midpoint_to_user", "Safe midpoint to user handover"),

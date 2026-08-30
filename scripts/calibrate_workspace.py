@@ -37,7 +37,7 @@ def main():
     logger.info("=" * 60)
     
     # Resolve config YAML file path
-    config_name = "marker"
+    config_name = "paper_manipulation"
     if len(sys.argv) > 1 and not sys.argv[1].startswith("--"):
         config_name = sys.argv[1]
         
@@ -51,8 +51,8 @@ def main():
     # Load parameters from config
     robot_ip = cfg.get("robot_ip", "192.168.57.100")
     output_path = "config/paper_manipulation.yaml"
-    paper_width = cfg.get("paper_width", 0.19)
-    paper_height = cfg.get("paper_height", 0.27)
+    paper_width = cfg.get("width", 0.4)
+    paper_height = cfg.get("height", 0.29)
     hover_distance = cfg.get("hover_distance", 0.003)
     move_speed = cfg.get("move_speed", 0.05)
     move_accel = cfg.get("move_accel", 0.1)

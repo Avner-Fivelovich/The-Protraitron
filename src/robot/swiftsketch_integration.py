@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 import shutil
 from PIL import Image
@@ -108,18 +109,29 @@ def run_swiftsketch_inference(input_image_path: str, output_svg_path: str, confi
 
         # 4. Prepare command
         module_to_run = "residual_generate" if use_residual else "generate"
-        cmd = [
-            "conda", "run", "-n", conda_env,
-            "python", "-m", module_to_run,
-            "--model_path", model_path,
-            "--refine_model_path", refine_model_path,
-            "--input_data", abs_input_image,
-            "--output_dir", temp_output_dir,
-            "--use_refine", str(use_refine),
-            "--guidance_param", str(guidance_param)
-        ]
+        if shutil.which("conda"):
+            cmd = [
+                "conda", "run", "-n", conda_env,
+                "python", "-m", module_to_run,
+                "--model_path", model_path,
+                "--refine_model_path", refine_model_path,
+                "--input_data", abs_input_image,
+                "--output_dir", temp_output_dir,
+                "--use_refine", str(use_refine),
+                "--guidance_param", str(guidance_param)
+            ]
+        else:
+            cmd = [
+                sys.executable, "-m", module_to_run,
+                "--model_path", model_path,
+                "--refine_model_path", refine_model_path,
+                "--input_data", abs_input_image,
+                "--output_dir", temp_output_dir,
+                "--use_refine", str(use_refine),
+                "--guidance_param", str(guidance_param)
+            ]
 
-        logger.info(f"Running SwiftSketch inference command in conda environment '{conda_env}'...")
+        logger.info(f"Running SwiftSketch inference command...")
         logger.info(f"Command: {' '.join(cmd)}")
 
         # Run command inside SwiftSketch source directory so imports resolve correctly

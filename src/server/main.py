@@ -18,6 +18,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 from src.common.logger import get_logger
 from src.robot.controller import UR5eController
 from src.robot.swiftsketch_integration import run_swiftsketch_inference, preprocess_image_to_square
+from src.robot.controlsketch_integration import run_remote_controlsketch
 from src.robot.svg_drawing import load_svg_file, normalize_svg_strokes
 from src.robot.path_optimization import optimize_strokes_tsp, merge_close_strokes
 from src.robot.mask_filtering import load_binary_mask, filter_strokes_with_mask
@@ -271,9 +272,10 @@ async def upload_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/generate/{strokes}")
-def generate_sketch(strokes: int, job_id: str = Form(...)):
+def generate_sketch(strokes: int, job_id: str = Form(...), quality: Optional[str] = Form("fast")):
     """
     Generates an SVG for the given job_id and stroke configuration.
+    quality: "fast" (SwiftSketch in 5-10s) or "high" (ControlSketch 2,000-step GPU optimization in ~2 mins)
     """
     try:
         preprocessed_filename = f"{job_id}_square.png"
@@ -289,26 +291,37 @@ def generate_sketch(strokes: int, job_id: str = Form(...)):
         if strokes not in supported_strokes:
             raise HTTPException(status_code=400, detail="Unsupported stroke count")
             
-        if strokes == 32:
-            model_override = server_cfg.get("swiftsketch", {}).get("model_32_path", None)
-            svg_filename = f"{job_id}_sketch.svg"
-            logger.info(f"Generating 32-stroke sketch for {job_id} using SwiftSketch...")
-        elif strokes == 96:
-            model_override = controller.cfg.get("swiftsketch", {}).get("model_96_path", "models/model000040000.pt")
-            svg_filename = f"{job_id}_sketch_96.svg"
-            logger.info(f"Generating 96-stroke sketch for {job_id} using SwiftSketch...")
+        if quality in ["high", "controlsketch", "high_quality"]:
+            svg_filename = f"{job_id}_controlsketch_{strokes}.svg"
+            svg_path = os.path.join(SKETCH_DIR, svg_filename)
+            logger.info(f"Generating High-Quality {strokes}-stroke sketch for {job_id} using ControlSketch on cluster...")
+            success = run_remote_controlsketch(
+                preprocessed_path,
+                svg_path,
+                server_cfg,
+                num_strokes=strokes
+            )
+        else:
+            if strokes == 32:
+                model_override = server_cfg.get("swiftsketch", {}).get("model_32_path", None)
+                svg_filename = f"{job_id}_sketch.svg"
+                logger.info(f"Generating 32-stroke sketch for {job_id} using SwiftSketch...")
+            elif strokes == 96:
+                model_override = controller.cfg.get("swiftsketch", {}).get("model_96_path", "SwiftSketch/save/SwiftSketch_96s_custom/model000020000.pt")
+                svg_filename = f"{job_id}_sketch_96.svg"
+                logger.info(f"Generating 96-stroke sketch for {job_id} using SwiftSketch...")
+                
+            svg_path = os.path.join(SKETCH_DIR, svg_filename)
             
-        svg_path = os.path.join(SKETCH_DIR, svg_filename)
-        
-        success = run_swiftsketch_inference(
-            preprocessed_path, 
-            svg_path, 
-            controller.cfg, 
-            override_model_path=model_override
-        )
+            success = run_swiftsketch_inference(
+                preprocessed_path, 
+                svg_path, 
+                controller.cfg, 
+                override_model_path=model_override
+            )
         
         if not success:
-            raise HTTPException(status_code=500, detail="SwiftSketch generative model failed to vectorize image.")
+            raise HTTPException(status_code=500, detail="Generative model failed to vectorize image.")
             
         return JSONResponse(content={
             "svgUrl": f"/api/svg/{svg_filename}"

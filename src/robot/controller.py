@@ -196,12 +196,8 @@ class UR5eController:
             return
             
         try:
-            if hasattr(self, 'p0_joints') and self.p0_joints and len(self.p0_joints) >= 6:
-                logger.info("Homing to Bottom-Left starting hover pose (P0) using moveJ...")
-                self.rtde_c.moveJ(self.p0_joints, self.cfg.get('home_speed', 0.1)*2, self.cfg.get('home_accel', 0.2)*4)
-            else:
-                logger.info("Homing to Bottom-Left starting hover pose (P0) using moveL...")
-                self.rtde_c.moveL(self.p0_pose, self.cfg.get('home_speed', 0.1), self.cfg.get('home_accel', 0.2))
+            logger.info("Homing to Bottom-Left starting hover pose (P0) using moveL...")
+            self.rtde_c.moveL(self.p0_pose, self.cfg.get('home_speed', 0.1), self.cfg.get('home_accel', 0.2))
             logger.success("Robot arrived at P0.")
         except Exception as e:
             logger.error(f"Homing failed (possibly disconnected): {e}")
@@ -540,13 +536,13 @@ class UR5eController:
 
         textstr = "\n".join(info_lines)
         props = dict(boxstyle='round,pad=0.5', facecolor='#f8f9fa', alpha=0.9, edgecolor='#cccccc', linewidth=1)
-        ax.text(0.02, 0.98, textstr, transform=ax.transAxes, fontsize=8.5,
+        ax.text(1.05, 0.98, textstr, transform=ax.transAxes, fontsize=8.5,
                 verticalalignment='top', bbox=props, fontfamily='sans-serif')
 
         # Show legend if we had labels
         handles, labels = ax.get_legend_handles_labels()
         if labels:
-            ax.legend(handles, labels, loc='upper right', framealpha=0.9)
+            ax.legend(handles, labels, loc='lower left', bbox_to_anchor=(1.05, 0.0), framealpha=0.9)
 
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
