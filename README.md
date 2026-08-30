@@ -245,10 +245,19 @@ Parses, optimizes, and executes any arbitrary SVG path:
 ./venv/bin/python main.py --svg plots/sample.svg
 ```
 
-#### 4. SwiftSketch Portrait Generation & Drawing
-Runs neural sketch diffusion on an input portrait image, optimizes the strokes, and draws the output:
+#### 4. Portrait Generation & Drawing (SwiftSketch or ControlSketch)
+Generates vector sketch from portrait image using either **SwiftSketch** (fast local inference ~7s) or **ControlSketch** (high-quality GPU cluster optimization ~2 mins), then draws:
+
+**Fast Mode (SwiftSketch, default):**
 ```bash
 ./venv/bin/python main.py --sketch pictures/portrait.jpg
+./venv/bin/python main.py --sketch pictures/portrait.jpg --quality fast
+```
+
+**High-Quality Mode (ControlSketch GPU cluster):**
+```bash
+./venv/bin/python main.py --sketch pictures/portrait.jpg --quality high
+./venv/bin/python main.py --sketch pictures/portrait.jpg --quality controlsketch
 ```
 
 #### 5. Live Webcam Capture & Sketch
@@ -275,6 +284,7 @@ Draws the SVG and triggers the physical gripper & paper-roll swapping sequence u
 | **`--merge-threshold`** | Float | `0.002` | Distance threshold in meters (2.0 mm) for merging adjacent stroke endpoints into continuous chains. |
 | **`--mask`** | String | `None` | Path to a binary foreground mask PNG to filter out background noise strokes. |
 | **`--mask-keep-ratio`** | Float | `0.7` | Minimum fraction of stroke points required to fall inside foreground mask pixels. |
+| **`--quality`** | String | `"fast"` | Sketch generation quality: `"fast"` (SwiftSketch local ~7s) or `"high"`/`"controlsketch"` (GPU cluster ControlSketch optimization ~2 mins). Requires cluster config. |
 | **`--approve`** | Flag | `False` | Displays the drawing preview plot and requires terminal confirmation before physical robot motion begins. |
 | **`--paper-swap`** | Flag | `False` | Triggers the robotic paper roll and tear routine after drawing finishes. |
 | **`--server`** / **`-S`** | Flag | `False` | Boots the FastAPI web server directly. |
@@ -285,6 +295,51 @@ Draws the SVG and triggers the physical gripper & paper-roll swapping sequence u
 > ```bash
 > MPLBACKEND=Agg ./venv/bin/python main.py --dryrun --sketch pictures/portrait.jpg
 > ```
+
+---
+
+## ⚙️ ControlSketch High-Quality Mode Setup (Optional)
+
+For production-quality portrait sketches, the system supports **ControlSketch**, a GPU-accelerated optimization method that produces professional-grade 96-stroke vector sketches. This requires access to a GPU cluster (currently configured for TAU Slurm cluster).
+
+### Prerequisites
+- SSH access to the GPU cluster (e.g., `slurm-client.cs.tau.ac.il`)
+- ControlSketch repository cloned on cluster
+- Conda environment with PyTorch & dependencies
+
+### Configuration
+
+Edit `config/server.yaml` to add cluster credentials:
+
+```yaml
+cluster:
+  username: "your_cluster_username"                    # SSH username
+  hostname: "slurm-client.cs.tau.ac.il"                # Cluster hostname
+  remote_repo_path: "/path/to/SwiftSketch-Protraitron" # Remote repo path
+  conda_env: "swiftsketch_env"                         # Conda environment name
+  conda_activate_path: "/path/to/anaconda3/bin/activate"
+```
+
+### Usage
+
+Once configured, simply use the `--quality high` or `--quality controlsketch` flag:
+
+```bash
+# Automatically uploads image to cluster, runs ControlSketch, downloads result
+python main.py --sketch portrait.jpg --quality high --approve
+
+# Optional: specify number of strokes (default 96)
+python main.py --sketch portrait.jpg --quality high --num-strokes 64
+```
+
+The system automatically:
+1. SCP uploads the preprocessed image to the cluster
+2. Submits a Slurm GPU job for ControlSketch optimization
+3. Waits for completion (~2-3 minutes)
+4. SCP downloads the resulting SVG and preview PNG
+5. Draws the high-quality sketch on the robot
+
+> **Note:** ControlSketch generates significantly higher-quality sketches with better stroke placement and fewer artifacts than real-time SwiftSketch, but requires ~2 minutes per image due to GPU optimization iterations.
 
 ---
 
