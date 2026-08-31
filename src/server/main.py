@@ -33,6 +33,7 @@ import yaml
 # Constants
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+OUTPUTS_DIR = os.path.join(PROJECT_ROOT, "SwiftSketch-Protraitron", "outputs")
 # Load File Paths Config
 FILES_PATHES_CONFIG = os.path.join(PROJECT_ROOT, "config", "files_pathes.yaml")
 paths_cfg = {}
@@ -67,6 +68,7 @@ hw_cfg = robot_logic_cfg.get("hardware", {})
 os.makedirs(STATIC_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(SKETCH_DIR, exist_ok=True)
+os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
 # Active Drawing Queue
 drawing_queue = []
@@ -303,11 +305,11 @@ def generate_sketch(strokes: int, job_id: str = Form(...), quality: Optional[str
             )
         else:
             if strokes == 32:
-                model_override = server_cfg.get("swiftsketch", {}).get("model_32_path", None)
+                model_override = server_cfg.get("swiftsketch", {}).get("model_32_path", "SwiftSketch/save/sketch-diffusion/model000450000.pt")
                 svg_filename = f"{job_id}_sketch.svg"
                 logger.info(f"Generating 32-stroke sketch for {job_id} using SwiftSketch...")
             elif strokes == 96:
-                model_override = controller.cfg.get("swiftsketch", {}).get("model_96_path", "SwiftSketch/save/SwiftSketch_96s_custom/model000020000.pt")
+                model_override = controller.cfg.get("swiftsketch", {}).get("model_96_path", "SwiftSketch/save/SwiftSketch_96s_custom/model000076000.pt")
                 svg_filename = f"{job_id}_sketch_96.svg"
                 logger.info(f"Generating 96-stroke sketch for {job_id} using SwiftSketch...")
                 
@@ -601,6 +603,8 @@ async def admin_swap_paper():
 
 # Serve static files
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+# Serve SwiftSketch output files (PNG previews, SVGs, etc.)
+app.mount("/outputs", StaticFiles(directory=OUTPUTS_DIR), name="outputs")
 
 def start_server(port=None):
     """
