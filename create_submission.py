@@ -91,9 +91,10 @@ def should_exclude(path_obj, parent_dir=""):
     if parent_dir and "config" in parent_dir and name in EXCLUDE_CONFIG_FILES:
         return True
     
-    # Check common exclusions
-    if name in EXCLUDE_PATTERNS:
-        return True
+    # Check common exclusions (support wildcards like *.pyc)
+    for pattern in EXCLUDE_PATTERNS:
+        if path_obj.match(pattern) or name == pattern:
+            return True
     
     # Check directory exclusions at root level
     if path_obj.is_dir() and name in EXCLUDE_DIRS:
