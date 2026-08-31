@@ -89,10 +89,10 @@ To ensure accurate, repeatable drawing strokes without damaging pens or tearing 
 
 ### Basic Execution
 
-Run the script from the repository root. By default, it loads the `marker` profile (`config/marker.yaml`):
+Run the script from the repository root. By default, it loads the `paper_manipulation` profile (`config/paper_manipulation.yaml`):
 
 ```bash
-python scripts/calibrate_workspace.py
+./venv/bin/python scripts/calibrate_workspace.py
 ```
 
 ### Specifying a Custom Tool Profile
@@ -101,10 +101,10 @@ You can pass a specific tool configuration profile name or an absolute/relative 
 
 ```bash
 # Using a named config profile from config/<profile>.yaml
-python scripts/calibrate_workspace.py marker
+./venv/bin/python scripts/calibrate_workspace.py marker
 
 # Or providing a direct file path
-python scripts/calibrate_workspace.py config/custom_pen.yaml
+./venv/bin/python scripts/calibrate_workspace.py config/custom_pen.yaml
 ```
 
 ### Step-by-Step Calibration Walkthrough

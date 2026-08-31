@@ -24,11 +24,11 @@
   </p>
   
   <div style="background-color: #0f0f10; padding: 15px; border-radius: 5px;">
-    <pre style="font-family: 'JetBrains Mono', monospace; color: #e0e0e0; margin: 0;"><code>python scripts/test_ur5e_connection.py</code></pre>
+    <pre style="font-family: 'JetBrains Mono', monospace; color: #e0e0e0; margin: 0;"><code>./venv/bin/python scripts/test_ur5e_connection.py</code></pre>
   </div>
   
   <p>
-    Ensure your virtual environment is active and that the <code>ur_rtde</code> library is installed (<code>pip install ur_rtde</code>).
+    Ensure your virtual environment is active and that the <code>ur_rtde</code> library is installed (<code>pip install -r requirements.txt</code>).
   </p>
 
   <h2 style="font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; border-bottom: 2px solid #26a69a; padding-bottom: 5px; color: #26a69a;">
@@ -36,13 +36,8 @@
   </h2>
   
   <p>
-    The script relies on a hardcoded IP variable that must match the physical UR5e controller IP.
+    The script dynamically loads the robot IP from <code>config/server.yaml</code> (under <code>hardware.robot_ip</code>), falling back to <code>192.168.57.101</code> if unconfigured.
   </p>
-  <ul>
-    <li>
-      <strong><code>ROBOT_IP</code></strong>: Defined at the top of the script (default: <code>"192.168.56.101"</code>). Modify this variable directly in the script if your lab setup uses a different subnet or IP assignment.
-    </li>
-  </ul>
 
   <h2 style="font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; border-bottom: 2px solid #26a69a; padding-bottom: 5px; color: #26a69a;">
     Inner Workings

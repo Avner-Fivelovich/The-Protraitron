@@ -65,9 +65,9 @@ The parent orchestrator invokes the `portraitron_developer` subagent to write th
    - Read the next incomplete task from [`TODO.md`](file:///Users/avnerf/Documents/GitHub/The%20Protraitron/TODO.md).
    - Formulate an implementation strategy.
    - Translate the plan into a plain-English, jargon-free summary (avoid technical terms like APIs/libraries).
-   - Send notification via:
-     ```bash
-     ./scripts/send_notification.py "[PLAN] <Task Name>" "<Plain English Summary>"
+   - Send notification via parent-agent messaging / transcript logging:
+     ```text
+     [PLAN] <Task Name>: <Plain English Summary>
      ```
 2. **Execute**: Write or update the necessary source files in the codebase (e.g., [`src/robot/controller.py`](file:///Users/avnerf/Documents/GitHub/The%20Protraitron/src/robot/controller.py)).
 3. **Commit**: Commit completed work to the `AI-agent` branch:
@@ -117,9 +117,9 @@ The parent orchestrator executes automated validation, updates the task tracking
        ```
    - **On Hardware or User Block**:
      - Move the task to the bottom of [`TODO.md`](file:///Users/avnerf/Documents/GitHub/The%20Protraitron/TODO.md) under the `## Physical & Hardware Tasks (Blocked / Manual)` section, prefixed with `[BLOCKED/MANUAL]`.
-     - Dispatch an email alert to the user:
-       ```bash
-       ./scripts/send_notification.py "[BLOCKER] <Task Name>" "<Explanation of hardware dependency or required manual action>"
+     - Flag blocker in agent logs:
+       ```text
+       [BLOCKER] <Task Name>: <Explanation of hardware dependency or required manual action>
        ```
      - Commit changes:
        ```bash
@@ -132,8 +132,8 @@ The parent orchestrator executes automated validation, updates the task tracking
 
 | Phase | Action | Commit Message Format | Notification Trigger |
 |---|---|---|---|
-| **Step 1: Develop** | Feature implementation | `Implement: <Task Name>` | `./scripts/send_notification.py "[PLAN] <Task Name>" "..."` |
+| **Step 1: Develop** | Feature implementation | `Implement: <Task Name>` | `[PLAN] <Task Name>: <Summary>` |
 | **Step 2: Refactor** | Code simplification & cleanup | `Refactor and simplify: <Task Name>` | None |
 | **Step 3: Verify (Success)** | Test pass & task completion | `Verify and complete: <Task Name>` | None |
 | **Step 3: Verify (Bug)** | Test failure & issue logging | `Report test failure on: <Task Name>` | None (queued in `TODO.md`) |
-| **Step 3: Verify (Blocked)** | Hardware / physical dependency | `Flag hardware/manual block on: <Task Name>` | `./scripts/send_notification.py "[BLOCKER] <Task Name>" "..."` |
+| **Step 3: Verify (Blocked)** | Hardware / physical dependency | `Flag hardware/manual block on: <Task Name>` | `[BLOCKER] <Task Name>: <Reason>` |
