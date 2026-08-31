@@ -86,6 +86,9 @@ The Protraitron/
 │   ├── record_location_to_ymal.py  # Interactive end-effector position recorder
 │   └── test_ur5e_connection.py     # Network ping & RTDE socket health check
 ├── src/                            # Core application source code
+│   ├── command_generator/          # Interactive Web Command Dashboard
+│   │   ├── server.py               # Multi-threaded parameter tuning server
+│   │   └── command_generator.html  # Command Dashboard UI
 │   ├── common/                     # Shared utilities & logging
 │   │   ├── logger.py               # Centralized logger
 │   │   └── robot_utils.py          # Math, coordinate transforms, & geometry
@@ -370,6 +373,8 @@ A lightweight, multi-threaded control server for visual parameter tuning and rea
 
 ```bash
 ./venv/bin/python command_generator_server.py
+# or
+./venv/bin/python src/command_generator/server.py
 ```
 - **URL:** `http://localhost:8080`
 - **Features:**

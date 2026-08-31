@@ -19,6 +19,8 @@ ZIP_PATH = PROJECT_ROOT / ZIP_NAME
 # Files and directories to include
 INCLUDE_FILES = [
     "main.py",
+    "command_generator_server.py",
+    "command_generator.html",
     "requirements.txt",
     "README.md",
     "LICENSE",
@@ -175,7 +177,8 @@ def create_submission_zip():
     print(f"📊 Size: {zip_size_mb:.2f} MB")
     print(f"\n📋 Contents Summary:")
     print(f"   • main.py (entry point)")
-    print(f"   • src/ (core modules, excluding hila.py)")
+    print(f"   • command_generator_server.py & command_generator.html (dashboard)")
+    print(f"   • src/ (core modules, server, vision, command_generator, robot)")
     print(f"   • config/ (YAML configuration files)")
     print(f"   • tests/ (unit tests)")
     print(f"   • scripts/ (calibration and utilities)")

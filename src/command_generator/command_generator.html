@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portraitron 3000 Command Panel</title>
+    
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Base Reset & Variables */
+        :root {
+            --bg-color: #0d0c18;
+            --card-bg: rgba(22, 21, 41, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-color: #f1f0fb;
+            --text-muted: #8b8a9f;
+            --accent-primary: #818cf8; /* Violet Indigo */
+            --accent-secondary: #2dd4bf; /* Teal */
+            --accent-gradient: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            --terminal-bg: #09080f;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --error: #f87171;
+            --font-display: 'Space Grotesk', -apple-system, sans-serif;
+            --font-sans: 'Inter', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(20, 184, 166, 0.12) 0px, transparent 50%);
+            color: var(--text-color);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem 2rem;
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(13, 12, 24, 0.6);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title h1 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.5rem;
+            letter-spacing: -0.02em;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-title p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        .app-container {
+            max-width: 1440px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 2rem;
+            flex: 1;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            backdrop-filter: blur(16px);
+            padding: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            height: fit-content;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Form groups & Controls */
+        .form-group {
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .input-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: -0.25rem;
+        }
+
+        select, input[type="text"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: var(--font-sans);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        select:focus, input[type="text"]:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.2);
+        }
+
+        /* Ranges & Sliders */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--accent-primary);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .slider-val {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            font-weight: 500;
+            width: 70px;
+            text-align: right;
+            color: var(--accent-secondary);
+        }
+
+        /* Toggles & Custom Checkboxes */
+        .toggle-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider-round {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .3s;
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .slider-round:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-color);
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider-round {
+            background-color: var(--accent-primary);
+        }
+
+        input:checked + .slider-round:before {
+            transform: translateX(20px);
+        }
+
+        /* Main Workspace Pane */
+        .main-pane {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Code/Command block */
+        .code-container {
+            position: relative;
+            background: var(--terminal-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .code-header span {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .btn-copy {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+            font-family: var(--font-sans);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-copy:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-muted);
+        }
+
+        .code-block {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            color: #d1d5db;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        /* Run Controls */
+        .run-controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            border: none;
+            color: #0b0a15;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.45);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-danger:hover {
+            background: rgba(248, 113, 113, 0.2);
+        }
+
+        /* Terminal Window */
+        .terminal-window {
+            background: var(--terminal-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+        }
+
+        .terminal-header {
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: var(--error); }
+        .dot-yellow { background: var(--warning); }
+        .dot-green { background: var(--success); }
+
+        .terminal-title {
+            font-size: 0.75rem;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        .terminal-body {
+            flex: 1;
+            padding: 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #d1d5db;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            max-height: 450px;
+            scroll-behavior: smooth;
+        }
+
+        .term-line-info { color: #a5b4fc; }
+        .term-line-success { color: var(--success); }
+        .term-line-warning { color: var(--warning); }
+        .term-line-error { color: var(--error); font-weight: bold; }
+        .term-line-timestamp { color: #4b5563; margin-right: 0.5rem; }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <h1>PORTRAITRON 3000</h1>
+            <p>Robotic Sketching Interface & Parameter Control Panel</p>
+        </div>
+        <div class="status-badge" id="statusBadge" style="font-family: var(--font-mono); font-size: 0.8rem; padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 0.4rem; color: var(--text-muted);">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted);" id="statusIndicator"></div>
+            <span>IDLE</span>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <div class="glass-card sidebar">
+            <h2>PARAMETERS</h2>
+            
+            <!-- AI Generation Pipeline -->
+            <div class="form-group">
+                <div class="toggle-group">
+                    <div>
+                        <label style="color: var(--accent-primary);">AI Generative Pipeline</label>
+                        <div class="input-desc">End-to-End: Image &rarr; Model &rarr; SVG &rarr; Robot</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="aiPipelineMode" onchange="toggleAiPipeline()">
+                        <span class="slider-round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="aiPipelineGroup" style="display: none; padding-left: 1rem; border-left: 2px solid var(--accent-primary); margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label>Input Image Path (JPG/PNG)</label>
+                    <input type="text" id="aiImagePath" value="" placeholder="/absolute/path/to/face.jpg" oninput="generateCommand()">
+                </div>
+                <div class="form-group">
+                    <label>Model Checkpoint</label>
+                    <select id="aiModelSelector" onchange="generateCommand()">
+                        <option value="">Loading models...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Num Strokes</label>
+                    <input type="number" id="aiNumStrokes" value="96" style="width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); color: var(--text-color); padding: 0.75rem 1rem; border-radius: 8px;" oninput="generateCommand()">
+                </div>
+            </div>
+
+            <!-- SVG Template Selector -->
+            <div class="form-group" id="svgSelectorGroup">
+                <label>Drawing Template (SVG)</label>
+                <select id="svgSelector" onchange="updatePaths()">
+                    <option value="98">Avner Portrait (98 Strokes)</option>
+                    <option value="128">Avner Portrait (128 Strokes)</option>
+                    <option value="custom">Custom Path...</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="customSvgGroup" style="display: none;">
+                <label>Custom SVG Absolute Path</label>
+                <input type="text" id="customSvgPath" value="" placeholder="/absolute/path/to/file.svg" oninput="generateCommand()">
+            </div>
+            
+            <!-- Mask Template Selector -->
+            <div class="form-group">
+                <label>Background Noise Mask</label>
+                <select id="maskSelector" onchange="updatePaths()">
+                    <option value="98">Avner Portrait (98 Strokes Mask)</option>
+                    <option value="128">Avner Portrait (128 Strokes Mask)</option>
+                    <option value="none">None (Disabled)</option>
+                    <option value="custom">Custom Path...</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="customMaskGroup" style="display: none;">
+                <label>Custom Mask Absolute Path</label>
+                <input type="text" id="customMaskPath" value="" placeholder="/absolute/path/to/mask.png" oninput="generateCommand()">
+            </div>
+
+            <!-- Mask Keep Ratio Slider -->
+            <div class="form-group" id="keepRatioGroup">
+                <label>Mask Keep Ratio</label>
+                <div class="slider-container">
+                    <input type="range" id="keepRatio" min="0.0" max="1.0" step="0.05" value="0.70" oninput="syncVal('keepRatio')">
+                    <span class="slider-val" id="keepRatioVal">70%</span>
+                </div>
+                <div class="input-desc">Min. fraction of points inside the mask to keep a stroke.</div>
+            </div>
+
+            <!-- Merge Threshold Slider -->
+            <div class="form-group">
+                <label>Merge Gap Threshold</label>
+                <div class="slider-container">
+                    <input type="range" id="mergeThreshold" min="0" max="20" step="1" value="2" oninput="syncVal('mergeThreshold')">
+                    <span class="slider-val" id="mergeThresholdVal">2.0 mm</span>
+                </div>
+                <div class="input-desc">Max physical distance to connect consecutive endpoints.</div>
+            </div>
+
+            <!-- TSP Optimization Toggle -->
+            <div class="form-group">
+                <div class="toggle-group">
+                    <div>
+                        <label style="color: var(--text-color);">TSP Optimization</label>
+                        <div class="input-desc">Reorder path drawing to minimize air travel.</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="tspOpt" checked onchange="generateCommand()">
+                        <span class="slider-round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Execution Mode (Dry Run) -->
+            <div class="form-group">
+                <div class="toggle-group">
+                    <div>
+                        <label style="color: var(--text-color);">Dry Run Simulation</label>
+                        <div class="input-desc">Dry run rendering without robot movement.</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="dryrunMode" checked onchange="generateCommand()">
+                        <span class="slider-round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Require Physical Approval Toggle -->
+            <div class="form-group" id="approveGroup" style="display: none;">
+                <div class="toggle-group">
+                    <div>
+                        <label style="color: var(--text-color);">Physical Approval Prompt</label>
+                        <div class="input-desc">Require verification in CLI before drawing.</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="approveMode" onchange="generateCommand()">
+                        <span class="slider-round"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="main-pane">
+            
+            <!-- Code Block / Command Builder -->
+            <div class="code-container">
+                <div class="code-header">
+                    <span>Generated CLI Command</span>
+                    <button class="btn-copy" id="btnCopy" onclick="copyCommand()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <span>Copy</span>
+                    </button>
+                </div>
+                <div class="code-block" id="generatedCmdText">./venv/bin/python main.py ...</div>
+            </div>
+
+            <!-- Run Button Controls -->
+            <div class="run-controls">
+                <button class="btn-primary" id="btnRun" onclick="runCommand()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span>Run Drawing Command</span>
+                </button>
+                <button class="btn-danger" id="btnAbort" onclick="abortCommand()" style="display: none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+                    <span>Stop</span>
+                </button>
+            </div>
+
+            <!-- Real-time Terminal Window -->
+            <div class="terminal-window">
+                <div class="terminal-header">
+                    <div class="terminal-dots">
+                        <div class="dot dot-red"></div>
+                        <div class="dot dot-yellow"></div>
+                        <div class="dot dot-green"></div>
+                    </div>
+                    <div class="terminal-title">TERMINAL LOG OUTPUT</div>
+                    <button class="btn-copy" onclick="clearTerminal()" style="padding: 0.2rem 0.5rem; font-size: 0.7rem;">Clear</button>
+                </div>
+                <div class="terminal-body" id="terminalBody">Portraitron 3000 Web Console Ready.<br>Select parameters and click "Run Drawing Command" to execute.</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Preset paths
+        const PRESETS = {
+            svg: {
+                "98": "/Users/avnerf/Documents/GitHub/SwiftSketch-Protraitron/outputs/avner_experiment/98s_slow/Avner-portrait/Avner-portrait_98_strokes/final_svg.svg",
+                "128": "/Users/avnerf/Documents/GitHub/SwiftSketch-Protraitron/outputs/avner_experiment/128s_slow/Avner-portrait/Avner-portrait_128_strokes/final_svg.svg"
+            },
+            mask: {
+                "98": "/Users/avnerf/Documents/GitHub/SwiftSketch-Protraitron/outputs/avner_experiment/98s_slow/Avner-portrait/Avner-portrait_98_strokes/mask.png",
+                "128": "/Users/avnerf/Documents/GitHub/SwiftSketch-Protraitron/outputs/avner_experiment/128s_slow/Avner-portrait/Avner-portrait_128_strokes/mask.png"
+            }
+        };
+
+        let activeEventSource = null;
+
+        function syncVal(sliderId) {
+            const slider = document.getElementById(sliderId);
+            const label = document.getElementById(sliderId + "Val");
+            
+            if (sliderId === 'keepRatio') {
+                label.innerText = Math.round(slider.value * 100) + "%";
+            } else if (sliderId === 'mergeThreshold') {
+                label.innerText = (slider.value * 1.0).toFixed(1) + " mm";
+            }
+            generateCommand();
+        }
+
+        function updatePaths() {
+            const svgSel = document.getElementById("svgSelector").value;
+            const maskSel = document.getElementById("maskSelector").value;
+            
+            document.getElementById("customSvgGroup").style.display = svgSel === 'custom' ? 'block' : 'none';
+            document.getElementById("customMaskGroup").style.display = maskSel === 'custom' ? 'block' : 'none';
+            
+            // Display keep ratio option if mask is enabled
+            document.getElementById("keepRatioGroup").style.display = maskSel === 'none' ? 'none' : 'block';
+            
+            generateCommand();
+        }
+
+        // Fetch models on load
+        window.onload = function() {
+            fetch('/api/models')
+                .then(response => response.json())
+                .then(data => {
+                    const selector = document.getElementById('aiModelSelector');
+                    selector.innerHTML = '';
+                    if (data.models && data.models.length > 0) {
+                        data.models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = 'SwiftSketch-Protraitron/models/' + model;
+                            option.textContent = model;
+                            selector.appendChild(option);
+                        });
+                    } else {
+                        selector.innerHTML = '<option value="">No models found in ./models/</option>';
+                    }
+                    generateCommand();
+                })
+                .catch(err => {
+                    console.error('Failed to fetch models:', err);
+                    const selector = document.getElementById('aiModelSelector');
+                    selector.innerHTML = '<option value="">Error fetching models</option>';
+                });
+        };
+
+        function toggleAiPipeline() {
+            const useAi = document.getElementById("aiPipelineMode").checked;
+            document.getElementById("aiPipelineGroup").style.display = useAi ? "block" : "none";
+            document.getElementById("svgSelectorGroup").style.display = useAi ? "none" : "flex";
+            document.getElementById("customSvgGroup").style.display = "none";
+            if (!useAi) {
+                updatePaths();
+            } else {
+                generateCommand();
+            }
+        }
+
+        function generateCommand() {
+            const useAi = document.getElementById("aiPipelineMode").checked;
+            const svgSel = document.getElementById("svgSelector").value;
+            const maskSel = document.getElementById("maskSelector").value;
+            
+            let svgPath = "";
+            if (!useAi) {
+                svgPath = svgSel === 'custom' ? document.getElementById("customSvgPath").value : PRESETS.svg[svgSel];
+            }
+            let maskPath = maskSel === 'custom' ? document.getElementById("customMaskPath").value : PRESETS.mask[maskSel];
+            
+            if (maskSel === 'none') {
+                maskPath = "";
+            }
+            
+            const keepRatio = document.getElementById("keepRatio").value;
+            const mergeThresholdMm = document.getElementById("mergeThreshold").value;
+            const mergeThresholdM = (mergeThresholdMm / 1000.0).toFixed(4);
+            const optimize = document.getElementById("tspOpt").checked;
+            const dryrun = document.getElementById("dryrunMode").checked;
+            const approveGroup = document.getElementById("approveGroup");
+            const approveMode = document.getElementById("approveMode");
+            
+            if (dryrun) {
+                approveGroup.style.display = "none";
+                approveMode.checked = false;
+            } else {
+                approveGroup.style.display = "block";
+                if (approveGroup.dataset.lastDryrun === 'true') {
+                    approveMode.checked = true;
+                }
+            }
+            approveGroup.dataset.lastDryrun = dryrun ? 'true' : 'false';
+            
+            const approve = approveMode.checked;
+            
+            let mainCmd = "./venv/bin/python main.py";
+            
+            if (useAi) {
+                const imgPath = document.getElementById("aiImagePath").value || "<select image path>";
+                const modelPath = document.getElementById("aiModelSelector").value || "<select model>";
+                const numStrokes = document.getElementById("aiNumStrokes").value;
+                const genOutputSvg = "./outputs/ai_generated.svg";
+                const genOutputMask = "./outputs/mask.png";
+                
+                mainCmd += ` --svg "${genOutputSvg}"`;
+                
+                // Extract filename without extension for the expected SVG output
+                const baseName = imgPath.split(/[\\/]/).pop().split('.')[0];
+                
+                let aiCmd = `PYTHONPATH="SwiftSketch-Protraitron:SwiftSketch-Protraitron/SwiftSketch" python -m SwiftSketch.generate --model_path "${modelPath}" --input_data "${imgPath}" --num_strokes ${numStrokes} --use_refine 0 --output_dir ./outputs/ && cp "./outputs/${baseName}.svg" "${genOutputSvg}" && `;
+                mainCmd = aiCmd + mainCmd;
+                
+                // Override mask path to point to the newly generated AI mask
+                maskPath = genOutputMask;
+            } else {
+                if (svgPath) {
+                    mainCmd += ` --svg "${svgPath}"`;
+                } else {
+                    mainCmd += ` --svg "<select SVG path>"`;
+                }
+            }
+            
+            if (maskPath) {
+                mainCmd += ` --mask "${maskPath}" --mask-keep-ratio ${keepRatio}`;
+            }
+            
+            if (parseFloat(mergeThresholdM) > 0) {
+                mainCmd += ` --merge-threshold ${mergeThresholdM}`;
+            } else {
+                mainCmd += ` --merge-threshold 0.0`;
+            }
+            
+            if (optimize) {
+                mainCmd += " --optimize";
+            } else {
+                mainCmd += " --no-optimize";
+            }
+            
+            if (dryrun) {
+                mainCmd += " --dryrun";
+            } else if (approve) {
+                mainCmd += " --approve";
+            }
+            
+            document.getElementById("generatedCmdText").innerText = mainCmd;
+        }
+
+        function copyCommand() {
+            const cmd = document.getElementById("generatedCmdText").innerText;
+            navigator.clipboard.writeText(cmd).then(() => {
+                const btn = document.getElementById("btnCopy");
+                btn.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span style="color: #34d399;">Copied!</span>
+                `;
+                setTimeout(() => {
+                    btn.innerHTML = `
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <span>Copy</span>
+                    `;
+                }, 2000);
+            });
+        }
+
+        function clearTerminal() {
+            document.getElementById("terminalBody").innerHTML = "";
+        }
+
+        function runCommand() {
+            const cmd = document.getElementById("generatedCmdText").innerText;
+            if (cmd.includes("<select SVG path>")) {
+                alert("Please configure a valid SVG template path first.");
+                return;
+            }
+            
+            const term = document.getElementById("terminalBody");
+            term.innerHTML = `<span class="term-line-info">Starting execution: ${cmd}</span>\n`;
+            
+            // Update UI status to busy
+            const badge = document.getElementById("statusBadge");
+            const indicator = document.getElementById("statusIndicator");
+            badge.style.color = "var(--warning)";
+            badge.style.borderColor = "var(--warning)";
+            indicator.style.background = "var(--warning)";
+            badge.querySelector("span").innerText = "RUNNING";
+            
+            document.getElementById("btnRun").disabled = true;
+            document.getElementById("btnRun").style.opacity = 0.5;
+            document.getElementById("btnAbort").style.display = "flex";
+            
+            // Launch standard EventSource to capture output stream
+            activeEventSource = new EventSource(`/api/run?cmd=${encodeURIComponent(cmd)}`);
+            
+            activeEventSource.onmessage = function(event) {
+                const line = event.data;
+                
+                if (line === '[PROCESS_COMPLETED]') {
+                    completeRun(0);
+                    return;
+                }
+                
+                if (line.startsWith('[PROCESS_FAILED]')) {
+                    const exitCode = line.split(': ')[1] || '1';
+                    term.innerHTML += `<span class="term-line-error">\nProcess finished with exit code ${exitCode}</span>\n`;
+                    completeRun(parseInt(exitCode));
+                    return;
+                }
+                
+                // Parse standard terminal logging formatting tags
+                let lineHtml = line;
+                if (line.includes('[INFO]')) {
+                    lineHtml = `<span class="term-line-info">${line}</span>`;
+                } else if (line.includes('[SUCCESS]')) {
+                    lineHtml = `<span class="term-line-success">${line}</span>`;
+                } else if (line.includes('[WARNING]')) {
+                    lineHtml = `<span class="term-line-warning">${line}</span>`;
+                } else if (line.includes('[ERROR]') || line.includes('[CRITICAL]')) {
+                    lineHtml = `<span class="term-line-error">${line}</span>`;
+                }
+                
+                term.innerHTML += lineHtml + "\n";
+                term.scrollTop = term.scrollHeight;
+            };
+            
+            activeEventSource.onerror = function() {
+                term.innerHTML += `<span class="term-line-error">\nConnection to execution stream lost.</span>\n`;
+                completeRun(-1);
+            };
+        }
+
+        function completeRun(code) {
+            if (activeEventSource) {
+                activeEventSource.close();
+                activeEventSource = null;
+            }
+            
+            const badge = document.getElementById("statusBadge");
+            const indicator = document.getElementById("statusIndicator");
+            
+            if (code === 0) {
+                badge.style.color = "var(--success)";
+                badge.style.borderColor = "var(--success)";
+                indicator.style.background = "var(--success)";
+                badge.querySelector("span").innerText = "SUCCESS";
+            } else {
+                badge.style.color = "var(--error)";
+                badge.style.borderColor = "var(--error)";
+                indicator.style.background = "var(--error)";
+                badge.querySelector("span").innerText = "FAILED";
+            }
+            
+            document.getElementById("btnRun").disabled = false;
+            document.getElementById("btnRun").style.opacity = 1.0;
+            document.getElementById("btnAbort").style.display = "none";
+            
+            setTimeout(() => {
+                badge.style.color = "var(--text-muted)";
+                badge.style.borderColor = "rgba(255,255,255,0.08)";
+                indicator.style.background = "var(--text-muted)";
+                badge.querySelector("span").innerText = "IDLE";
+            }, 5000);
+        }
+
+        function abortCommand() {
+            if (activeEventSource) {
+                activeEventSource.close();
+                activeEventSource = null;
+            }
+            fetch('/api/abort', { method: 'POST' })
+                .then(() => {
+                    const term = document.getElementById("terminalBody");
+                    term.innerHTML += `<span class="term-line-error">\nProcess aborted by user request.</span>\n`;
+                    completeRun(-1);
+                });
+        }
+
+        // Initialize view
+        updatePaths();
+    </script>
+</body>
+</html>
