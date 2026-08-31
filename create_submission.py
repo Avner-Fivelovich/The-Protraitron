@@ -43,6 +43,7 @@ EXCLUDE_PATTERNS = {
     ".pytest_cache",
     ".DS_Store",
     ".calibrate_gui_state.yaml",
+    "agent_workflow.md",
 }
 
 EXCLUDE_DIRS = {

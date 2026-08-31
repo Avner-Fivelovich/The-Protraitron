@@ -26,6 +26,8 @@
   - [2. Interactive Web Command Dashboard](#2-interactive-web-command-dashboard)
 - [Scripts & Hardware Utilities](#-scripts--hardware-utilities)
 - [Testing & Quality Assurance](#-testing--quality-assurance)
+- [Original Contributions vs. Third-Party Libraries](#-original-contributions-vs-third-party-libraries)
+- [Safety & Operational Guidelines](#-safety--operational-guidelines)
 
 ---
 
@@ -77,8 +79,7 @@ The Protraitron/
 ├── docs/                           # System guides & hardware manuals
 │   ├── scripts/                    # Documentation for peripheral scripts
 │   ├── network_setup.md            # Static IP & subnet configuration
-│   ├── PolyScopeX_Connection_Guide.md # Universal Robots PolyScope setup
-│   └── agent_workflow.md           # Autonomous agent guidelines
+│   └── PolyScopeX_Connection_Guide.md # Universal Robots PolyScope setup
 ├── scripts/                        # Calibration, diagnostics, and testing scripts
 │   ├── calibrate_paper_gui.py      # Tkinter GUI for paper swap position tuning
 │   ├── calibrate_workspace.py      # Force-probing drawing plane calibration
@@ -143,15 +144,9 @@ Runs the SwiftSketch diffusion model and differentiable vector rasterizer (`pydi
 
 ## ⚙️ SwiftSketch Setup & Pretrained Checkpoints
 
-### 1. Clone SwiftSketch
-Clone the SwiftSketch repository alongside the main project directory (or use the included submodule):
+### 1. Initialize SwiftSketch Submodule
+The project integrates the optimized **SwiftSketch** neural vector engine as an in-repo Git submodule:
 ```bash
-# Option A: Side-by-side clone
-cd ..
-git clone https://github.com/swiftsketch/swiftsketch.git
-cd The-Protraitron
-
-# Option B: Initialize git submodule
 git submodule update --init --recursive
 ```
 
@@ -160,24 +155,30 @@ git submodule update --init --recursive
 conda create -n swiftsketch_env python=3.9.19 -y
 conda activate swiftsketch_env
 pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1
-pip install -r ../swiftsketch/requirements.txt
+pip install -r SwiftSketch-Protraitron/requirements.txt
 pip install git+https://github.com/openai/CLIP.git
 ```
 
-### 3. Download Pre-trained Checkpoints
-Download the official model weights and place them under `swiftsketch/SwiftSketch/save/`:
-* [sketch-diffusion checkpoint](https://drive.google.com/uc?export=download&id=19FryO99dCmz-Dw1jzeZITUI0uuksiOA-)
-* [refinement-network checkpoint](https://drive.google.com/uc?export=download&id=1OrLzwaJXZ4SlDw3hqn71Yg1L01ytLv2x)
+### 3. Pre-trained Checkpoints
+The required model checkpoints are organized within the `SwiftSketch-Protraitron/` directory:
+* **32-Stroke Model:** [`sketch-diffusion checkpoint (model000450000.pt)`](https://drive.google.com/uc?export=download&id=19FryO99dCmz-Dw1jzeZITUI0uuksiOA-)
+* **96-Stroke Model:** `SwiftSketch-Protraitron/models/model000076000.pt`
+* **Refinement Model:** [`refinement-network checkpoint (model000430000.pt)`](https://drive.google.com/uc?export=download&id=1OrLzwaJXZ4SlDw3hqn71Yg1L01ytLv2x)
 
 Expected directory layout:
 ```text
-swiftsketch/SwiftSketch/save/
-├── sketch-diffusion/
-│   ├── args.json
-│   └── model000450000.pt
-└── refinement-network/
-    ├── args.json
-    └── model000430000.pt
+SwiftSketch-Protraitron/
+├── models/
+│   ├── model000040000.pt
+│   ├── model000076000.pt
+│   └── model000077000.pt
+└── SwiftSketch/save/
+    ├── sketch-diffusion/
+    │   ├── args.json
+    │   └── model000450000.pt
+    └── refinement-network/
+        ├── args.json
+        └── model000430000.pt
 ```
 
 ---
@@ -402,7 +403,6 @@ The repository contains dedicated calibration, diagnostic, and communication too
 ### Supplementary Documentation
 - [PolyScopeX Connection Guide](docs/PolyScopeX_Connection_Guide.md)
 - [Network Setup Guide](docs/network_setup.md)
-- [Agent Workflow Guide](docs/agent_workflow.md)
 
 ---
 
@@ -419,6 +419,43 @@ Test coverage includes:
 - **`tests/test_path_optimization.py`**: TSP solver convergence, distance reduction verification, and stroke merging logic.
 - **`tests/test_mask_filtering.py`**: Binary mask thresholding and foreground stroke preservation.
 - **`tests/test_swiftsketch_integration.py`**: Image preprocessing, aspect ratio padding, and command formulation.
+
+---
+
+## 🧩 Original Contributions vs. Third-Party Libraries
+
+To provide full clarity on project provenance, the table below delineates the new original components developed for **The Portraitron 3000** versus external libraries, models, and submodules utilized:
+
+### 🌟 Original Work Developed for this Project
+* **Robotic Drawing & Compliance Control Loop (`src/robot/controller.py`):**
+  * Real-time Cartesian position streaming via `ur_rtde.servoL()` at 500Hz.
+  * Active surface compliance using `ur_rtde.forceMode()` on Base X with dynamic tool contact probing and hover-retract safeguards.
+* **Double-Ended TSP 2-Opt Trajectory Optimizer (`src/robot/path_optimization.py`):**
+  * Custom path optimization formulating vector stroke ordering as a Double-Ended Traveling Salesperson Problem (evaluating both forward and reversed stroke directions).
+  * 2-Opt local search heuristics and proximity stroke merging (< 2mm) reducing airborne transition travel distance by over 80%.
+* **Automated Paper Swapping & Handover Pipeline (`src/robot/paper_handler.py`, `src/robot/paper_roller.py`):**
+  * Multi-step state machine orchestrating magnet removal, motorized paper advancing, Robotiq gripper paper roll tearing, force-feedback human handover, fresh paper alignment, and commemorative stamping.
+* **Foreground Mask Pruning Engine (`src/robot/mask_filtering.py`):**
+  * Reverse-mapping coordinate transforms from SVG viewBox coordinates to raster mask pixel space.
+  * Foreground keep-ratio filtering with dynamic PyTorch mock unpicklers for environments without `torch`.
+* **Vision Capture & Portrait Preprocessing (`src/vision/camera_capture.py`):**
+  * Webcam face detection, adaptive head-and-shoulders portrait cropping, aspect ratio padding with Lanczos resampling, and smooth elliptical edge vignetting.
+* **FastAPI Backend Server & Kiosk Client (`src/server/`):**
+  * Production asynchronous queue worker, job telemetry tracking, passcode authentication, and mobile-friendly frontend camera/crop interface (`src/server/static/`).
+* **Interactive Web Command Dashboard (`src/command_generator/`):**
+  * Multi-threaded parameter tuning server with real-time Server-Sent Events (SSE) log streaming and process abort controls.
+* **Hardware Calibration GUIs & Testing Utilities (`scripts/`, `tests/`):**
+  * Tkinter paper swap position calibrator, workspace plane probing tools, and complete 16-test automated unit test suite.
+
+### 📚 Third-Party Libraries, Models & Prior Work Used
+* **[`ur-rtde`](https://gitlab.com/sdurobotics/ur_rtde) (SDU Robotics):** C++ / Python interface for Real-Time Data Exchange (RTDE) communication with Universal Robots UR5e controllers.
+* **[`SwiftSketch`](https://github.com/SwiftSketch/SwiftSketch) & [`pydiffvg`](https://github.com/BachiLi/diffvg):** Pretrained diffusion model and differentiable vector rasterizer used as a submodule for stroke vector generation.
+* **[`ControlSketch`](https://github.com/ControlSketch/ControlSketch):** Remote Slurm GPU cluster pipeline for CLIP-guided iterative vector optimization.
+* **[`OpenCV`](https://opencv.org/) (`opencv-python`):** Video capture, Haar-cascade face detection classifiers, and Gaussian blur image operations.
+* **[`Hershey Fonts`](https://en.wikipedia.org/wiki/Hershey_fonts):** Vector font glyph definitions for single-stroke geometric text rendering (`src/robot/text_drawing.py`).
+* **[`FastAPI`](https://fastapi.tiangolo.com/) & [`Uvicorn`](https://www.uvicorn.org/):** Modern, high-performance ASGI web framework and server for the kiosk backend.
+* **[`Cropper.js`](https://fengyuanchen.github.io/cropperjs/):** Client-side touch-enabled image crop UI.
+* **[`Pillow`](https://python-pillow.org/), [`NumPy`](https://numpy.org/), [`Matplotlib`](https://matplotlib.org/), [`PyYAML`](https://pyyaml.org/):** Image processing, vector math, SVG visual simulation, and configuration file serialization.
 
 ---
 
