@@ -62,7 +62,7 @@ Ensure that the robot is powered on, accessible over the network, and the `ur_rt
 Run the script without arguments to record the location as the default `base_test` configuration:
 
 ```bash
-python scripts/record_location_to_ymal.py
+./venv/bin/python scripts/record_location_to_ymal.py
 ```
 
 ### CLI Arguments
@@ -78,7 +78,7 @@ You can customize the recording process using the following command-line flags:
 To record a drawing canvas origin on a robot with a custom IP:
 
 ```bash
-python scripts/record_location_to_ymal.py --name canvas_origin --robot-ip 192.168.1.50
+./venv/bin/python scripts/record_location_to_ymal.py --name canvas_origin --robot-ip 192.168.1.50
 ```
 
 ## Config Files and Outputs

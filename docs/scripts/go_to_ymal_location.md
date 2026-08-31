@@ -32,18 +32,18 @@ Execute the script from the command line, optionally passing arguments to custom
 ### Basic Usage
 To move the robot to the default `base_test` location:
 ```bash
-python scripts/go_to_ymal_location.py
+./venv/bin/python scripts/go_to_ymal_location.py
 ```
 
 ### Specifying a Named Location
 To move the robot to a specific named location (e.g., `home_position`), the script will automatically look for `config/locations/home_position.yaml`:
 ```bash
-python scripts/go_to_ymal_location.py --name home_position
+./venv/bin/python scripts/go_to_ymal_location.py --name home_position
 ```
 
 ### Advanced Movement and Options
 ```bash
-python scripts/go_to_ymal_location.py \
+./venv/bin/python scripts/go_to_ymal_location.py \
     --name pickup_zone \
     --speed 0.5 \
     --accel 0.2 \
