@@ -46,7 +46,7 @@ This guide compiles details and code utilities from external repositories to ass
 ---
 
 ## 3. SwiftSketch
-*   **Path**: `/Users/avnerf/Documents/GitHub/swiftsketch`
+*   **Path**: `SwiftSketch-Protraitron/` (In-Repo Git Submodule) / [GitHub Repository](https://github.com/swiftsketch/swiftsketch)
 
 ### Key Modules & Structure:
 - `ControlSketch/painter_params.py`: Saliency-based stroke initialization and differentiable vector representation using `pydiffvg`.

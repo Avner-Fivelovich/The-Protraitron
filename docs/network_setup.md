@@ -19,7 +19,7 @@ The UR5e robot controller and the host workstation communicate over a **direct, 
 | **Default Gateway / Router** | *(leave blank)* | Do not set a gateway so internet traffic stays on Wi-Fi |
 
 > [!IMPORTANT]
-> The robot IP (`192.168.57.101`) is configured in the central hardware config: [`config/server.yaml`](file:///Users/avnerf/Documents/GitHub/The%20Protraitron/config/server.yaml). Never assign `192.168.57.101` to your host computer, as this causes an IP address collision.
+> The robot IP (`192.168.57.101`) is configured in the central hardware config: [`config/server.yaml`](../config/server.yaml). Never assign `192.168.57.101` to your host computer, as this causes an IP address collision.
 
 ---
 
@@ -223,12 +223,12 @@ Failed to establish RTDE communication channel.
 
 * On PolyScope X, the standard Robotiq URCap does not expose port `63352` automatically.
 * You must install and configure the **ToolComm Forwarder URCapX** to bridge the RS-485 tool communication to network port `63352`.
-* Refer to the [PolyScope X Connection Guide](file:///Users/avnerf/Documents/GitHub/The%20Protraitron/docs/PolyScopeX_Connection_Guide.md) for installation and configuration instructions.
+* Refer to the [PolyScope X Connection Guide](PolyScopeX_Connection_Guide.md) for installation and configuration instructions.
 
 ---
 
 ## 8. Related Resources
 
-* [PolyScope X Connection Guide](file:///Users/avnerf/Documents/GitHub/The%20Protraitron/docs/PolyScopeX_Connection_Guide.md) — Comprehensive guide for PolyScope X integration and ToolComm forwarder.
-* [Test UR5e Connection Documentation](file:///Users/avnerf/Documents/GitHub/The%20Protraitron/docs/scripts/test_ur5e_connection.md) — Documentation for the RTDE diagnostic script.
-* [Central Server Configuration](file:///Users/avnerf/Documents/GitHub/The%20Protraitron/config/server.yaml) — Robot IP and port definitions.
+* [PolyScope X Connection Guide](PolyScopeX_Connection_Guide.md) — Comprehensive guide for PolyScope X integration and ToolComm forwarder.
+* [Test UR5e Connection Documentation](scripts/test_ur5e_connection.md) — Documentation for the RTDE diagnostic script.
+* [Central Server Configuration](../config/server.yaml) — Robot IP and port definitions.
