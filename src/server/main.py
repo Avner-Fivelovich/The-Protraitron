@@ -5,8 +5,12 @@ import time
 import socket
 import threading
 from typing import Optional
-import uvicorn
-import qrcode
+try:
+    import qrcode
+    QRCODE_AVAILABLE = True
+except ImportError:
+    qrcode = None
+    QRCODE_AVAILABLE = False
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
@@ -148,7 +152,7 @@ def queue_worker():
                 mask_img = load_binary_mask(job_to_run.mask_path)
                 if mask_img is not None:
                     keep_ratio = proc_cfg.get('mask_keep_ratio', 0.7)
-                    normalized_strokes = filter_strokes_with_mask(
+                    normalized_strokes, _ = filter_strokes_with_mask(
                         normalized_strokes, mask_img,
                         canvas_width=controller.width, canvas_height=controller.height,
                         keep_ratio=keep_ratio
@@ -477,6 +481,9 @@ def get_local_ip():
 
 def generate_startup_qr(ip_address, port=8000):
     """Generates a QR code pointing to the server and saves it to static/qr.png."""
+    if not QRCODE_AVAILABLE or qrcode is None:
+        logger.warning("qrcode module not available; skipping QR code generation.")
+        return
     url = f"http://{ip_address}:{port}"
     qr = qrcode.QRCode(
         version=1,

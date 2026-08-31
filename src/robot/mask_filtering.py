@@ -150,10 +150,13 @@ def load_swiftsketch_config(svg_path: str) -> dict:
 def filter_strokes_with_mask(
     raw_strokes: list,
     mask_np: np.ndarray,
-    svg_width: float,
-    svg_height: float,
+    svg_width: float = 1.0,
+    svg_height: float = 1.0,
     keep_ratio: float = DEFAULT_KEEP_RATIO,
     svg_path: str = None,
+    canvas_width: float = None,
+    canvas_height: float = None,
+    **kwargs,
 ) -> tuple:
     """
     Filters raw (pre-normalization) SVG strokes against a binary mask.
@@ -176,6 +179,11 @@ def filter_strokes_with_mask(
     Returns:
         (kept_strokes, deleted_strokes) both in raw SVG pixel coordinates.
     """
+    if canvas_width is not None:
+        svg_width = canvas_width
+    if canvas_height is not None:
+        svg_height = canvas_height
+
     if mask_np is None or keep_ratio <= 0.0:
         return raw_strokes, []
 
