@@ -84,7 +84,6 @@ The Protraitron/
 │   ├── calibrate_workspace.py      # Force-probing drawing plane calibration
 │   ├── go_to_ymal_location.py      # UR5e motion diagnostic to YAML positions
 │   ├── record_location_to_ymal.py  # Interactive end-effector position recorder
-│   ├── send_notification.py        # Push notification service integration
 │   └── test_ur5e_connection.py     # Network ping & RTDE socket health check
 ├── src/                            # Core application source code
 │   ├── common/                     # Shared utilities & logging
@@ -391,11 +390,9 @@ The repository contains dedicated calibration, diagnostic, and communication too
 | [`scripts/calibrate_workspace.py`](scripts/calibrate_workspace.py) | [Workspace Calibration](docs/scripts/calibrate_workspace.md) | Uses compliant force probing to detect the drawing plane and establish 3D canvas coordinate boundaries. |
 | [`scripts/go_to_ymal_location.py`](scripts/go_to_ymal_location.py) | [Go-to YAML Position](docs/scripts/go_to_ymal_location.md) | Moves the UR5e directly to named waypoint positions stored in configuration YAMLs. |
 | [`scripts/record_location_to_ymal.py`](scripts/record_location_to_ymal.py) | [Record Position to YAML](docs/scripts/record_location_to_ymal.md) | Reads the current end-effector Cartesian pose and writes it to configuration files. |
-| [`scripts/send_notification.py`](scripts/send_notification.py) | [Push Notifications](docs/scripts/send_notification.md) | Sends push notifications and alerts regarding drawing status or system errors. |
 | [`scripts/test_ur5e_connection.py`](scripts/test_ur5e_connection.py) | [UR5e Connection Diagnostics](docs/scripts/test_ur5e_connection.md) | Tests network ping, RTDE socket connectivity, and dashboard server responsiveness. |
 | [`scripts/roll_paper.py`](scripts/roll_paper.py) | — | Standalone script to drive the motorized paper roller. |
 | [`scripts/test_paper_sequences.py`](scripts/test_paper_sequences.py) | — | Executes and verifies paper advancing and cutting sequences. |
-| [`scripts/test_ur5e_nudge.py`](scripts/test_ur5e_nudge.py) | — | Cartesian micro-step jogging utility for millimeter-level end-effector positioning. |
 
 ### Supplementary Documentation
 - [PolyScopeX Connection Guide](docs/PolyScopeX_Connection_Guide.md)
