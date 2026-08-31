@@ -58,7 +58,7 @@ def run_swiftsketch_inference(input_image_path: str, output_svg_path: str, confi
     # 1. Load parameters from config
     swiftsketch_cfg = config.get("swiftsketch", {})
     conda_env = swiftsketch_cfg.get("conda_env", "swiftsketch_env")
-    repo_rel_path = swiftsketch_cfg.get("repo_path", "../swiftsketch")
+    repo_rel_path = swiftsketch_cfg.get("repo_path", "SwiftSketch-Protraitron")
     model_rel_path = override_model_path or swiftsketch_cfg.get("model_path", "SwiftSketch/save/sketch-diffusion/model000450000.pt")
     refine_model_rel_path = swiftsketch_cfg.get("refine_model_path", "SwiftSketch/save/refinement-network/model000430000.pt")
     guidance_param = swiftsketch_cfg.get("guidance_param", 2.5)
