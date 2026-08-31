@@ -152,8 +152,6 @@ This verifies:
 - Connection to **Port 30003** (`RTDEControlInterface` motion control).
 - Real-time joint angles, TCP pose (XYZ / RxRyRz), and Force/Torque sensor data.
 
-See the [Test UR5e Connection Documentation](file:///Users/avnerf/Documents/GitHub/The%20Protraitron/docs/scripts/test_ur5e_connection.md) for detailed telemetry breakdowns.
-
 ### Step 3: PolyScope X REST API Verification (PolyScope X Only)
 
 If operating on PolyScope X, open the interactive REST API documentation in your browser:
@@ -229,6 +227,5 @@ Failed to establish RTDE communication channel.
 
 ## 8. Related Resources
 
-* [PolyScope X Connection Guide](PolyScopeX_Connection_Guide.md) — Comprehensive guide for PolyScope X integration and ToolComm forwarder.
-* [Test UR5e Connection Documentation](scripts/test_ur5e_connection.md) — Documentation for the RTDE diagnostic script.
 * [Central Server Configuration](../config/server.yaml) — Robot IP and port definitions.
+* [Workspace Calibration Documentation](scripts/calibrate_workspace.md) — Documentation for compliant drawing surface calibration.

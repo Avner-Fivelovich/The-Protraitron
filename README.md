@@ -78,8 +78,7 @@ The Protraitron/
 │   └── vision.yaml                 # Camera indices, crop ratios, & detection settings
 ├── docs/                           # System guides & hardware manuals
 │   ├── scripts/                    # Documentation for peripheral scripts
-│   ├── network_setup.md            # Static IP & subnet configuration
-│   └── PolyScopeX_Connection_Guide.md # Universal Robots PolyScope setup
+│   └── network_setup.md            # Static IP & subnet configuration
 ├── scripts/                        # Calibration, diagnostics, and testing scripts
 │   ├── calibrate_paper_gui.py      # Tkinter GUI for paper swap position tuning
 │   ├── calibrate_workspace.py      # Force-probing drawing plane calibration
@@ -396,12 +395,11 @@ The repository contains dedicated calibration, diagnostic, and communication too
 | [`scripts/calibrate_workspace.py`](scripts/calibrate_workspace.py) | [Workspace Calibration](docs/scripts/calibrate_workspace.md) | Uses compliant force probing to detect the drawing plane and establish 3D canvas coordinate boundaries. |
 | [`scripts/go_to_ymal_location.py`](scripts/go_to_ymal_location.py) | [Go-to YAML Position](docs/scripts/go_to_ymal_location.md) | Moves the UR5e directly to named waypoint positions stored in configuration YAMLs. |
 | [`scripts/record_location_to_ymal.py`](scripts/record_location_to_ymal.py) | [Record Position to YAML](docs/scripts/record_location_to_ymal.md) | Reads the current end-effector Cartesian pose and writes it to configuration files. |
-| [`scripts/test_ur5e_connection.py`](scripts/test_ur5e_connection.py) | [UR5e Connection Diagnostics](docs/scripts/test_ur5e_connection.md) | Tests network ping, RTDE socket connectivity, and dashboard server responsiveness. |
+| [`scripts/test_ur5e_connection.py`](scripts/test_ur5e_connection.py) | — | Tests network ping, RTDE socket connectivity, and dashboard server responsiveness. |
 | [`scripts/roll_paper.py`](scripts/roll_paper.py) | — | Standalone script to drive the motorized paper roller. |
 | [`scripts/test_paper_sequences.py`](scripts/test_paper_sequences.py) | — | Executes and verifies paper advancing and cutting sequences. |
 
 ### Supplementary Documentation
-- [PolyScopeX Connection Guide](docs/PolyScopeX_Connection_Guide.md)
 - [Network Setup Guide](docs/network_setup.md)
 
 ---
